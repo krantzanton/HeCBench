@@ -9,7 +9,7 @@ OPTIMIZE  = yes
 DEBUG     = no
 LAUNCHER  =
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

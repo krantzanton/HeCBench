@@ -3,7 +3,7 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 LAUNCHER=
 
 OPTIMIZE  = yes
@@ -12,7 +12,7 @@ CHECK     = yes
 DUMP      = yes
 TIMING    = yes
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

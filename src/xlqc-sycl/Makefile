@@ -3,14 +3,14 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 OPTIMIZE  = yes
 DEBUG     = no
 GSL_INC   =-I/path/to/gsl/include
 GSL_LIB   =-L/path/to/gsl/lib -lgsl -lgslcblas 
 LAUNCHER  =
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

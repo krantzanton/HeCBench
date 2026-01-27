@@ -3,14 +3,14 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 OPTIMIZE  = yes
 DEBUG     = no
 VERIFY    = no
 LAUNCHER  =
 
 # if GPU = no, then -DSYCL has not effect
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

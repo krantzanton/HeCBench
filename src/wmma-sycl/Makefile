@@ -3,12 +3,12 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 OPTIMIZE  = yes
 DEBUG     = no
 
 SYCL      = yes
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_90
 HIP       = no

@@ -3,7 +3,7 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 OPTIMIZE  = yes
 DEBUG     = no
 #MPI_ROOT  = /usr/lib/x86_64-linux-gnu/openmpi
@@ -12,7 +12,7 @@ DEBUG     = no
 MPI_ROOT  = /opt/nvidia/hpc_sdk/Linux_x86_64/24.5/comm_libs/12.4/openmpi4/openmpi-4.1.5/
 LAUNCHER  = /opt/nvidia/hpc_sdk/Linux_x86_64/24.5/comm_libs/mpi/bin/mpirun -n 2
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

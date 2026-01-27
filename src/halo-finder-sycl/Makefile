@@ -1,6 +1,6 @@
 C_COMPILER   = icpx #clang
 CXX_COMPILER = icpx #clang++
-GPU          = yes
+GPU          = $(USE_GPU)
 CUDA         = no
 CUDA_ARCH    = sm_70
 HIP          = no

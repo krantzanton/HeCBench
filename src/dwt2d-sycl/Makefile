@@ -6,14 +6,14 @@
 ifeq ($(VENDOR), codeplay)
 CC        = compute++
 else
-CC        = clang++
+CC        = $(CXX)
 endif
 LAUNCHER=
 
 OPTIMIZE  = yes
 DEBUG     = no
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no

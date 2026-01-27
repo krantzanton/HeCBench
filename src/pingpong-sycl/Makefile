@@ -3,7 +3,7 @@
 #===============================================================================
 
 # Compiler can be set below, or via environment variable
-CC        = clang++
+CC        = $(CXX)
 OPTIMIZE  = yes
 DEBUG     = no
 MPI_ROOT  = /opt/intel/oneapi/2024.1
@@ -14,7 +14,7 @@ LAUNCHER  = $(MPI_ROOT)/bin/mpirun -n 2
 #MPI_ROOT  = $(NVHPC_SDK)/comm_libs/12.4/openmpi4/openmpi-4.1.5/
 #LAUNCHER  = $(NVHPC_SDK)/comm_libs/mpi/bin/mpirun --mca coll ^hcoll -n 2
 
-GPU       = yes
+GPU       = $(USE_GPU)
 CUDA      = no
 CUDA_ARCH = sm_70
 HIP       = no
