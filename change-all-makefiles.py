@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Compile and test all *-sycl benchmarks.")
+    ap = argparse.ArgumentParser(description="modify all cmake *-sycl benchmarks.")
     ap.add_argument("--sycl-root", default=".", help="Root directory containing *-sycl projects (default: .)")
     args = ap.parse_args()
 
