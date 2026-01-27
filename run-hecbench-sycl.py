@@ -143,7 +143,7 @@ def main():
             continue
 
         # 1) Build
-        build_cmd = [args.make, f"-j{args.make_jobs}", "CXX=acpp", "VENDOR=AdaptiveCpp"]
+        build_cmd = [args.make, f"-j{args.make_jobs}", "CXX=acpp", "USE_GPU=no", "VENDOR=AdaptiveCpp"]
         if args.cflags_plus:
             for tok in shlex.split(args.cflags_plus):
                 build_cmd.append(f"EXTRA_CFLAGS+={tok}")
