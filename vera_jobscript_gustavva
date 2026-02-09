@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH -A C3SE2025-1-14
+#SBATCH -A C3SE 2026/1-12
 #SBATCH -C ZEN4
 #SBATCH --exclusive
 #SBATCH -p vera
-#SBATCH -J hec
+#SBATCH -J HeCBench
 #SBATCH -N 1
 #SBATCH -t 24:00:00
 #SBATCH -e hecbench_err_amd
