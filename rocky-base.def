@@ -1,0 +1,120 @@
+Bootstrap: docker
+From: rockylinux:9
+
+%post
+    set -e
+
+    # -----------------------------
+    # Base system & dev tools
+    # -----------------------------
+    dnf -y install epel-release
+
+    dnf -y groupinstall "Development Tools"
+
+    dnf -y install \
+        wget git vim nano \
+        gcc gcc-c++ make \
+        python3 python3-devel \
+        perl-File-Copy perl-Config-Simple \
+        perf lua-posix \
+        spirv-tools cmake
+
+    # -----------------------------
+    # LLVM / Clang (Rocky default)
+    # -----------------------------
+    dnf -y install \
+        llvm llvm-devel llvm-libs \
+        clang clang-devel clang-libs
+
+    # -----------------------------
+    # Boost (source build)
+    # -----------------------------
+    cd /tmp
+    wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz
+    tar -xvf boost_1_87_0.tar.gz
+    cd boost_1_87_0
+    ./bootstrap.sh --prefix=/opt/boost
+    ./b2 install
+
+    # -----------------------------
+    # OpenCL Headers + ICD Loader
+    # -----------------------------
+    mkdir -p /opt/OpenCL
+    cd /opt/OpenCL
+    
+    # -----------------------------
+    # OpenCL Headers (authoritative)
+    # -----------------------------
+    rm -rf OpenCL-Headers
+    git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+    
+    cmake -S OpenCL-Headers -B OpenCL-Headers/build \
+      -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/OpenCL-Headers
+    
+    cmake --build OpenCL-Headers/build
+    cmake --install OpenCL-Headers/build
+    
+    # -----------------------------
+    # OpenCL ICD Loader
+    # -----------------------------
+    rm -rf OpenCL-ICD-Loader
+    git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+    
+    cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build \
+      -DCMAKE_PREFIX_PATH=/opt/OpenCL/OpenCL-Headers \
+      -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/OpenCL-ICD-Loader
+    
+    cmake --build OpenCL-ICD-Loader/build
+    cmake --install OpenCL-ICD-Loader/build
+    
+    # -----------------------------
+    # OpenCL Intercept Layer
+    # -----------------------------
+    rm -rf opencl-intercept-layer
+    git clone https://github.com/intel/opencl-intercept-layer.git
+    
+    mkdir -p opencl-intercept-layer/build
+    cd opencl-intercept-layer/build
+    
+    cmake .. -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/intercept
+    make -j$(nproc)
+    make install
+    
+    # -----------------------------
+    # Ensure OpenCL unversioned symlink exists (robust)
+    # -----------------------------
+    for d in \
+      /opt/OpenCL/OpenCL-ICD-Loader/lib64 \
+      /opt/OpenCL/intercept/lib64 \
+      /usr/lib64
+    do
+      if [ -d "$d" ] && [ -f "$d/libOpenCL.so.1" ] && [ ! -f "$d/libOpenCL.so" ]; then
+        ln -s libOpenCL.so.1 "$d/libOpenCL.so"
+      fi
+    done
+
+    # -----------------------------
+    # LIKWID
+    # -----------------------------
+    cd /tmp
+    wget https://github.com/RRZE-HPC/likwid/archive/refs/tags/v5.4.1.tar.gz
+    tar -xvf v5.4.1.tar.gz
+    cd likwid-5.4.1
+    sed -i 's/accessdaemon/perf_event/' config.mk
+    make
+    make install
+
+    dnf clean all
+
+    rm -rf /tmp/boost_* \
+           /tmp/likwid-* \
+           /tmp/v5.4.1.tar.gz || true
+
+%environment
+    export PATH=/opt/cmake/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/boost/lib:/opt/OpenCL/OpenCL-ICD-Loader/lib:$LD_LIBRARY_PATH
+    export CMAKE_PREFIX_PATH=/opt/boost:/opt/OpenCL/OpenCL-Headers:/opt/OpenCL/OpenCL-ICD-Loader:$CMAKE_PREFIX_PATH
+    export CC=clang
+    export CXX=clang++
+    export PYTHONPATH=/usr/lib/python3.9/site-packages${PYTHONPATH:+:${PYTHONPATH}}
+

@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./rocky-base.sif
+
+%post
+    set -e
+    dnf install -y 'dnf-command(config-manager)'
+    dnf install -y dnf-plugins-core.noarch
+    dnf install -y kernel-devel-matched.x86_64
+    dnf install -y kernel-headers.x86_64
+
+    mkdir -p /etc/OpenCL/vendors
+
+    echo "[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" | tee > /tmp/oneAPI.repo
+	
+    mv /tmp/oneAPI.repo /etc/yum.repos.d
+
+    yum install -y intel-oneapi-runtime-opencl
+    yum install -y intel-oneapi-vtune
+    dnf install -y python3-pip
+    pip install optuna
+
+
+    mkdir -p /tmp/acpp
+    cd /tmp/acpp
+    
+    rm -rf AdaptiveCpp-25.02.0 v25.02.0.tar.gz
+    
+    wget https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.02.0.tar.gz
+    tar -xvf v25.02.0.tar.gz
+    cd AdaptiveCpp-25.02.0
+
+    mkdir -p build && cd build 
+
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX=/opt/AdaptiveCpp \
+      -DCMAKE_CXX_FLAGS="-O3" \
+      -DCMAKE_CXX_COMPILER=clang++ \
+      -DCMAKE_C_COMPILER=clang \
+      -DWITH_ROCM_BACKEND=OFF \
+      -DWITH_CUDA_BACKEND=OFF \
+      -DWITH_CPU_BACKEND=ON \
+      -DWITH_SSCP_COMPILER=ON \
+      -DWITH_OPENCL_BACKEND=ON \
+      -DWITH_LEVEL_ZERO_BACKEND=OFF \
+      -DOpenCL_LIBRARY=/opt/OpenCL/intercept/lib64/libOpenCL.so \
+      -DOpenCL_INCLUDE_DIR=/opt/OpenCL/OpenCL-Headers/include \
+      -DBOOST_ROOT=/opt/boost
+
+    make -j $(nproc) install
+  
+    rm -rf /tmp/acpp || true
+
+    
+    
+    
+    
+    
+    
+    
+    
+

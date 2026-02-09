@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./rocky-acpp-intermediate.sif
+
+%post
+    set -e
+
+    dnf install -y clinfo
+
+
+%environment
+    # ----- Base system -----
+    export PATH=/usr/bin:/bin
+
+    # ----- AdaptiveCpp -----
+    export PATH=/opt/AdaptiveCpp/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/AdaptiveCpp/lib
+
+    # ----- OpenCL -----
+    export LD_LIBRARY_PATH=/usr/lib64:/usr/lib:/opt/OpenCL/OpenCL-ICD-Loader/lib64:$LD_LIBRARY_PATH
+
+    # ----- Linker FIX -----
+    export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-14/root/usr/lib64:$LD_LIBRARY_PATH
+
+    # ----- AdaptiveCpp device selection -----
+    export HIPSYCL_PLATFORM=opencl
+    export HIPSYCL_DEVICE=cpu
+
+    # ----- Compilers -----
+    export CXX=acpp
+    export CC=clang
+
+    # ----- CMake -----
+    export CMAKE_PREFIX_PATH=/opt/AdaptiveCpp:/opt/OpenCL/OpenCL-Headers
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
