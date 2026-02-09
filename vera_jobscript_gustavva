@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -A C3SE 2026/1-12
+#SBATCH -A C3SE2026-1-12
 #SBATCH -C ZEN4
 #SBATCH --exclusive
 #SBATCH -p vera
@@ -14,4 +14,4 @@ cd /cephyr/users/gustavva/Vera/HeCBench
 
 IMG=/cephyr/users/gustavva/Vera/HeCBench/rocky-acpp.sif
 
-apptainer exec $IMG run-hecbench-sycl.py --sycl-root=src
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src
