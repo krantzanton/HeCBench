@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH -A C3SE2025-1-14
+#SBATCH -C ZEN4
+#SBATCH --exclusive
+#SBATCH -p vera
+#SBATCH -J hec
+#SBATCH -N 1
+#SBATCH -t 24:00:00
+#SBATCH -e hecbench_err_amd
+
+######################-------------------######################
+
+cd /cephyr/users/gustavva/Vera/HeCBench
+
+IMG=/cephyr/users/gustavva/Vera/HeCBench/rocky-acpp.sif
+
+apptainer exec $IMG run-hecbench-sycl.py --sycl-root=src
