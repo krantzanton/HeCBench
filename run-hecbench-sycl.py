@@ -8,6 +8,7 @@ import shlex
 import stat
 import subprocess
 import sys
+import signal
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -16,14 +17,21 @@ from typing import List, Optional, Tuple
 
 def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> Tuple[int, str, str]:
     p = subprocess.Popen(
-        cmd, cwd=str(cwd),
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+        cmd,
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+        start_new_session=True  # critical for killing children
     )
+
     try:
         out, err = p.communicate(timeout=timeout)
         return p.returncode, out, err
+
     except subprocess.TimeoutExpired:
-        p.kill()
+        os.killpg(p.pid, signal.SIGKILL)
         out, err = p.communicate()
         return 124, out, err + "\n[TIMEOUT]\n"
 
