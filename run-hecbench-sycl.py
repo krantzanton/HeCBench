@@ -23,7 +23,7 @@ def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> 
         stderr=subprocess.PIPE,
         text=True,
         env=env,
-        start_new_session=True  # critical for killing children
+        start_new_session=True
     )
 
     try:
@@ -34,6 +34,12 @@ def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> 
         os.killpg(p.pid, signal.SIGKILL)
         out, err = p.communicate()
         return 124, out, err + "\n[TIMEOUT]\n"
+
+    except KeyboardInterrupt:
+        print("\n[INTERRUPTED] Killing subprocess...")
+        os.killpg(p.pid, signal.SIGKILL)
+        p.wait()
+        raise  # re-raise so main program stops
 
 def list_targets(make_tool: str, proj_dir: Path, timeout: int) -> List[str]:
     # Parse targets from `make -qp`. This prints make database; targets are lines ending with ':'
@@ -114,19 +120,10 @@ def main():
     results_root = Path(args.results_dir).resolve()
     results_root.mkdir(parents=True, exist_ok=True)
    
-    orig_stdout = sys.stdout
-    log_file = open('log.txt', 'w')
-    sys.stdout = log_file
-    
-
-
-
     # Discover projects
     projects = sorted([p for p in sycl_root.glob(args.pattern) if p.is_dir()])
     if not projects:
         print(f"No projects found under {sycl_root} matching {args.pattern}", file=sys.stderr)
-        sys.stdout = orig_stdout
-        log_file.close()
         sys.exit(1)
 
     summary_rows = []
@@ -246,9 +243,16 @@ def main():
     print(f"  SKIP run:     {skipped_run}")
     print(f"Logs & results in: {csv_path.parent}")
     print(f"Elapsed: {int(elapsed)}s")
-    sys.stdout = orig_stdout
-    log_file.close()
 
 if __name__ == "__main__":
-    main()
-
+    orig_stdout = sys.stdout
+    log_file = open('log.txt', 'w')
+    sys.stdout = log_file
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.")
+        sys.exit(130)
+    finally:
+        sys.stdout = orig_stdout
+        log_file.close()
