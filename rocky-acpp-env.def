@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./rocky-acpp-base.sif
+
+%post
+    echo "Setting up environment... Make sure to build to off the rocky-acpp-base image! And if you want to add modules add them in this post since the base rebuild takes quite a while."
+
+%environment
+    # Base
+    export CC=clang
+    export CXX=acpp
+    export PATH=/usr/bin:/bin
+
+    # AdaptiveCpp
+    export PATH=/opt/AdaptiveCpp/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/AdaptiveCpp/lib
+
+    # OpenCL
+    export LD_LIBRARY_PATH=/usr/lib64:/usr/lib:/opt/OpenCL/OpenCL-ICD-Loader/lib64:$LD_LIBRARY_PATH
+
+    # Linker FIX
+    export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-14/root/usr/lib64:$LD_LIBRARY_PATH
+
+    # AdaptiveCpp device selection
+    export HIPSYCL_PLATFORM=opencl
+    export HIPSYCL_DEVICE=cpu
+
+    # Boost
+    export LD_LIBRARY_PATH=/opt/boost/lib:$LD_LIBRARY_PATH
+
+    # CMake
+    export PATH=/opt/cmake/bin:$PATH
+    export CMAKE_PREFIX_PATH=/opt/adaptivecpp:/opt/boost:/opt/OpenCL/OpenCL-Headers:/opt/OpenCL/OpenCL-ICD-Loader:$CMAKE_PREFIX_PATH
+

@@ -1,0 +1,151 @@
+Bootstrap: docker
+From: rockylinux:9
+
+%post
+    set -e
+
+    dnf -y install epel-release
+
+    dnf -y groupinstall "Development Tools"
+
+    dnf -y install wget
+
+    dnf -y install git
+
+    dnf -y install vim nano
+
+    dnf -y install gcc gcc-c++ make cmake
+
+    dnf -y install python3 python3-devel python3-pip
+
+    dnf -y install perl-File-Copy perl-Config-Simple
+    
+    dnf -y install perf 
+
+    dnf -y install lua-posix
+
+    dnf -y install spirv-tools
+
+    dnf -y install 'dnf-command(config-manager)'
+    dnf -y install dnf-plugins-core.noarch
+
+    dnf -y install kernel-devel-matched.x86_64 kernel-headers.x86_64
+
+    dnf -y install llvm llvm-devel llvm-libs
+    dnf -y install clang clang-devel clang-libs
+
+    dnf -y install lld
+
+    dnf -y install clinfo
+
+
+    # Boost
+    cd /tmp
+    wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz
+    tar -xvf boost_1_87_0.tar.gz
+    cd boost_1_87_0
+    ./bootstrap.sh --prefix=/opt/boost
+    ./b2 install
+
+    # OpenCL headers
+    mkdir -p /opt/OpenCL
+    cd /opt/OpenCL
+    rm -rf OpenCL-Headers
+    git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+    cmake -S OpenCL-Headers -B OpenCL-Headers/build \
+      -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/OpenCL-Headers
+    cmake --build OpenCL-Headers/build
+    cmake --install OpenCL-Headers/build
+    
+    # OpenCL ICD loader
+    rm -rf OpenCL-ICD-Loader
+    git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+    cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build \
+      -DCMAKE_PREFIX_PATH=/opt/OpenCL/OpenCL-Headers \
+      -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/OpenCL-ICD-Loader
+    cmake --build OpenCL-ICD-Loader/build
+    cmake --install OpenCL-ICD-Loader/build
+   
+
+    # OpenCL intercept layer
+    rm -rf opencl-intercept-layer
+    git clone https://github.com/intel/opencl-intercept-layer.git
+    mkdir -p opencl-intercept-layer/build
+    cd opencl-intercept-layer/build
+    cmake .. -DCMAKE_INSTALL_PREFIX=/opt/OpenCL/intercept
+    make -j$(nproc)
+    make install
+    
+    # Ensure OpenCL unversioned symlink exists
+    for d in \
+      /opt/OpenCL/OpenCL-ICD-Loader/lib64 \
+      /opt/OpenCL/intercept/lib64 \
+      /usr/lib64
+    do
+      if [ -d "$d" ] && [ -f "$d/libOpenCL.so.1" ] && [ ! -f "$d/libOpenCL.so" ]; then
+        ln -s libOpenCL.so.1 "$d/libOpenCL.so"
+      fi
+    done
+
+    # LIKWID
+    cd /tmp
+    wget https://github.com/RRZE-HPC/likwid/archive/refs/tags/v5.4.1.tar.gz
+    tar -xvf v5.4.1.tar.gz
+    cd likwid-5.4.1
+    sed -i 's/accessdaemon/perf_event/' config.mk
+    make
+    make install
+
+    # dnf clean all
+
+    rm -rf /tmp/boost_* \
+           /tmp/likwid-* \
+           /tmp/v5.4.1.tar.gz || true
+
+
+    # oneAPI
+    mkdir -p /etc/OpenCL/vendors
+    echo "[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" | tee > /tmp/oneAPI.repo
+    mv /tmp/oneAPI.repo /etc/yum.repos.d
+    yum install -y intel-oneapi-runtime-opencl
+    yum install -y intel-oneapi-vtune
+    yum install -y intel-oneapi-hpc-toolkit
+    # yum install -y intel-oneapi-dpcpp-cpp-2025.3.x86_64
+
+
+    # AdaptiveCpp
+    mkdir -p /tmp/acpp
+    cd /tmp/acpp
+    
+    rm -rf AdaptiveCpp-25.02.0 v25.02.0.tar.gz
+    
+    wget https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz
+    tar -xvf v25.10.0.tar.gz
+    cd AdaptiveCpp-25.10.0
+
+    mkdir -p build && cd build 
+
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX=/opt/AdaptiveCpp \
+      -DCMAKE_CXX_FLAGS="-O3" \
+      -DCMAKE_CXX_COMPILER=clang++ \
+      -DCMAKE_C_COMPILER=clang \
+      -DWITH_ROCM_BACKEND=OFF \
+      -DWITH_CUDA_BACKEND=OFF \
+      -DWITH_CPU_BACKEND=ON \
+      -DWITH_SSCP_COMPILER=ON \
+      -DWITH_OPENCL_BACKEND=ON \
+      -DWITH_LEVEL_ZERO_BACKEND=OFF \
+      -DOpenCL_LIBRARY=/opt/OpenCL/intercept/lib64/libOpenCL.so \
+      -DOpenCL_INCLUDE_DIR=/opt/OpenCL/OpenCL-Headers/include \
+      -DBOOST_ROOT=/opt/boost
+
+    make -j $(nproc) install
+  
+    rm -rf /tmp/acpp || true

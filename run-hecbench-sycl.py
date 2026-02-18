@@ -15,6 +15,7 @@ from typing import List, Optional, Tuple
 
 # ---------- helpers ----------
 
+
 def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> Tuple[int, str, str]:
     p = subprocess.Popen(
         cmd,
@@ -123,7 +124,7 @@ def main():
     # Discover projects
     projects = sorted([p for p in sycl_root.glob(args.pattern) if p.is_dir()])
     if not projects:
-        print(f"No projects found under {sycl_root} matching {args.pattern}", file=sys.stderr)
+        log(f"No projects found under {sycl_root} matching {args.pattern}", file=sys.stderr)
         sys.exit(1)
 
     summary_rows = []
@@ -131,7 +132,7 @@ def main():
 
     for proj in projects:
         proj_name = proj.name
-        print(f"==> {proj_name}")
+        log(f"==> {proj_name}")
 
         makefile = proj / "Makefile"
         log_dir = results_root / proj_name
@@ -236,23 +237,23 @@ def main():
     skipped_run = sum(1 for r in summary_rows if r["run"] == "SKIP")
 
     elapsed = time.time() - start_time
-    print(f"\nSummary for {total} benchmarks:")
-    print(f"  PASS both:  {passed_both}")
-    print(f"  FAIL compile: {failed_compile}")
-    print(f"  FAIL run:     {failed_run}")
-    print(f"  SKIP run:     {skipped_run}")
-    print(f"Logs & results in: {csv_path.parent}")
-    print(f"Elapsed: {int(elapsed)}s")
+    log(f"\nSummary for {total} benchmarks:")
+    log(f"  PASS both:  {passed_both}")
+    log(f"  FAIL compile: {failed_compile}")
+    log(f"  FAIL run:     {failed_run}")
+    log(f"  SKIP run:     {skipped_run}")
+    log(f"Logs & results in: {csv_path.parent}")
+    log(f"Elapsed: {int(elapsed)}s")
 
 if __name__ == "__main__":
     orig_stdout = sys.stdout
     log_file = open('log.txt', 'w')
-    sys.stdout = log_file
+    def log(text):
+        log_file.write(text+"\n")
     try:
         main()
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
         sys.exit(130)
     finally:
-        sys.stdout = orig_stdout
         log_file.close()
