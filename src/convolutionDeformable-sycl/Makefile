@@ -9,5 +9,5 @@ clean:
 	rm -rf *.egg-info *.so build __pycache__
 
 run: build
-	$(LAUNCHER) python main.py # warmup run
-	$(LAUNCHER) python main.py
+	$(LAUNCHER) python3 main.py # warmup run
+	$(LAUNCHER) python3 main.py

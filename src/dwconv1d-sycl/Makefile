@@ -15,9 +15,9 @@ DOCKER_IMAGE = intel/intel-extension-for-pytorch:2.8.10-xpu
 
 ifeq ($(USE_DOCKER),yes)
   PYTHON_CMD = docker run --rm --device /dev/dri -v /dev/dri/by-path:/dev/dri/by-path \
-	--ipc=host -v $(PWD):/workspace -w /workspace $(DOCKER_IMAGE) python
+	--ipc=host -v $(PWD):/workspace -w /workspace $(DOCKER_IMAGE) python3
 else
-  PYTHON_CMD = python
+  PYTHON_CMD = python3
 endif
 
 #===============================================================================
