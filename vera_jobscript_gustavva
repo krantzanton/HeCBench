@@ -12,7 +12,7 @@
 
 cd /cephyr/users/gustavva/Vera/HeCBench
 
-IMG=/cephyr/users/gustavva/Vera/HeCBench/rocky-acpp.sif
+IMG=/cephyr/users/gustavva/Vera/HeCBench/acpp.sif
 
 export ACPP_VISIBILITY_MASK=ocl
 # export ACPP_VISIBILITY_MASK=omp
