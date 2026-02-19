@@ -14,14 +14,7 @@ From: ./rocky-acpp-base.sif
 
     dnf -y install gdal gdal-devel
 
-    cd /tmp
-    wget https://github.com/neovim/neovim/archive/refs/tags/v0.11.6.tar.gz
-    tar -xf v0.11.6.tar.gz
-    rm ./*.tar.gz
-    cd "$(ls | grep neovim)"
-    make CMAKE_BUILD_TYPE=RelWithDebInfo
-    make install
-
+    dnf install -y GraphicsMagick ImageMagick
 
 %environment
     # Base
