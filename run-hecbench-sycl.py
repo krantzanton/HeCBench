@@ -323,7 +323,7 @@ if __name__ == "__main__":
 
     def log(text):
         log_file.write(text + "\n")
-
+        log_file.flush()
     try:
         main()
     except KeyboardInterrupt:
