@@ -7,6 +7,7 @@
 #include <sycl/sycl.hpp>
 
 //define the data set size for a cubic volume
+#include "../sycl_timer.hpp"
 #define DATAXSIZE 256
 #define DATAYSIZE 256
 #define DATAZSIZE 256
@@ -283,29 +284,29 @@ int main(int argc, char *argv[])
 
   for (int t = 0; t < t_f; t++) {
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class chemical_potential>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         chemicalPotential(item, d_cold, d_muold,
                           dx,dy,dz,gamma,e_AA,e_BB,e_AB);
       });
-    });
+    }));
         
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class energy>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         localFreeEnergyFunctional(item, d_cold, d_fold,
                                   dx,dy,dz,gamma,e_AA,e_BB,e_AB);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class cahn_hilliard>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         cahnHilliard(item, d_cnew, d_cold, d_muold,
                      D,dt,dx,dy,dz);
       });
-    });
+    }));
 
     if (t > 0 && t % (t_freq - 1) == 0) {
 
@@ -329,12 +330,12 @@ int main(int argc, char *argv[])
       ofile_f << t << "," << integral_f << "\n";
     }
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class swap_grid>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         Swap(item, d_cnew, d_cold);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -349,5 +350,6 @@ int main(int argc, char *argv[])
   sycl::free(d_cnew, q);
   sycl::free(d_muold, q);
   sycl::free(d_fold, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

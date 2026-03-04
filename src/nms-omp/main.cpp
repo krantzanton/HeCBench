@@ -24,6 +24,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef struct { float x; float y; float z; float w; } float4 ;
 
 #define MAX_DETECTIONS  4096
@@ -257,5 +258,6 @@ int main(int argc, char *argv[])
   free(pointsbitmap);
   free(nmsbitmap);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

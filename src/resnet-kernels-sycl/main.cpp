@@ -4,6 +4,7 @@
 #include "Kernel256_one.h"
 #include "Kernel256_winograd.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv) {
   if (argc != 3) {
     printf("Usage %s <mode> <repeat more than twice>\n", argv[0]);
@@ -50,5 +51,6 @@ int main(int argc, char** argv) {
   printf("Case %d: Average device offload time: [%lf us]\n", mode, time_total * 1e-3 / (repeat - 2));
   printf("        Average kernel time: [%lf us]\n", ktime_total * 1e-3 / (repeat - 2));
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

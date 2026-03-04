@@ -1,6 +1,7 @@
 #include "dslash.h"
 
 // Global variables
+#include "../sycl_timer.hpp"
 std::vector<int> squaresize(4, LDIM);
 size_t sites_on_node = LDIM*LDIM*LDIM*LDIM;
 size_t even_sites_on_node = sites_on_node/2;
@@ -154,5 +155,6 @@ int main(int argc, char **argv)
   free(bck);
   free(fwd3);
   free(bck3);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

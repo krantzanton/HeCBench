@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef SINGLE_PRECISION
 #define T float 
 #define T2 sycl::float2
@@ -159,7 +160,7 @@ int main(int argc, char** argv)
     });
   };
 
-  q.submit(fft_kernel);
+  SYCL_TIME_AGG("kernel 1", q.submit(fft_kernel));
   fft1D_512_reference<64>(reference, n_ffts);
   q.memcpy(source, work, used_bytes).wait();
 
@@ -188,7 +189,7 @@ int main(int argc, char** argv)
   };
 
   // verify iFFT
-  q.submit(ifft_kernel);
+  SYCL_TIME_AGG("kernel 2", q.submit(ifft_kernel));
   q.memcpy(source, work, used_bytes).wait();
   error = false;
   for (int i = 0; i < n_cmplx; i++) {
@@ -207,7 +208,7 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int k=0; k<passes; k++) {
-    q.submit(fft_kernel);
+    SYCL_TIME_AGG("kernel 3", q.submit(fft_kernel));
     q.submit(ifft_kernel);
   }
 
@@ -221,5 +222,6 @@ int main(int argc, char** argv)
   free(reference);
   free(source);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

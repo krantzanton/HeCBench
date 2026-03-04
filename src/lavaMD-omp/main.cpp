@@ -8,6 +8,7 @@
 #include "./util/num/num.h"
 #include "main.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv [])
 {
   // counters
@@ -361,6 +362,7 @@ int main(int argc, char *argv [])
   free(fv_cpu);
   free(box_cpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

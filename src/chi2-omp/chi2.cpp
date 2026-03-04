@@ -8,6 +8,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 7) {
@@ -126,5 +127,6 @@ int main(int argc, char* argv[]) {
   free(h_results);
   free(cpu_results);
  
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

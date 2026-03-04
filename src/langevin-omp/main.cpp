@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void k0 (const float *__restrict a, float *__restrict o, const int n) {
   #pragma omp target teams distribute parallel for thread_limit(256)
   for (int t = 0; t < n; t++) {
@@ -145,5 +146,6 @@ int main(int argc, char* argv[]) {
   free(o0);
   free(o1);
   free(o2);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

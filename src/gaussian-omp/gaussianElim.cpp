@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include "gaussianElim.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE_0 256
 
 long long get_time() {
@@ -168,7 +169,8 @@ int main(int argc, char *argv[]) {
   free(m_host);
   free(b_host);
   free(finalVec_host);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 /*------------------------------------------------------

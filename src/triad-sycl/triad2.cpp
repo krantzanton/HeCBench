@@ -23,6 +23,7 @@
 // Modifications:
 //
 // ****************************************************************************
+#include "../sycl_timer.hpp"
 void addBenchmarkSpecOptions(OptionParser &op)
 {
   ;
@@ -117,13 +118,13 @@ void RunBenchmark(OptionParser &op)
       p.memcpy(d_memA0, h_mem, sizeof(float) * elemsInBlock);
       p.memcpy(d_memB0, h_mem, sizeof(float) * elemsInBlock);
 
-      p.submit([&] (handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", p.submit([&] (handler &cgh) {
         cgh.parallel_for<class triad_start>(nd_range<1>(
           range<1>(globalWorkSize), range<1>(blockSize)), [=] (nd_item<1> item) {
           int gid = item.get_global_id(0); 
           d_memC0[gid] = d_memA0[gid] + scalar*d_memB0[gid];
         });
-      });
+      }));
 
       if (elemsInBlock < numMaxFloats)
       {
@@ -154,21 +155,21 @@ void RunBenchmark(OptionParser &op)
           // Execute the kernel
           if (currStream)
           {
-            q.submit([&] (handler &cgh) {
+            SYCL_TIME_AGG("kernel 2", q.submit([&] (handler &cgh) {
               cgh.parallel_for<class triad_curr>(nd_range<1>(range<1>(globalWorkSize), range<1>(blockSize)), [=] (nd_item<1> item) {
                 int gid = item.get_global_id(0); 
                 d_memC1[gid] = d_memA1[gid] + scalar*d_memB1[gid];
               });
-            });
+            }));
           }
           else
           {
-            p.submit([&] (handler &cgh) {
+            SYCL_TIME_AGG("kernel 3", p.submit([&] (handler &cgh) {
               cgh.parallel_for<class triad_next>(nd_range<1>(range<1>(globalWorkSize), range<1>(blockSize)), [=] (nd_item<1> item) {
                 int gid = item.get_global_id(0); 
                 d_memC0[gid] = d_memA0[gid] + scalar*d_memB0[gid];
               });
-            });
+            }));
           }
         }
 

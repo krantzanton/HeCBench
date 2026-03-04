@@ -32,6 +32,7 @@
 #include <sycl/sycl.hpp>
 
 // Add two vectors on the GPU
+#include "../sycl_timer.hpp"
 void vectorAddGPU(float *__restrict a,
                   float *__restrict b,
                   float *__restrict c,
@@ -113,9 +114,9 @@ void eval(sycl::queue &q, bool warmup, bool bGenericSharedMemory, const int repe
 
     auto start = std::chrono::steady_clock::now();
     for (n = 0; n < repeat; n++) {
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         vectorAddGPU(a, b, c, nelem, item);
-      });
+      }));
     }
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -189,5 +190,6 @@ int main(int argc, char **argv) {
   bGenericSharedMemory = false;
   eval(q, true, bGenericSharedMemory, repeat); 
   eval(q, false, bGenericSharedMemory, repeat); 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

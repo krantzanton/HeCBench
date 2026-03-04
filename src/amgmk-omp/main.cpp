@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../sycl_timer.hpp"
 #ifdef _OPENMP
 #include <omp.h>
 #else
@@ -130,7 +131,8 @@ int main(int argc, char *argv[])
 
   printf("\nTotal Wall time = %f seconds. \n", del_wtime);
 
-  return  0;
+  SYCL_TIMER_DUMP();
+return  0;
 }
 
 void test_Matvec()

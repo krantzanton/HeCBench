@@ -30,6 +30,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[]) {
 
   printf("%s Starting...\n\n", argv[0]);
@@ -96,5 +97,6 @@ int main(int argc, char *argv[]) {
   printf("Runtime overhead of first run is %f seconds\n", overhead);
 
   free(a);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

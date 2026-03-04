@@ -2,6 +2,7 @@
 #include <omp.h>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   double start = rtclock();
@@ -182,5 +183,6 @@ int main(int argc, char* argv[]) {
   printf("Ratio of co-execution time to total time: %.2lf%%\n",
          100.0 * co_time / (end - start));
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

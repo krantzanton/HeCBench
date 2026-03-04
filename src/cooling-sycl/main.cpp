@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef double Real;
 
 // Primordial hydrogen/helium cooling curve derived according to Katz et al. 1996.
@@ -182,24 +183,24 @@ int main(int argc, char* argv[])
 
   // warmup
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class noheat>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cool_kernel(num, n, d_T, d_r, 0, item);
       });
-    });
+    }));
   }
   q.wait();
 
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class heat>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cool_kernel(num, n, d_T, d_r, 1, item);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -226,5 +227,6 @@ int main(int argc, char* argv[])
   free(T);
   free(r);
   free(h_r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

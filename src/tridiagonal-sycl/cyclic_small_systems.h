@@ -13,6 +13,7 @@
  * NVIDIA, Nikolai Sakharnykh, 2009
  */
 
+#include "../sycl_timer.hpp"
 #ifndef _CYCLIC_SMALL_SYSTEMS_
 #define _CYCLIC_SMALL_SYSTEMS_
 
@@ -68,7 +69,7 @@ double cyclic_small_systems(sycl::queue &q, float *a, float *b, float *c, float 
   for (int iCycles = 0; iCycles < BENCH_ITERATIONS; iCycles++)
   {
     if (id == 0)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> lmem(sycl::range<1>((system_size+1)*5), cgh);
         cgh.parallel_for<class cyclic>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           cyclic_small_systems_kernel(item,
@@ -82,9 +83,9 @@ double cyclic_small_systems(sycl::queue &q, float *a, float *b, float *c, float 
                                       num_systems,
                                       iterations);
         });
-      });
+      }));
     else
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> lmem(sycl::range<1>((system_size+1)*5), cgh);
         cgh.parallel_for<class cyclic_opt>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           cyclic_branch_free_kernel(item,
@@ -98,7 +99,7 @@ double cyclic_small_systems(sycl::queue &q, float *a, float *b, float *c, float 
                                     num_systems,
                                     iterations);
         });
-      });
+      }));
   }
   q.wait();
   sum_time = shrDeltaT(0);

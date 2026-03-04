@@ -18,6 +18,7 @@
 #include "reference.h"
 
 // Forward declarations
+#include "../sycl_timer.hpp"
 template<typename T>
 class extrema1D;
 
@@ -55,7 +56,7 @@ long test_1D (sycl::queue &q, const int length, const int order, const bool clip
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class extrema1D<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         const int tid = item.get_global_id(0);
@@ -77,7 +78,7 @@ long test_1D (sycl::queue &q, const int length, const int order, const bool clip
           d_result[tid] = temp;
         }
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -132,7 +133,7 @@ long test_2D (sycl::queue &q, const int length_x, const int length_y,
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class extrema2D<T>>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         const int ty = item.get_global_id(1); 
@@ -171,7 +172,7 @@ long test_2D (sycl::queue &q, const int length_x, const int length_y,
           d_result[tid] = temp;
         }
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -239,5 +240,6 @@ int main(int argc, char* argv[]) {
   printf("Total kernel execution time: %lf (s)", time * 1e-9);
   printf("\n-----------------------------------------------\n");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 struct full_data
 {
   int sizex;
@@ -127,7 +128,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
   auto t0 = std::chrono::system_clock::now();
   //ccc_loop1 <<< dim3(blocks), dim3(threads) >>> (d_imaterial, d_nextfrac, d_rho_compact, d_rho_compact_list, d_Vf_compact_list, d_V, d_rho_ave_compact, sizex, sizey, d_mmc_index);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class ccc_loop1>(
       sycl::nd_range<2>(ccc_loop1_gws, ccc_loop1_lws), [=] (sycl::nd_item<2> item) {
       int i = item.get_global_id(1); 
@@ -161,7 +162,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
     #endif
      
     });
-    });
+    }));
 
 #ifndef FUSED
 
@@ -169,7 +170,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
   sycl::range<1> ccc_loop1_2_lws (thx*thy);
 
   // ccc_loop1_2 <<< dim3((mmc_cells-1)/(thx*thy)+1), dim3((thx*thy)) >>> (d_rho_compact_list, d_Vf_compact_list, d_V, d_rho_ave_compact, d_mmc_index, mmc_cells, d_mmc_i, d_mmc_j, sizex, sizey);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class ccc_loop1_2>(
       sycl::nd_range<1>(ccc_loop1_2_gws, ccc_loop1_2_lws), [=] (sycl::nd_item<1> item) {
       int c = item.get_global_id(0);
@@ -180,7 +181,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
       }
       d_rho_ave_compact[d_mmc_i[c] + sizex * d_mmc_j[c]] = ave / d_V[d_mmc_i[c] + sizex * d_mmc_j[c]];
     });
-  });
+  }));
 
 #endif
   q.wait();
@@ -191,7 +192,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
   t0 = std::chrono::system_clock::now();
   // ccc_loop2 <<< dim3(blocks), dim3(threads) >>> (d_imaterial, d_matids,d_nextfrac, d_rho_compact, d_rho_compact_list, d_t_compact, d_t_compact_list, d_Vf_compact_list, d_n, d_p_compact, d_p_compact_list, sizex, sizey, d_mmc_index);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class ccc_loop2>(
       sycl::nd_range<2>(ccc_loop1_gws, ccc_loop1_lws), [=] (sycl::nd_item<2> item) {
   
@@ -226,13 +227,13 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
        d_p_compact[i+sizex*j] = d_n[mat] * d_rho_compact[i+sizex*j] * d_t_compact[i+sizex*j];;
      }
     });
-  });
+  }));
 
 #ifndef FUSED
   sycl::range<1> ccc_loop2_2_gws ((mm_len + thx * thy - 1)/(thx * thy) * (thx*thy));
   sycl::range<1> ccc_loop2_2_lws (thx*thy);
   //ccc_loop2_2 <<< dim3((mm_len-1)/(thx*thy)+1), dim3((thx*thy)) >>> (d_matids, d_rho_compact_list, d_t_compact_list, d_Vf_compact_list, d_n, d_p_compact_list, d_mmc_index, mm_len);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class ccc_loop2_2>(
       sycl::nd_range<1>(ccc_loop2_2_gws, ccc_loop2_2_lws), [=] (sycl::nd_item<1> item) {
       int idx = item.get_global_id(0);
@@ -240,7 +241,7 @@ void compact_cell_centric(full_data cc, compact_data ccc, int argc, char** argv)
       double nm = d_n[d_matids[idx]];
       d_p_compact_list[idx] = (nm * d_rho_compact_list[idx] * d_t_compact_list[idx]) / d_Vf_compact_list[idx];
     });
-  });
+  }));
   #endif
 
   q.wait();

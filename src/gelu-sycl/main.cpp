@@ -23,6 +23,7 @@
  */
 
 // width is hidden_dim and height is seq_len
+#include "../sycl_timer.hpp"
 void gelu_bias_loop(sycl::half *src, const sycl::half *bias, int width,
                     int height, sycl::nd_item<2> &item)
 {
@@ -122,12 +123,12 @@ int main(int argc, char* argv[])
   gelu_bias_loop_cpu (output_ref, bias, batch_size, hidden_dim, seq_len);
 
   q.memcpy(d_output, input, src_size_bytes).wait();
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       gelu_bias_loop_base(d_output, d_bias, hidden_dim, seq_len, item);
     });
-  });
+  }));
   q.memcpy(output, d_output, src_size_bytes).wait();
 
   bool ok = true;
@@ -144,12 +145,12 @@ int main(int argc, char* argv[])
 
   ok = true;
   q.memcpy(d_output, input, src_size_bytes).wait();
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       gelu_bias_loop(d_output, d_bias, hidden_dim, seq_len, item);
     });
-  });
+  }));
   q.memcpy(output, d_output, src_size_bytes).wait();
 
   for (size_t i = 0; i < src_size; i++) {
@@ -167,12 +168,12 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         gelu_bias_loop(d_output, d_bias, hidden_dim, seq_len, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -183,12 +184,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         gelu_bias_loop_base(d_output, d_bias, hidden_dim, seq_len, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -203,5 +204,6 @@ int main(int argc, char* argv[])
   free(output_ref);
   free(bias);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

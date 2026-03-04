@@ -20,6 +20,7 @@
 #include "MT.h"
 
 // comment the below line if not doing Box-Muller transformation
+#include "../sycl_timer.hpp"
 #define DO_BOXMULLER
 
 // Reference CPU MT and Box-Muller transformation 
@@ -199,5 +200,6 @@ int main(int argc, const char **argv)
   // finish
   printf("%s\n", (L1norm < 1e-6) ? "PASS" : "FAIL");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

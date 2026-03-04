@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 #include "gaussianElim.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE_0 256
 #define BLOCK_SIZE_1_X 16
 #define BLOCK_SIZE_1_Y 16
@@ -174,7 +175,8 @@ int main(int argc, char *argv[]) {
   free(m_host);
   free(b_host);
   free(finalVec_host);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 /*------------------------------------------------------
@@ -215,7 +217,7 @@ void ForwardSub(float *a, float *b, float *m, int size, int timing) {
 
   // Run kernels
   for (int t=0; t<(size-1); t++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class fan1>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int globalId = item.get_global_id(0);
@@ -224,9 +226,9 @@ void ForwardSub(float *a, float *b, float *m, int size, int timing) {
           d_a[size * (globalId + t + 1) + t] / d_a[size * t + t];
         }
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class fan2>(
         sycl::nd_range<2>(gws2, lws2), [=] (sycl::nd_item<2> item) {
         int globalIdx = item.get_global_id(0);
@@ -241,7 +243,7 @@ void ForwardSub(float *a, float *b, float *m, int size, int timing) {
           }
         }
       });
-    });
+    }));
   } // for (t=0; t<(size-1); t++) 
 
   q.wait();

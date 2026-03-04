@@ -39,6 +39,7 @@
 #include <iostream>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv)
 {
   if (argc != 4)
@@ -186,5 +187,6 @@ int main(int argc, char** argv)
   printf("   Bytes written = %d\n\n", (int)(items_written * sizeof(output_image)));
   fclose(output_file);
 
-  return 0 ;
+  SYCL_TIMER_DUMP();
+return 0 ;
 }

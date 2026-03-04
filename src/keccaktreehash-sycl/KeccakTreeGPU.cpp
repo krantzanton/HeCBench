@@ -11,6 +11,7 @@
 #include "KeccakTreeGPU.h"
 
 //host constants
+#include "../sycl_timer.hpp"
 tKeccakLane KeccakF_RoundConstants_h[22] =
 {
    (tKeccakLane)0x00000001 ,
@@ -443,7 +444,7 @@ void KeccakTreeGPU(sycl::queue &q,
 
    q.memcpy(d_inBuffer, h_inBuffer, INPUT_BLOCK_SIZE_B * NB_THREADS * NB_INPUT_BLOCK*NB_THREADS_BLOCKS);
 
-   q.submit([&](sycl::handler &h) {
+   SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
      h.parallel_for<class keccak> (
        sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
        int ind_word,k;
@@ -472,7 +473,7 @@ void KeccakTreeGPU(sycl::queue &q,
                      item.get_group(0) * NB_THREADS * OUTPUT_BLOCK_SIZE_B/4 ]= Kstate[ind_word];
        }
      });
-   });
+   }));
 
    q.memcpy(h_outBuffer,d_outBuffer, OUTPUT_BLOCK_SIZE_B * NB_THREADS * NB_THREADS_BLOCKS).wait();
 }

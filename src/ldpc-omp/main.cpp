@@ -20,6 +20,7 @@
 #include "matrix.h"
 #include "kernel.cpp"
 
+#include "../sycl_timer.hpp"
 float sigma ;
 int *info_bin ;
 
@@ -297,5 +298,6 @@ int main()
   free(hard_decision_gpu);
   free(info_bin_gpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

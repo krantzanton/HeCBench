@@ -40,6 +40,7 @@ https://cs.txstate.edu/~burtscher/research/ECL-APSP/.
 #include <sycl/sycl.hpp>
 #include "graph.h"
 
+#include "../sycl_timer.hpp"
 using mtype = int;
 
 static const int ws = 32; // warp size
@@ -500,17 +501,17 @@ static void FW_gpu_64(const ECLgraph g, mtype *const AdjMat, const int repeat) {
 
   for (int i = 0; i < repeat; i++) {
     // run GPU init code
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(init_gws, lws), [=](sycl::nd_item<1> item) {
         init1(g.nodes, d_AdjMat, upper, item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(init2_gws, lws), [=](sycl::nd_item<1> item) {
         init2(d_g, d_AdjMat, upper, item);
       });
-    });
+    }));
   }
   q.wait();
   gettimeofday(&end, NULL);
@@ -522,7 +523,7 @@ static void FW_gpu_64(const ECLgraph g, mtype *const AdjMat, const int repeat) {
 
   for (int i = 0; i < repeat; i++) {
     // compute 64*64 tile
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<mtype, 1> temp(sycl::range<1>(tile * tile), cgh);
       sycl::local_accessor<mtype, 1> krow(sycl::range<1>(tile * tile), cgh);
       cgh.parallel_for(sycl::nd_range<1>(lws, lws),
@@ -531,14 +532,14 @@ static void FW_gpu_64(const ECLgraph g, mtype *const AdjMat, const int repeat) {
                    temp.get_multi_ptr<sycl::access::decorated::no>().get(),
                    krow.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
 
     if (sub > 1) {
       sycl::range<1> fw64_gws (2 * subm1 * TPB);
       sycl::range<1> fw64r_gws (subm1 * subm1 * TPB);
 
       for (int x = 0; x < sub; x++) {
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
           sycl::local_accessor<mtype, 1> temp(sycl::range<1>(tile * tile), cgh);
           sycl::local_accessor<mtype, 1> krow(sycl::range<1>(tile * tile), cgh);
           cgh.parallel_for(sycl::nd_range<1>(fw64_gws, lws),
@@ -547,9 +548,9 @@ static void FW_gpu_64(const ECLgraph g, mtype *const AdjMat, const int repeat) {
                             temp.get_multi_ptr<sycl::access::decorated::no>().get(),
                             krow.get_multi_ptr<sycl::access::decorated::no>().get());
           });
-        });
+        }));
 
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
           sycl::local_accessor<mtype, 1> s_kj(sycl::range<1>(tile * tile), cgh);
           sycl::local_accessor<mtype, 1> s_ik(sycl::range<1>(tile * tile), cgh);
           cgh.parallel_for(
@@ -559,7 +560,7 @@ static void FW_gpu_64(const ECLgraph g, mtype *const AdjMat, const int repeat) {
                          s_kj.get_multi_ptr<sycl::access::decorated::no>().get(),
                          s_ik.get_multi_ptr<sycl::access::decorated::no>().get());
           });
-        });
+        }));
       }
     }
   }
@@ -702,5 +703,6 @@ int main(int argc, char* argv[])
   if (AdjMat1) free(AdjMat1);
   if (AdjMat2) free(AdjMat2);
   freeECLgraph(g);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

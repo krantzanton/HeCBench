@@ -5,6 +5,7 @@
 #include <omp.h>
 
 // a multiple of WGS for simplicity
+#include "../sycl_timer.hpp"
 #define N 8192
 #define WGS 256
 #define SAMPLE_TEST_LEN 20000
@@ -238,5 +239,6 @@ int main(int argc, char* argv[])
   free(infer1_out);
   free(infer2_out);
   printf("Processing complete.\n");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

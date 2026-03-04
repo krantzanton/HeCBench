@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 using namespace std::chrono;
 typedef high_resolution_clock myclock;
 typedef duration<float> myduration;
@@ -332,5 +333,6 @@ int main(int argc, char **argv)
   mem_free(SNP_Data);
   mem_free(SNP_Data_trans);
   mem_free(Ph_Data);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

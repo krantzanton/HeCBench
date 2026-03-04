@@ -38,6 +38,7 @@
 //---------------------------------------------------------------------
 // Globals, constants, and type declarations
 //---------------------------------------------------------------------
+#include "../sycl_timer.hpp"
 bool                    g_verbose = false;  // Whether to display input/output to console
 bool                    g_report = false;   // Whether to display a full report in CSV format
 
@@ -663,5 +664,6 @@ int main(int argc, char **argv)
 
     printf("\n\n");
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

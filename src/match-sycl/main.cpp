@@ -13,6 +13,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using float4 = sycl::float4;
 
 #define NPTS (2048*8)
@@ -761,12 +762,12 @@ int main(int argc, char *argv[])
   sycl::range<1> lws1 (M1W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k1>(
         sycl::nd_range<1>(gws1, lws1), [=] (sycl::nd_item<1> item) {
         Match1(item, d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -781,7 +782,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws2 (M2H, M2W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> buffer1(sycl::range<1>(M2W*NDIM), cgh);
       sycl::local_accessor<float, 1> buffer2(sycl::range<1>(M2H*NDIM), cgh);
       sycl::local_accessor<float, 1> scores(sycl::range<1>(M2H*M2W), cgh);
@@ -793,7 +794,7 @@ int main(int argc, char *argv[])
 		scores.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -808,7 +809,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws3 (M2H, M2W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> buffer1(sycl::range<1>(M2W*(NDIM+1)), cgh);
       sycl::local_accessor<float, 1> buffer2(sycl::range<1>(M2H*NDIM), cgh);
       sycl::local_accessor<float, 1> scores(sycl::range<1>(M2H*M2W), cgh);
@@ -820,7 +821,7 @@ int main(int argc, char *argv[])
 		scores.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -835,7 +836,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws4 (M2H, M2W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M2W*(NDIM/4+1)), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M2H*NDIM/4), cgh);
       sycl::local_accessor<float, 1> scores(sycl::range<1>(M2H*M2W), cgh);
@@ -847,7 +848,7 @@ int main(int argc, char *argv[])
 		scores.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -862,7 +863,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws5 (M5H, M5W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M5W*(NDIM/4+1)), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M5H*NDIM/4), cgh);
       sycl::local_accessor<float, 1> scores(sycl::range<1>(M5H*M5W), cgh);
@@ -874,7 +875,7 @@ int main(int argc, char *argv[])
 		scores.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -889,7 +890,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws6 (M5H, M5W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M5W*(NDIM/4+1)), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M5H*NDIM/4), cgh);
       cgh.parallel_for<class k6>(
@@ -899,7 +900,7 @@ int main(int argc, char *argv[])
                 buffer2.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -914,7 +915,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws7 (M7H/M7R, M7W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M7W*NDIM/4), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M7H*NDIM/4), cgh);
       cgh.parallel_for<class k7>(
@@ -924,7 +925,7 @@ int main(int argc, char *argv[])
                 buffer2.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -939,7 +940,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws8 (M7H/M7R, M7W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M7W*NDIM/4), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M7H*NDIM/4), cgh);
       cgh.parallel_for<class k8>(
@@ -949,7 +950,7 @@ int main(int argc, char *argv[])
                 buffer2.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -964,7 +965,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws9 (M7H/M7R/2, M7W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M7W*NDIM/4), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M7H*NDIM/4), cgh);
       cgh.parallel_for<class k9>(
@@ -974,7 +975,7 @@ int main(int argc, char *argv[])
                 buffer2.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -989,7 +990,7 @@ int main(int argc, char *argv[])
   sycl::range<2> lws10 (M7H/M7R, M7W);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> buffer1(sycl::range<1>(M7W*NDIM/4), cgh);
       sycl::local_accessor<float4, 1> buffer2(sycl::range<1>(M7H*NUM), cgh);
       cgh.parallel_for<class k10>(sycl::nd_range<2>(gws10, lws10), [=] (sycl::nd_item<2> item) {
@@ -998,7 +999,7 @@ int main(int argc, char *argv[])
                 buffer2.get_multi_ptr<sycl::access::decorated::no>().get(),
                 d_pts1, d_pts2, d_score, d_index);
       });
-    });
+    }));
   q.wait();
   end = std::chrono::high_resolution_clock::now();
   elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -1013,5 +1014,6 @@ int main(int argc, char *argv[])
   sycl::free(d_pts2, q);
   sycl::free(d_index, q);
   sycl::free(d_score, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

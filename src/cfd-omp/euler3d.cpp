@@ -21,6 +21,7 @@
  * Options 
  * 
  */ 
+#include "../sycl_timer.hpp"
 #define GAMMA 1.4f
 #define iterations 2000
 #ifndef block_length
@@ -545,5 +546,6 @@ int main(int argc, char** argv){
   delete[] h_step_factors;
   
   std::cout << "Done..." << std::endl;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

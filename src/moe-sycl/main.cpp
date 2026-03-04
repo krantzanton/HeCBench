@@ -7,6 +7,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void topk_softmax(int num_tokens, int num_experts, int topk, int repeat)
 {
   const int index_size = num_tokens * topk;
@@ -156,5 +157,6 @@ int main(int argc, char* argv[])
   const int topk = atoi(argv[3]);
   const int repeat = atoi(argv[4]);
   topk_softmax(num_tokens, num_experts, topk, repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

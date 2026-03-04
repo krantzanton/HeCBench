@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp> 
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 template <typename FP, int dim>
 FP cost (FP *A, FP *B, FP *scale_A, FP *scale_B, int m, int n) {
   double sum = 0;
@@ -78,7 +79,7 @@ void test(const int size, const int repeat) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<FP, 1> sh_A (sycl::range<1>(2 * block_size_x * tile_size_x), cgh);
       sycl::local_accessor<FP, 1> sh_B (sycl::range<1>(2 * block_size_y * tile_size_y), cgh);
       sycl::local_accessor<FP, 1> sh_scaleA (sycl::range<1>(block_size_x * tile_size_x), cgh);
@@ -94,9 +95,9 @@ void test(const int size, const int repeat) {
           sh_scaleB.template get_multi_ptr<sycl::access::decorated::no>().get(),
           sum.template get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<FP, 1> sum (sycl::range<1>(1), cgh);
       cgh.parallel_for<class reduceBlock<FP>>(
          sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
@@ -105,7 +106,7 @@ void test(const int size, const int repeat) {
            sum.template get_multi_ptr<sycl::access::decorated::no>().get(),
            size, size, nblocks);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -148,5 +149,6 @@ int main(int argc, char* argv[]) {
   printf("Test double precision\n");
   test<double>(size, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

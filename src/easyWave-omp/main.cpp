@@ -30,6 +30,7 @@
  * limitations under the Licence.
  */
 
+#include "../sycl_timer.hpp"
 #define HEADER "\neasyWave ver.2013-04-11\n"
 
 #include <stdio.h>
@@ -1140,7 +1141,8 @@ int main( int argc, char **argv )
   free( C4 );
 
   printf_v("Runtime: %.3lf\n", diff(start, end) * 1000.0);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

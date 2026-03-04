@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace std::chrono;
 using float4 = sycl::float4;
 
@@ -89,13 +90,13 @@ void shmembenchGPU(double *c, const long size, const int n) {
 
   auto start = high_resolution_clock::now();
   for (int i = 0; i < n; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float4, 1> shm_buffer(sycl::range<1>(BLOCK_SIZE*6), cgh);
       cgh.parallel_for<class kernel>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         benchmark_shmem((float4*)cd,
                          shm_buffer.get_multi_ptr<sycl::access::decorated::no>().get(), item);
       });
-    });
+    }));
   }
   q.wait();
   auto end = high_resolution_clock::now();

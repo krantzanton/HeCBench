@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 const char inputName128[] = "data/input_14_1_128.bin";
 const char biasName128[] = "data/bias_128.bin";
 const char weight_winograd_Name128[] = "data/weight_winograd_128_128.bin";
@@ -264,25 +265,25 @@ void kernel_128(sycl::queue &q, double &time, double &ktime) {
   sycl::range<2> gws (4*6, 4*128);
   sycl::range<2> lws (6, 128);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm (sycl::range<1>(6*6*128), cgh);
     cgh.parallel_for<class k1>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       kernel_128_winograd_BtdB (item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), input, t_input);
     });
-  });
+  }));
 
   sycl::range<2> gws2 (2*8, 36*128);
   sycl::range<2> lws2 (8, 128);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm (sycl::range<1>(8*128 + 64*128 + 8*128), cgh);
     cgh.parallel_for<class k2>(sycl::nd_range<2>(gws2, lws2), [=] (sycl::nd_item<2> item) {
       kernel_128_OuterProduct_128(item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), t_input, l_weights, ip);
     });
-  });
+  }));
 
   sycl::range<3> gws3 (128, 4*6, 4*6);
   sycl::range<3> lws3 (1, 6, 6);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 0> sm_bias (cgh);
     sycl::local_accessor<float, 0> sm_scale (cgh);
     sycl::local_accessor<float, 1> sm_input (sycl::range<1>(6*6), cgh);
@@ -291,7 +292,7 @@ void kernel_128(sycl::queue &q, double &time, double &ktime) {
         sm_bias, sm_scale, sm_input.get_multi_ptr<sycl::access::decorated::no>().get(),
         ip, l_bnBias, l_bnScale, output);
     });
-  });
+  }));
 
   q.wait();
   auto kend = std::chrono::steady_clock::now();

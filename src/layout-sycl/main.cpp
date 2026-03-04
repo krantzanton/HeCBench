@@ -21,6 +21,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define TREE_NUM 4096
 #define TREE_SIZE 4096
 #define GROUP_SIZE 256
@@ -130,12 +131,12 @@ int main(int argc, char * argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class AoS>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         AoSKernel((AppleTree*)inputBuffer, outputBuffer, treeSize, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -170,12 +171,12 @@ int main(int argc, char * argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class SoA>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         SoAKernel((ApplesOnTrees*)inputBuffer, outputBuffer, treeSize, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -205,5 +206,6 @@ int main(int argc, char * argv[])
   free(deviceResult);
   free(reference);
   free(data);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

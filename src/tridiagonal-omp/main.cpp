@@ -38,6 +38,7 @@
 #include "cpu_solvers.h"
 #include "tridiagonal.h"
 
+#include "../sycl_timer.hpp"
 bool             useLmem = false;  // select sweep_small_systems_local_kernel
 bool             useVec4 = false;  // select sweep_small_systems_global_vec4_kernel
 int              SWEEP_BLOCK_SIZE = 256;
@@ -227,5 +228,6 @@ int main(int argc, const char** argv)
   // run the tests on a GPU
   run(system_size, num_systems);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

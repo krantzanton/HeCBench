@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_SIZE 16
 
 void setup(size_t *size) {
@@ -89,5 +90,6 @@ int main(int argc, char* argv[]) {
               << (float)std::abs(timeH2D - timeD2H) / (repeat * size[i]);
     std::cout << std::endl << std::endl;
   }
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

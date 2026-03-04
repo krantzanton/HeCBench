@@ -14,6 +14,7 @@
 
 // declaration, forward
 
+#include "../sycl_timer.hpp"
 void printHelp(void);
 
 // Main program
@@ -115,7 +116,8 @@ int main(int argc, char **argv){
   free(h_u2);
   free(h_u3);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define WIDTH        256
 #define HEIGHT       256
 #define NSUBSAMPLES  2
@@ -305,7 +306,7 @@ long render(sycl::queue &q, unsigned char *img, int w, int h, int nsubsamples,
                       (w+BLOCK_SIZE-1)/BLOCK_SIZE*BLOCK_SIZE);
   sycl::range<2> lws (BLOCK_SIZE, BLOCK_SIZE);
 
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class render_kernel>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         int x = item.get_global_id(1);
@@ -354,7 +355,7 @@ long render(sycl::queue &q, unsigned char *img, int w, int h, int nsubsamples,
           d_img[ 3 * ( y * w + x ) + 2 ] = my_clamp ( s2 / ( float )( nsubsamples * nsubsamples ) );
         }
      });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -396,5 +397,6 @@ int main(int argc, char **argv)
   saveppm( "ao.ppm", WIDTH, HEIGHT, img );
   free( img );
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

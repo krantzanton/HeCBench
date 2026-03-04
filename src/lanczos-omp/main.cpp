@@ -12,6 +12,7 @@
 #include "utils.h"
 
 
+#include "../sycl_timer.hpp"
 static string graph_file;
 static int node_count = 0;
 static int eigen_count = 0;
@@ -106,5 +107,6 @@ int main(int argc, char *argv[]) {
     else {
         run<float>();
     }
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

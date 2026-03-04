@@ -6,6 +6,7 @@
 #include "kernels.h"
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 const double t_init = .1;
 const double t_final = 200;
 
@@ -88,12 +89,12 @@ int main (int argc, char* argv[]) {
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rhs>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         RHS_f(item, dftab, ftab, t_next, d_c, d_n);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -117,5 +118,6 @@ int main (int argc, char* argv[]) {
   free(c);
   free(n);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

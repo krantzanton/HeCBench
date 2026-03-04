@@ -21,6 +21,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // generate rand int64_t [a, b]
@@ -59,7 +60,7 @@ float loss_bwd_kernel(
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  q.submit([&](sycl::handler& h) {
+  auto __sycl_evt_k1 = q.submit([&](sycl::handler& h) {
     h.parallel_for(sycl::nd_range<2> (gws, lws), [=](sycl::nd_item<2> item) { 
       int local_id_x = item.get_local_id(1);
       int group_id_bs = item.get_group(0);
@@ -97,7 +98,7 @@ float loss_bwd_kernel(
         grad_predict[in_offset] = res;
       }
     });
-  }).wait();
+  }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
   auto end = std::chrono::high_resolution_clock::now();
   float time = std::chrono::duration<float, std::milli>(end - start).count(); // ms
@@ -310,5 +311,6 @@ int main(int argc, char** argv) {
 
   printf("%s\n", (errors == 0) ? "PASS" : "FAIL");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

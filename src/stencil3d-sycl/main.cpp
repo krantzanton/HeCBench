@@ -4,6 +4,7 @@
 #include <sycl/sycl.hpp>
 
 // 2D block size
+#include "../sycl_timer.hpp"
 #define BSIZE 16
 // Tile size in the x direction
 #define XTILE 20
@@ -187,7 +188,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<Real, 1> sm_psi (sycl::range<1>(4*BSIZE*BSIZE), cgh);
       cgh.parallel_for<class diffusion>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
@@ -195,7 +196,7 @@ int main(int argc, char* argv[])
                   d_sigma, d_sigma + 3*vol, d_sigma + 6*vol,
                   nx, ny, nz);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -221,5 +222,6 @@ int main(int argc, char* argv[])
   free(h_Vm);
   free(h_dVm);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

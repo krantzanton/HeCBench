@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 4) {
     printf("Usage: %s <width> <height> <repeat>\n", argv[0]);
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class base>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         const int x = item.get_global_id(1);
@@ -81,7 +82,7 @@ int main(int argc, char* argv[]) {
 
         d_output[y * width + x] = entropy;
       });
-    });
+    }));
   }
 
   q.wait();
@@ -99,7 +100,7 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int, 2> sd_count (sycl::range<2>{16, 256}, cgh);
       cgh.parallel_for<class opt>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -131,7 +132,7 @@ int main(int argc, char* argv[]) {
         entropy = entropy / total + sycl::native::log2((float)total);
         d_output[y*width+x] = entropy;
       });
-    });
+    }));
   }
 
   q.wait();
@@ -163,5 +164,6 @@ int main(int argc, char* argv[]) {
   free(input);
   free(output);
   free(output_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

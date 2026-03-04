@@ -7,6 +7,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template<typename T>
 void surfel_render(
   const T *__restrict__ s,
@@ -176,12 +177,12 @@ void surfelRenderTest(sycl::queue &q, int n, int w, int h, int repeat)
     auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < repeat; i++)
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
         auto inverseFocalLength_f = inverseFocalLength[f];
         cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item) {
           surfel_render<T>(d_src, n, inverseFocalLength_f, w, h, d_dst, item);
         });
-      });
+      }));
 
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -202,7 +203,7 @@ void surfelRenderTest(sycl::queue &q, int n, int w, int h, int repeat)
     start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < repeat; i++)
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor<T, 1> sh_acc(sycl::range<1>(256 * COL_DIM), cgh);
         auto inverseFocalLength_f = inverseFocalLength[f];
         cgh.parallel_for(
@@ -211,7 +212,7 @@ void surfelRenderTest(sycl::queue &q, int n, int w, int h, int repeat)
                 d_src, n, inverseFocalLength_f, w, h, d_dst, item,
                 sh_acc.template get_multi_ptr<sycl::access::decorated::no>().get());
           });
-      });
+      }));
 
     q.wait();
     end = std::chrono::steady_clock::now();
@@ -258,5 +259,6 @@ int main(int argc, char *argv[]) {
   printf("-------------------------------------\n");
   surfelRenderTest<float>(q, n, w, h, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

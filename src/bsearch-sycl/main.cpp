@@ -7,6 +7,7 @@
 #include "bs3.h"
 #include "bs4.h"
 
+#include "../sycl_timer.hpp"
 #ifndef Real_t 
 #define Real_t float
 #endif
@@ -106,5 +107,6 @@ int main(int argc, char* argv[])
   free(a);
   free(z);
   free(r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

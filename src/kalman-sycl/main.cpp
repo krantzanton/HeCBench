@@ -22,6 +22,7 @@
 #include "reference.h"
 
 //! Thread-local Matrix-Vector multiplication.
+#include "../sycl_timer.hpp"
 template <int n>
 void Mv_l(const double* A, const double* v, double* out)
 {
@@ -369,7 +370,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     for (i = 0; i < repeat; i++)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class filter>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           kalman<rd> (
@@ -393,7 +394,7 @@ int main(int argc, char* argv[]) {
             true, // forcast
             d_F_fc );
         });
-     });
+     }));
 
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -437,5 +438,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_sum_logFs, q);
   sycl::free(d_F_fc, q);
   sycl::free(d_fc, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

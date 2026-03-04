@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "bude.h"
 
+#include "../sycl_timer.hpp"
 typedef std::chrono::high_resolution_clock::time_point TimePoint;
 
 struct Params {
@@ -259,7 +260,7 @@ std::vector<float> runKernel(Params params) {
   sycl::range<1> lws (wgSize);
 
   // warmup
-  q.submit([&](sycl::handler &h) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
     sycl::local_accessor<FFParams, 1> s_forcefield(sycl::range<1>(ntypes), h);
     h.parallel_for<class warmup>(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
@@ -281,11 +282,11 @@ std::vector<float> runKernel(Params params) {
                   forcefield,
                   results);
     });
-  }).wait();
+  }));
 
   auto kernelStart = std::chrono::high_resolution_clock::now();
   for (size_t i = 0; i < params.iterations; ++i) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       sycl::local_accessor<FFParams, 1> s_forcefield(sycl::range<1>(ntypes), h);
       h.parallel_for<class run>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
@@ -307,7 +308,7 @@ std::vector<float> runKernel(Params params) {
                     forcefield,
                     results);
       });
-    });
+    }));
   }
   q.wait();
   auto kernelEnd = std::chrono::high_resolution_clock::now();
@@ -381,5 +382,6 @@ int main(int argc, char *argv[]) {
     << "%.\n\n"; // Expect numbers to be accurate to 2 decimal places
   refEnergies.close();
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 #ifdef RWG_SIZE_0_0
 #define BLOCK_SIZE RWG_SIZE_0_0
 #elif defined(RWG_SIZE_0)
@@ -375,6 +376,7 @@ int main(int argc, char **argv){
   free(reference);
   free(input_itemsets);
   free(h_input_itemsets);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

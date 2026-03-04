@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 #ifdef RD_WG_SIZE_0_0
 #define BLOCK_SIZE RD_WG_SIZE_0_0
 #elif defined(RD_WG_SIZE_0)
@@ -177,14 +178,14 @@ int main(int argc, char **argv){
   // warmup is required to exclude data copy from host to device 
   for(int blk = 1 ; blk <= block_width ; blk++){
     global_work = BLOCK_SIZE * blk; // kernel arg set every iteration
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <int, 1> input_itemsets_l (sycl::range<1>((BLOCK_SIZE + 1) *(BLOCK_SIZE+1)), cgh);
       sycl::local_accessor <int, 1> reference_l (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       cgh.parallel_for<class kernel1_warmup>(
         sycl::nd_range<1>(sycl::range<1>(global_work), sycl::range<1>(local_work)), [=] (sycl::nd_item<1> item) {
           #include "kernel1.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
   }
 
   q.wait();
@@ -199,14 +200,14 @@ int main(int argc, char **argv){
 #ifdef DEBUG
     printf("global size: %d local size: %d\n", global_work, local_work);
 #endif
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <int, 1> input_itemsets_l (sycl::range<1>((BLOCK_SIZE + 1) *(BLOCK_SIZE+1)), cgh);
       sycl::local_accessor <int, 1> reference_l (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       cgh.parallel_for<class kernel1>(
         sycl::nd_range<1>(sycl::range<1>(global_work), sycl::range<1>(local_work)), [=] (sycl::nd_item<1> item) {
           #include "kernel1.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
   }
 
 #ifdef DEBUG
@@ -215,14 +216,14 @@ int main(int argc, char **argv){
 
   for(int blk = block_width - 1 ; blk >= 1 ; blk--){	   
     global_work = BLOCK_SIZE * blk;
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k3 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <int, 1> input_itemsets_l (sycl::range<1>((BLOCK_SIZE + 1) *(BLOCK_SIZE+1)), cgh);
       sycl::local_accessor <int, 1> reference_l (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       cgh.parallel_for<class kernel2>(
         sycl::nd_range<1>(sycl::range<1>(global_work), sycl::range<1>(local_work)), [=] (sycl::nd_item<1> item) {
           #include "kernel2.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
   }
 
   q.wait();
@@ -308,5 +309,6 @@ int main(int argc, char **argv){
   free(output_itemsets);
   sycl::free(d_input_itemsets_acc, q);
   sycl::free(d_reference_acc, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -46,6 +46,7 @@
 #include "support/verify.h"
 
 // Params ---------------------------------------------------------------------
+#include "../sycl_timer.hpp"
 struct Params {
 
     int         device;
@@ -264,5 +265,6 @@ int main(int argc, char **argv) {
     free(h_random_numbers);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

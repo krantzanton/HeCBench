@@ -5,6 +5,7 @@
 #include "linear.h"
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 #define local_size TEMP_WORKGROUP_SIZE
 
 int cpu_offset;
@@ -114,13 +115,13 @@ void r_squared(sycl::queue &q, linear_param_t *params, data_t *dataset, sum_t *l
     auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < params->repeat; i++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<rsquared_t, 1> sm (sycl::range<1>(wg_size), cgh);
         cgh.parallel_for<class rs>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           rsquared(item, d_dataset, mean, equation, sm.get_multi_ptr<sycl::access::decorated::no>().get(), d_result);
         });
-      });
+      }));
     }
     q.wait();
 
@@ -196,13 +197,13 @@ void parallelized_regression(linear_param_t *params, data_t *dataset, result_t *
     auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < params->repeat; i++) {
-      d_q->submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", d_q->submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<sum_t, 1> sm (sycl::range<1>(wg_size), cgh);
         cgh.parallel_for<class lr>(
          sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
          linear_regression(item, d_dataset, sm.get_multi_ptr<sycl::access::decorated::no>().get(), d_result);
         });
-      });
+      }));
     }
     d_q->wait();
 

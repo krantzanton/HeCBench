@@ -59,6 +59,7 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define WARMUPS         1000
 #define NSPEEDS         9
 #define LOCALSIZEX      128
@@ -254,7 +255,7 @@ int main(int argc, char* argv[])
       gettimeofday(&timstr, NULL);
       tic = timstr.tv_sec * 1e6 + timstr.tv_usec;
     }
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       //setup local memory
       sycl::local_accessor<float, 1> local_sum(sycl::range<1>(LOCALSIZEX*LOCALSIZEY), cgh);
       sycl::local_accessor<int, 1> local_sum2(sycl::range<1>(LOCALSIZEX*LOCALSIZEY), cgh);
@@ -418,7 +419,7 @@ int main(int argc, char* argv[])
           partial_sum2[group_id+group_id2*group_size+tt*group_size*group_size2] = sum2;
         }
       });
-    });//end of queue
+    }));//end of queue
 
     // swap the buffers
     float* speed_tmp = speeds0;
@@ -550,7 +551,8 @@ int main(int argc, char* argv[])
   free(tot_up);
   free(tot_cellsp);
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }
 
 float av_velocity(const t_param params, t_speed* cells, int* obstacles)

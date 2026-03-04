@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_ELEMENTS 4096
 #define COUNT 4096       // accumulation count
 
@@ -80,7 +81,7 @@ void add_test_interleaved(
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class interleaved>(
         sycl::nd_range<1>(global_work_size, local_work_size), [=](sycl::nd_item<1> item) {
         const unsigned int tid = item.get_global_id(0);
@@ -107,7 +108,7 @@ void add_test_interleaved(
           }
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -144,7 +145,7 @@ void add_test_non_interleaved(
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       h.parallel_for<class non_interleaved>(
         sycl::nd_range<1>(global_work_size, local_work_size), [=](sycl::nd_item<1> item) {
         const unsigned int tid = item.get_global_id(0);
@@ -171,7 +172,7 @@ void add_test_non_interleaved(
           }
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -209,5 +210,6 @@ int main(int argc, char* argv[]) {
                        repeat, NUM_ELEMENTS);
   verify(interleaved_dst, non_interleaved_dst, NUM_ELEMENTS);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

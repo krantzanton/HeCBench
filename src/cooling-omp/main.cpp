@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef double Real;
 
 // Primordial hydrogen/helium cooling curve derived according to Katz et al. 1996.
@@ -179,5 +180,6 @@ int main(int argc, char* argv[])
   free(T);
   free(h_r);
   free(d_r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

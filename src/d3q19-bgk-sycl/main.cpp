@@ -6,6 +6,7 @@
 #include "kernels.h"
 
 // Copies the flow velocity from GPU to CPU memory, for data output.
+#include "../sycl_timer.hpp"
 void u_read(sycl::queue &q, lbm_vars *h_vars, lbm_vars *d_vars, int nl) {
   q.memcpy(h_vars->u_star.u0, d_vars->u_star.u0, sizeof(u_type) * nl);
   q.memcpy(h_vars->u_star.u1, d_vars->u_star.u1, sizeof(u_type) * nl);
@@ -69,7 +70,7 @@ void init_and_allocate_data(sycl::queue &q, BoxCU &domain, lbm_vars *h_vars, lbm
   // Initialization of flags according to wall
   q.memset(d_vars->boundary_flag, type_b::fluid, nl * sizeof(flag_type));
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
 
     auto d_vars_boundary_flag = d_vars->boundary_flag;
     auto d_vars_boundary_values = d_vars->boundary_values;
@@ -83,9 +84,9 @@ void init_and_allocate_data(sycl::queue &q, BoxCU &domain, lbm_vars *h_vars, lbm
                 d_vars_boundary_dirs, domain, wall, domain.nx,
                 domain.ny, domain.nz, 0, item, C_p);
     });
-  });
+  }));
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
 
     auto d_vars_boundary_flag = d_vars->boundary_flag;
     auto d_vars_boundary_dirs = d_vars->boundary_dirs;
@@ -98,7 +99,7 @@ void init_and_allocate_data(sycl::queue &q, BoxCU &domain, lbm_vars *h_vars, lbm
       find_wall<D3Q19>(d_vars_boundary_flag, d_vars_boundary_dirs,
                        d_vars_boundary_values, domain, 0, item, C_dirs);
     });
-  });
+  }));
 
   q.wait();
   sycl::free(C_dirs, q);
@@ -141,14 +142,14 @@ double run_benchmark(sycl::queue &q, BoxCU &domain, lbm_vars h_vars, lbm_vars d_
   const int nl = domain.nx*domain.ny*domain.nz;
 
   // Initialization of the populations.
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_population>(
         sycl::nd_range<3>(sycl::range<3>(domain.nz, domain.ny, domain.nx),
                           sycl::range<3>(1, 1, domain.nx)),
       [=](sycl::nd_item<3> item) {
         init_velocity_g<D3Q19>(d_vars, domain, domain, domain.nz, 0, 0, 0, 1., item);
     });
-  });
+  }));
 
   int iter = 0;
   int num_bench_iter = 0;
@@ -170,7 +171,7 @@ double run_benchmark(sycl::queue &q, BoxCU &domain, lbm_vars h_vars, lbm_vars d_
     }
 
     // LBM collision-streaming cycle, in parallel over every cell. Stream precedes collision.
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class collision_streaming>(
         sycl::nd_range<3>(
             sycl::range<3>(domain.nz, domain.ny, ((domain.nx - 1) / 64 + 1) * 64),
@@ -178,7 +179,7 @@ double run_benchmark(sycl::queue &q, BoxCU &domain, lbm_vars h_vars, lbm_vars d_
         [=](sycl::nd_item<3> item) {
           collide_and_stream_g<D3Q19>(d_vars, domain, ulb, omega, do_output, iter, item);
       });
-    });
+    }));
 
     // Swap populations pointer, f0 are population to be read and f1 the population to be written,
     // this is the double population soa scheme.
@@ -261,5 +262,6 @@ int main(int argc, char* argv[]) {
     printf("%.4f\n", mlups[i]);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -7,6 +7,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_THREADS 128
 #define NUM_BLOCKS 256
 
@@ -221,13 +222,13 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class kernel>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         spm(M_d, vol_size, g_d, f_d, g_vol, f_vol,
             ivf_d, ivg_d, data_threshold_d, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -283,5 +284,6 @@ int main(int argc, char* argv[])
   sycl::free(ivg_d, q);
   sycl::free(data_threshold_d, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

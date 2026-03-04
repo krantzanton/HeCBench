@@ -23,6 +23,7 @@
 #include <sycl/sycl.hpp>
 #include "constants.h"
 
+#include "../sycl_timer.hpp"
 /** Mesh sizes */
 const Real dx = xLength / NUM;
 const Real dy = yLength / NUM;
@@ -196,12 +197,12 @@ int main (int argc, char *argv[])
 
     // calculate F and G
     //calculate_F <<<grid_F, block_F>>> (dt, u_d, v_d, F_d);
-    q.submit([&](sycl::handler &h) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler &h) {
       h.parallel_for<class calculate_F>(
         sycl::nd_range<2>(gws_F, lws_F), [=] (sycl::nd_item<2> item) {
         #include "calculate_F.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     //    calculate_G <<<grid_G, block_G>>> (dt, u_d, v_d, G_d);
     q.submit([&](sycl::handler &h) {
@@ -213,13 +214,13 @@ int main (int argc, char *argv[])
 
     // get L2 norm of initial pressure
     //sum_pressure <<<grid_pr, block_pr>>> (pres_red_d, pres_black_d, pres_sum_d);
-    q.submit([&](sycl::handler &h) {
+    auto __sycl_evt_k2 = q.submit([&](sycl::handler &h) {
       sycl::local_accessor <Real, 1> sum_cache (sycl::range<1>(BLOCK_SIZE), h);
       h.parallel_for<class sum_pressure>(
         sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
         #include "sum_pressure.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
     q.memcpy (pres_sum, pres_sum_d, size_res * sizeof(Real)).wait();
 
@@ -243,48 +244,48 @@ int main (int argc, char *argv[])
 
       // set pressure boundary conditions
       //set_horz_pres_BCs <<<grid_hpbc, block_hpbc>>> (pres_red_d, pres_black_d);
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k3 = q.submit([&](sycl::handler &h) {
         h.parallel_for<class set_horz_pres_BCs>(
           sycl::nd_range<1>(gws_hpbc, lws_hpbc), [=] (sycl::nd_item<1> item) {
           #include "set_horz_pres_BCs.sycl"
         });
-      });
+      }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
 
       //      set_vert_pres_BCs <<<grid_vpbc, block_hpbc>>> (pres_red_d, pres_black_d);
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k4 = q.submit([&](sycl::handler &h) {
         h.parallel_for<class set_vert_pres_BCs>(
           sycl::nd_range<1>(gws_vpbc, lws_vpbc), [=] (sycl::nd_item<1> item) {
           #include "set_vert_pres_BCs.sycl"
         });
-      });
+      }); SYCL_TIME_AGG("kernel 4", __sycl_evt_k4);
 
       // update red cells
       //      red_kernel <<<grid_pr, block_pr>>> (dt, F_d, G_d, pres_black_d, pres_red_d);
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k5 = q.submit([&](sycl::handler &h) {
         h.parallel_for<class red_kernel>(
           sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
           #include "red_kernel.sycl"
         });
-      });
+      }); SYCL_TIME_AGG("kernel 5", __sycl_evt_k5);
 
       // update black cells
       //      black_kernel <<<grid_pr, block_pr>>> (dt, F_d, G_d, pres_red_d, pres_black_d);
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k6 = q.submit([&](sycl::handler &h) {
         h.parallel_for<class black_kernel>(
           sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
           #include "black_kernel.sycl"
         });
-      });
+      }); SYCL_TIME_AGG("kernel 6", __sycl_evt_k6);
 
       // calculate residual values
       //calc_residual <<<grid_pr, block_pr>>> (dt, F_d, G_d, pres_red_d, pres_black_d, res_d);
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k7 = q.submit([&](sycl::handler &h) {
         sycl::local_accessor <Real, 1> sum_cache (sycl::range<1>(BLOCK_SIZE), h);
         h.parallel_for<class calc_residual>(
           sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
           #include "calc_residual.sycl"
         });
-      });
+      }); SYCL_TIME_AGG("kernel 7", __sycl_evt_k7);
 
       // transfer residual value(s) back to CPU
       q.memcpy (res, res_d, size_res * sizeof(Real)).wait();
@@ -310,24 +311,24 @@ int main (int argc, char *argv[])
     // calculate new velocities and transfer maximums back
 
     //calculate_u <<<grid_pr, block_pr>>> (dt, F_d, pres_red_d, pres_black_d, u_d, max_u_d);
-    q.submit([&](sycl::handler &h) {
+    auto __sycl_evt_k8 = q.submit([&](sycl::handler &h) {
       sycl::local_accessor <Real, 1> max_cache (sycl::range<1>(BLOCK_SIZE), h);
       h.parallel_for<class calculate_u>(
         sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
         #include "calculate_u.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 8", __sycl_evt_k8);
 
     q.memcpy (max_u_arr, max_u_d, size_max * sizeof(Real));
 
     //    calculate_v <<<grid_pr, block_pr>>> (dt, G_d, pres_red_d, pres_black_d, v_d, max_v_d);
-    q.submit([&](sycl::handler &h) {
+    auto __sycl_evt_k9 = q.submit([&](sycl::handler &h) {
       sycl::local_accessor <Real, 1> max_cache (sycl::range<1>(BLOCK_SIZE), h);
       h.parallel_for<class calculate_v>(
         sycl::nd_range<2>(gws_pr, lws_pr), [=] (sycl::nd_item<2> item) {
         #include "calculate_v.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 9", __sycl_evt_k9);
 
     q.memcpy (max_v_arr, max_v_d, size_max * sizeof(Real)).wait();
 
@@ -346,12 +347,12 @@ int main (int argc, char *argv[])
 
     // set velocity boundary conditions
     //set_BCs <<<grid_bcs, block_bcs>>> (u_d, v_d);
-    q.submit([&](sycl::handler &h) {
+    auto __sycl_evt_k10 = q.submit([&](sycl::handler &h) {
       h.parallel_for<class set_BCs>(
         sycl::nd_range<1>(gws_bcs, lws_bcs), [=] (sycl::nd_item<1> item) {
         #include "set_BCs.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 10", __sycl_evt_k10);
 
     // increase time
     time += dt;
@@ -430,5 +431,6 @@ int main (int argc, char *argv[])
   free(max_v_arr);
   free(res);
   free(pres_sum);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

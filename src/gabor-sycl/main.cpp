@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void gabor (
   sycl::nd_item<2> &item,
   double *gabor_spatial,
@@ -72,7 +73,7 @@ double* generateGaborKernelDevice(
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class image_process>(
          sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
          gabor(item,
@@ -88,7 +89,7 @@ double* generateGaborKernelDevice(
                sy_2,
                fx);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -129,4 +130,6 @@ int main(int argc, char* argv[]) {
   printf("%s\n", ok ? "PASS" : "FAIL");
   free(h_filter);
   free(d_filter);
+
+  SYCL_TIMER_DUMP();
 }

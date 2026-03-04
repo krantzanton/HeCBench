@@ -3,6 +3,7 @@
 #include <cmath>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using FLOAT = float;
 
 const int NTHR_PER_BLK = 256;           // Number of threads per block
@@ -177,17 +178,17 @@ int main(int argc, char* argv[]) {
   sycl::range<1> gws (Npoint);
   sycl::range<1> lws (NTHR_PER_BLK);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class init_random_states>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int i = item.get_global_id(0);
       d_ranstates[i] = 5551212 ^ i;
       LCG_random_init(&d_ranstates[i]);
     });
-  });
+  }));
 
   // initialize<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, x1, y1, z1, x2, y2, z2, psi, ranstates);
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class initialize>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int i = item.get_global_id(0);
@@ -199,25 +200,25 @@ int main(int argc, char* argv[]) {
       d_z2[i] = (LCG_random(d_ranstates+i) - HALF)*FOUR;
       d_psi[i] = wave_function(d_x1[i], d_y1[i], d_z1[i], d_x2[i], d_y2[i], d_z2[i]);
     });
-  });
+  }));
 
   //zero_stats<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, stats);
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class reset_stats>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       zero_stats(d_stats, item);
     });
-  });
+  }));
 
   // Equilibrate
   //propagate<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, Neq, x1, y1, z1, x2, y2, z2, psi, stats, ranstates);
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class prop2>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       propagate(Neq, d_x1, d_y1, d_z1, d_x2, d_y2, d_z2,
                 d_psi, d_stats, d_ranstates, item);
     });
-  });
+  }));
 
   // Accumulators for averages over blocks --- use doubles
   double r1_tot = ZERO,  r1_sq_tot = ZERO;
@@ -232,43 +233,43 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     //zero_stats<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, stats);
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class reset>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         zero_stats(d_stats, item);
       });
-    });
+    }));
 
     //propagate<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, Ngen_per_block, x1, y1, z1, x2, y2, z2, psi, stats, ranstates);
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class prop>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         propagate(Ngen_per_block, d_x1, d_y1, d_z1, d_x2, d_y2, d_z2,
                   d_psi, d_stats, d_ranstates, item);
       });
-    });
+    }));
 
     //sum_stats(Npoint, stats, statsum, blocksums);
     for (int what=0; what<4; what++) {
       // SumWithinBlocks<<<NBLOCK,NTHR_PER_BLK>>>(Npoint, stats+what*Npoint, blocksums);
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<FLOAT, 1> sdata(sycl::range<1>(512), cgh);
         cgh.parallel_for<class sum_blocks>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           SumWithinBlocks(Npoint, d_stats + what * Npoint, d_blocksums,
                           sdata.get_multi_ptr<sycl::access::decorated::no>().get(), item);
         });
-      });
+      }));
 
      //SumWithinBlocks<<<1,NBLOCK>>>(NBLOCK, blocksums, statsum+what);
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<FLOAT, 1> sdata(sycl::range<1>(512), cgh);
         cgh.parallel_for<class final_sum_blocks>(
           sycl::nd_range<1>(lws, lws), [=] (sycl::nd_item<1> item) {
           SumWithinBlocks(NBLOCK, d_blocksums, d_statsum + what,
                           sdata.get_multi_ptr<sycl::access::decorated::no>().get(), item);
         });
-      });
+      }));
     }
 
     q.wait();
@@ -322,5 +323,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_blocksums, q);
   sycl::free(d_statsum, q);
   sycl::free(d_ranstates, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

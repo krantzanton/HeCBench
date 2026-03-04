@@ -10,6 +10,7 @@
 #include <cmath>
 #include <complex>
 #include <chrono>
+#include "../sycl_timer.hpp"
 typedef std::chrono::system_clock Clock;
 
 #ifndef ITERATIONS
@@ -179,5 +180,7 @@ int main(int argc, char **argv)
     if (getrusage(RUSAGE_SELF, &usage) == 0)
       printf("Approximate memory usage = %.3f MiB\n", (float)usage.ru_maxrss/1024.0);
   }
+
+  SYCL_TIMER_DUMP();
 }
 

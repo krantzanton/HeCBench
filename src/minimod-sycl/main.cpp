@@ -11,6 +11,7 @@
 #include "pml.h"
 #include "data_setup.h"
 
+#include "../sycl_timer.hpp"
 void init_coef(float dx, float *__restrict__ coefx)
 {
   float dx2 = dx*dx;
@@ -204,5 +205,6 @@ int main(int argc, char *argv[])
   printf("Average kernel time per iteration: %g s\n", total_kernel_time / niters);
   printf("Average modeling time per iteration: %g s\n", total_modeling_time / niters);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

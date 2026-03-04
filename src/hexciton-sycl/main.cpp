@@ -5,6 +5,7 @@
 
 #include "utils.hpp"
 
+#include "../sycl_timer.hpp"
 long benchmark(
     sycl::queue &q,
     complex_t *sigma_in,
@@ -88,10 +89,10 @@ long benchmark(
       case 0:  {
         sycl::range<1> k0_gws (num);
         sycl::range<1> k0_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_empty>(sycl::nd_range<1>(k0_gws, k0_lws), [=] (sycl::nd_item<1> item) { 
           }); 
-        });
+        }));
         break;
       }
 
@@ -99,7 +100,7 @@ long benchmark(
       case 1: {
         sycl::range<1> k1_gws (num);
         sycl::range<1> k1_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_init>(
             sycl::nd_range<1>(k1_gws, k1_lws), [=] (sycl::nd_item<1> item) {
             int sigma_id = item.get_global_id(0) * dim * dim;
@@ -126,7 +127,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -134,7 +135,7 @@ long benchmark(
       case 2: {
         sycl::range<1> k2_gws (num);
         sycl::range<1> k2_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_refactor>(
             sycl::nd_range<1>(k2_gws, k2_lws), [=] (sycl::nd_item<1> item) {
             #define sigma_real(i, j) (sigma_id + 2 * ((i) * dim + (j)))
@@ -169,7 +170,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -177,7 +178,7 @@ long benchmark(
       case 3: {
         sycl::range<1> k3_gws (num);
         sycl::range<1> k3_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_refactor_direct_store>(
             sycl::nd_range<1>(k3_gws, k3_lws), [=] (sycl::nd_item<1> item) {
             #define sigma_real(i, j) (sigma_id + 2 * ((i) * dim + (j)))
@@ -206,7 +207,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -214,7 +215,7 @@ long benchmark(
       case 4: {
         sycl::range<1> k4_gws (num);
         sycl::range<1> k4_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive>(
             sycl::nd_range<1>(k4_gws, k4_lws), [=] (sycl::nd_item<1> item) {
             #define package_id ((item.get_global_id(0) / VEC_LENGTH_AUTO) * VEC_LENGTH_AUTO * 2 * dim * dim)
@@ -249,7 +250,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -257,7 +258,7 @@ long benchmark(
       case 5: {
         sycl::range<1> k5_gws (num);
         sycl::range<1> k5_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive_constants>(
             sycl::nd_range<1>(k5_gws, k5_lws), [=] (sycl::nd_item<1> item) {
             #define package_id ((item.get_global_id(0) / VEC_LENGTH_AUTO) * VEC_LENGTH_AUTO * 2 * DIM * DIM)
@@ -292,7 +293,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -300,7 +301,7 @@ long benchmark(
       case 6: {
         sycl::range<1> k6_gws (num);
         sycl::range<1> k6_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive_constants_perm>(
             sycl::nd_range<1>(k6_gws, k6_lws), [=] (sycl::nd_item<1> item) {
             #define package_id ((item.get_global_id(0) / VEC_LENGTH_AUTO) * VEC_LENGTH_AUTO * 2 * DIM * DIM)
@@ -350,7 +351,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -358,7 +359,7 @@ long benchmark(
       case 7: {
         sycl::range<1> k7_gws (num);
         sycl::range<1> k7_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive_direct>(
             sycl::nd_range<1>(k7_gws, k7_lws), [=] (sycl::nd_item<1> item) {
             #define package_id ((item.get_global_id(0) / VEC_LENGTH_AUTO) * VEC_LENGTH_AUTO * 2 * dim * dim)
@@ -390,7 +391,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -398,7 +399,7 @@ long benchmark(
       case 8: {
         sycl::range<1> k8_gws (num);
         sycl::range<1> k8_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive_constants_direct>(
             sycl::nd_range<1>(k8_gws, k8_lws), [=] (sycl::nd_item<1> item) {
             #define package_id ((item.get_global_id(0) / VEC_LENGTH_AUTO) * VEC_LENGTH_AUTO * 2 * DIM * DIM)
@@ -430,7 +431,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -438,7 +439,7 @@ long benchmark(
       case 9: {
         sycl::range<1> k9_gws (num);
         sycl::range<1> k9_lws (VEC_LENGTH_AUTO * PACKAGES_PER_WG);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_naive_constants_direct_perm>(
             sycl::nd_range<1>(k9_gws, k9_lws), [=] (sycl::nd_item<1> item) {
 
@@ -476,7 +477,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -484,7 +485,7 @@ long benchmark(
       case 10: {
         sycl::range<2> k10_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k10_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 11", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa>(
             sycl::nd_range<2>(k10_gws, k10_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * dim * dim))
@@ -519,7 +520,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -527,7 +528,7 @@ long benchmark(
       case 11: {
         sycl::range<2> k11_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k11_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 12", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_constants>(
             sycl::nd_range<2>(k11_gws, k11_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * DIM * DIM))
@@ -562,7 +563,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -570,7 +571,7 @@ long benchmark(
       case 12: {
         sycl::range<2> k12_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k12_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 13", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_constants_perm>(
             sycl::nd_range<2>(k12_gws, k12_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * DIM * DIM))
@@ -619,7 +620,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -627,7 +628,7 @@ long benchmark(
       case 13: {
         sycl::range<2> k13_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k13_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 14", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_direct>(
             sycl::nd_range<2>(k13_gws, k13_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * dim * dim))
@@ -658,7 +659,7 @@ long benchmark(
 	      }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -666,7 +667,7 @@ long benchmark(
       case 14: {
         sycl::range<2> k14_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k14_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 15", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_constants_direct>(
             sycl::nd_range<2>(k14_gws, k14_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * DIM * DIM))
@@ -697,7 +698,7 @@ long benchmark(
 	      }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -705,7 +706,7 @@ long benchmark(
       case 15: {
         sycl::range<2> k15_gws (num / VEC_LENGTH_AUTO, VEC_LENGTH_AUTO);
         sycl::range<2> k15_lws (PACKAGES_PER_WG, VEC_LENGTH_AUTO);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 16", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_aosoa_constants_direct_perm>(
             sycl::nd_range<2>(k15_gws, k15_lws), [=] (sycl::nd_item<2> item) {
             #define package_id ((PACKAGES_PER_WG * item.get_group(0) + item.get_local_id(0)) * (VEC_LENGTH_AUTO * 2 * DIM * DIM))
@@ -740,7 +741,7 @@ long benchmark(
 	      }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -748,7 +749,7 @@ long benchmark(
       case 16: {
         sycl::range<1> k16_gws (num / VEC_LENGTH);
         sycl::range<1> k16_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 17", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa>(
             sycl::nd_range<1>(k16_gws, k16_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -786,7 +787,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -794,7 +795,7 @@ long benchmark(
       case 17: {
         sycl::range<1> k17_gws (num / VEC_LENGTH);
         sycl::range<1> k17_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 18", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants>(
             sycl::nd_range<1>(k17_gws, k17_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -832,7 +833,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -840,7 +841,7 @@ long benchmark(
       case 18: {
         sycl::range<1> k18_gws (num / VEC_LENGTH);
         sycl::range<1> k18_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 19", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants_perm>(
             sycl::nd_range<1>(k18_gws, k18_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -892,7 +893,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -900,7 +901,7 @@ long benchmark(
       case 19: {
         sycl::range<1> k19_gws (num / VEC_LENGTH);
         sycl::range<1> k19_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 20", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants_prefetch>(
             sycl::nd_range<1>(k19_gws, k19_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -940,7 +941,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -948,7 +949,7 @@ long benchmark(
       case 20: {
         sycl::range<1> k20_gws (num / VEC_LENGTH);
         sycl::range<1> k20_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 21", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_direct>(
             sycl::nd_range<1>(k20_gws, k20_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -980,7 +981,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -988,7 +989,7 @@ long benchmark(
       case 21: {
         sycl::range<1> k21_gws (num / VEC_LENGTH);
         sycl::range<1> k21_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 22", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants_direct>(
             sycl::nd_range<1>(k21_gws, k21_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -1020,7 +1021,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -1028,7 +1029,7 @@ long benchmark(
       case 22: {
         sycl::range<1> k22_gws (num / VEC_LENGTH);
         sycl::range<1> k22_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 23", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants_direct_prefetch>(
             sycl::nd_range<1>(k22_gws, k22_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -1065,7 +1066,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -1073,7 +1074,7 @@ long benchmark(
       case 23: {
         sycl::range<1> k23_gws (num / VEC_LENGTH);
         sycl::range<1> k23_lws (VEC_LENGTH);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 24", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class comm_manual_aosoa_constants_direct_perm>(
             sycl::nd_range<1>(k23_gws, k23_lws), 
             [=] (sycl::nd_item<1> item) [[vec_type_hint(real_vec_t)]] {
@@ -1110,7 +1111,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
 
@@ -1121,7 +1122,7 @@ long benchmark(
 
         sycl::range<2> k24_gws (block_dim_y, num / (block_dim_y * CHUNK_SIZE) * block_dim_x);
         sycl::range<2> k24_lws (block_dim_y, block_dim_x);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 25", q.submit([&] (sycl::handler &cgh) {
           // Local memory: shared between all work items in the same work group
           // 2-way shared memory bank conflicts will occur for real_t = double
           // real parts and imaginary parts are stored separately to avoid 4-way bank conflicts in case of real_2_t = double2
@@ -1213,7 +1214,7 @@ long benchmark(
               }
             }
           });
-        });
+        }));
         break;
       }
       default: std::cerr << "ERROR: **** benchmark kernel unavailable **** \n";
@@ -1354,5 +1355,6 @@ int main(int argc, char* argv[])
   free(sigma_reference);
   free(sigma_reference_transformed);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_X 16
 #define BLOCK_Y 16
 #define PI 3.1415926535897932f
@@ -424,13 +425,13 @@ int particleFilter(unsigned char * I, int IszX, int IszY, int Nfr, int * seed, i
 
   for (k = 1; k < Nfr; k++) {
     /****************** L I K E L I H O O D ************************************/
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor<float, 1> weights_local(sycl::range<1>(threads_per_block), cgh);
       cgh.parallel_for<class likelihood>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_likelihood.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
 #ifdef DEBUG
     float * sum = (float *) calloc(Nparticles + 1, sizeof (float));
@@ -440,11 +441,11 @@ int particleFilter(unsigned char * I, int IszX, int IszY, int Nfr, int * seed, i
     printf("\n");
 #endif
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
       cgh.single_task<class sum>([=]() {
         #include "kernel_sum.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
 #ifdef DEBUG
     // this shows the sum of all partial_sum results
@@ -453,14 +454,14 @@ int particleFilter(unsigned char * I, int IszX, int IszY, int Nfr, int * seed, i
     free(sum);
 #endif
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k3 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor<float, 0> u1(cgh);
       sycl::local_accessor<float, 0> sumWeights(cgh);
       cgh.parallel_for<class normalize_weights>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_normalize_weights.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
 
     //Set number of threads
     q.submit([&](sycl::handler& cgh) {
@@ -621,5 +622,6 @@ int main(int argc, char * argv[]) {
 
   free(seed);
   free(I);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

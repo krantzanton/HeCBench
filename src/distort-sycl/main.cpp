@@ -5,6 +5,7 @@
 #include <iostream>
 #include "distort.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv)
 {
   if (argc != 5) {
@@ -70,12 +71,12 @@ int main(int argc, char **argv)
   auto start = std::chrono::steady_clock::now();
   
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class image_process>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         barrel_distort(item, d_src, d_dst, d_prop);
       });
-    });
+    }));
   }
   
   q.wait();
@@ -103,5 +104,6 @@ int main(int argc, char **argv)
   free(h_src);
   free(h_dst);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

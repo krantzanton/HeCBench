@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define threadsPerBlock 512
 
 // Kernel for fast unfold+copy on volumes
@@ -306,5 +307,6 @@ int main(int argc, char* argv[])
                  dilation_t, dilation_h, dilation_w);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

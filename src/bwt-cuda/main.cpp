@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "bwt.hpp"
 
+#include "../sycl_timer.hpp"
 #define NOW std::chrono::high_resolution_clock::now()
 
 std::string bwt_cpu(const std::string sequence) {
@@ -72,5 +73,6 @@ int main(int argc, char const *argv[])
   }
 
   free(sequence);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

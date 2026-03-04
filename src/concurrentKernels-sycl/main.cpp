@@ -32,6 +32,7 @@
 #include <sycl/sycl.hpp>
 
 
+#include "../sycl_timer.hpp"
 long get_time() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -109,23 +110,23 @@ int main(int argc, char **argv) {
   sycl::range<1> gws (1);
   sycl::range<1> lws (1);
   for (int i = 0; i < nkernels; ++i) {
-    e[i] = q.submit([&](sycl::handler &cgh) {
+    e[i] = SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         clock_block(d_a+i, time_clocks);
       });
-    });
+    }));
   }
 
   // queue a sum kernel and a copy back to host 
   sycl::range<1> gws2 (32);
   sycl::range<1> lws2 (32);
-  auto e2 = q.submit([&](sycl::handler &cgh) {
+  auto e2 = SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<long, 1> s (sycl::range<1>(32), cgh);
     cgh.depends_on(e);
     cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       sum(d_a, nkernels, item, s.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   // at this point the CPU has dispatched all work for the GPU and can continue
   // processing other tasks in parallel
@@ -144,5 +145,6 @@ int main(int argc, char **argv) {
   sycl::free(a, q);
   sycl::free(d_a, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

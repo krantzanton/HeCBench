@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 // forward declaractions
+#include "../sycl_timer.hpp"
 int initHMM(float *initProb, float *mtState, float *mtObs, const int &nState, const int &nEmit);
 int ViterbiCPU(float &viterbiProb,
                int *viterbiPath,
@@ -114,7 +115,8 @@ int main(int argc, const char **argv)
     free(viterbiProbCPU);
     free(viterbiProbGPU);
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 
 }
 

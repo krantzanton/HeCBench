@@ -8,6 +8,7 @@
 #include <sycl/sycl.hpp>
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 #define MAX_THREADS_PER_BLOCK 256
 
 //Structure to hold a node information
@@ -101,7 +102,7 @@ void run_bfs_gpu(int no_of_nodes, Node *h_graph_nodes, int edge_list_size,
     
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class kernel1>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int tid = item.get_global_id(0);
@@ -119,9 +120,9 @@ void run_bfs_gpu(int no_of_nodes, Node *h_graph_nodes, int edge_list_size,
           }
         }    
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class kernel2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int tid = item.get_global_id(0);
@@ -132,7 +133,7 @@ void run_bfs_gpu(int no_of_nodes, Node *h_graph_nodes, int edge_list_size,
           d_updating_graph_mask[tid]=0;
         }
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -260,5 +261,6 @@ int main(int argc, char * argv[])
   free(h_graph_visited);
   free(h_cost);
   free(h_cost_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

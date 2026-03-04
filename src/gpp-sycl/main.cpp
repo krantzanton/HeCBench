@@ -2,6 +2,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifndef dataType
 #define dataType double
 #endif
@@ -211,14 +212,14 @@ int main(int argc, char **argv) {
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class gpp_kernel>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         solver(item, number_bands, ngpown, ncouls, 
                d_inv_igp_index, d_indinv, d_wx_array, d_wtilde_array,  
                d_aqsmtemp, d_aqsntemp, d_I_eps_array, d_vcoul, d_achtemp_re, d_achtemp_im);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -285,5 +286,6 @@ int main(int argc, char **argv) {
   std::cout << "********** Total Time Taken **********= " << elapsedTimer << " secs"
             << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #ifdef DOUBLE_PRECISION
   #define SQRT sqrt
   #define FABS fabs
@@ -103,5 +104,6 @@ int main(int argc, char** argv)
   delete[] b_host;
   delete[] c_host;
   delete[] c_back;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

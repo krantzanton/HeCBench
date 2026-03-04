@@ -11,6 +11,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define MAX_MASK_WIDTH 10
 #define BLOCK_SIZE 256
 #define TILE_SIZE BLOCK_SIZE
@@ -231,5 +232,6 @@ int main(int argc, char* argv[]) {
     conv1D<int16_t>(input_width, mask_width, repeat);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

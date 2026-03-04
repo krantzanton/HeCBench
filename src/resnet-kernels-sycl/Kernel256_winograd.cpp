@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 const char inputName256[] = "data/input_14_1_256.bin";
 const char weight_winograd_Name256[] = "data/weight_winograd_256_256.bin";
 const char bnBias_winograd_Name256[] = "data/bnBias_winograd_256.bin";
@@ -271,25 +272,25 @@ void kernel_256(sycl::queue &q, double &time, double &ktime) {
 
   sycl::range<3> gws (2, 4*6, 4*128);
   sycl::range<3> lws (1, 6, 128);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm (sycl::range<1>(6*6*128), cgh);
     cgh.parallel_for<class k1>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       kernel_256_winograd_BtdB (item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), input, t_input);
     });
-  });
+  }));
 
   sycl::range<2> gws2 (2*4, 36*256);
   sycl::range<2> lws2 (4, 256);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm (sycl::range<1>(8*256 + 32*256 + 8*256), cgh);
     cgh.parallel_for<class k2>(sycl::nd_range<2>(gws2, lws2), [=] (sycl::nd_item<2> item) {
       kernel_256_OuterProduct_256(item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), t_input, l_weights, ip);
     });
-  });
+  }));
 
   sycl::range<3> gws3 (256, 4*6, 4*6);
   sycl::range<3> lws3 (1, 6, 6);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm_bias (1, cgh);
     sycl::local_accessor<float, 1> sm_scale (1, cgh);
     sycl::local_accessor<float, 1> sm_input (6*6, cgh);
@@ -300,7 +301,7 @@ void kernel_256(sycl::queue &q, double &time, double &ktime) {
         sm_input.get_multi_ptr<sycl::access::decorated::no>().get(),
         ip, l_bnBias, l_bnScale, output);
     });
-  });
+  }));
 
   q.wait();
   auto kend = std::chrono::steady_clock::now();

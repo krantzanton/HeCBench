@@ -7,6 +7,7 @@
 #include <utility>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NTX 16
 #define NTY 16
 
@@ -145,5 +146,6 @@ int main(int argc, char *argv[]) {
   free(h_in);
   free(d_in);
   free(d_out);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

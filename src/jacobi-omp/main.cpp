@@ -21,6 +21,7 @@
 #include <omp.h>
 
 // A multiple of thread block size
+#include "../sycl_timer.hpp"
 #define N 2048
 
 #define IDX(i, j) ((i) + (j) * N)
@@ -137,5 +138,6 @@ int main () {
   double duration = total_time * 1e-9;
   std::cout << "Total elapsed time: " << std::setprecision(4) << duration << " seconds" << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

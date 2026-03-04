@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 
 
+#include "../sycl_timer.hpp"
 #define CEILDIV(x, y) (((x) + (y) - 1) / (y))
 
 template <typename scalar_t>
@@ -340,7 +341,7 @@ void moe_align_block_size(sycl::queue &q, int *topk_ids, int num_experts,
     // threadIdx.x < fill_threads: filling sorted_token_ids
     constexpr int fill_threads = 256;
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 1> shared_mem (sycl::range<1>(shared_mem_size), cgh);
 
       cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1,1,fill_threads + threads),
@@ -352,7 +353,7 @@ void moe_align_block_size(sycl::queue &q, int *topk_ids, int num_experts,
             topk, item,
             shared_mem.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    }).wait();
+    }));
   } else {
     int *cumsum_buff;
     cumsum_buff = sycl::malloc_device<int>((num_experts + 1), q);
@@ -364,7 +365,7 @@ void moe_align_block_size(sycl::queue &q, int *topk_ids, int num_experts,
     // launch two threadblocks
     // blockIdx.x == 0: counting experts and aligning
     // blockIdx.x == 1: filling sorted_token_ids
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 1> shared_mem(sycl::range<1>(shared_mem_size), cgh);
 
       cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1,1,2*threads),
@@ -376,7 +377,7 @@ void moe_align_block_size(sycl::queue &q, int *topk_ids, int num_experts,
             block_size, topk_ids_size, cumsum_buff, sorted_token_ids_size, topk, item,
             shared_mem.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
 
     const int block_threads = std::min(256, (int)threads);
     const int num_blocks = (topk_ids_size + block_threads - 1) / block_threads;
@@ -385,11 +386,11 @@ void moe_align_block_size(sycl::queue &q, int *topk_ids, int num_experts,
     sycl::range<3> lws (1, 1, block_threads);
     sycl::range<3> gws (1, actual_blocks, block_threads);
 
-    q.parallel_for(sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item) {
+    SYCL_TIME_AGG("kernel 3", q.parallel_for(sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item) {
       count_and_sort_expert_tokens_kernel<int>(
           topk_ids, sorted_token_ids, cumsum_buff, expert_map, topk_ids_size,
           num_experts, sorted_token_ids_size, topk, item);
-    }).wait();
+    }));
 
     sycl::free(cumsum_buff, q);
   }
@@ -675,5 +676,6 @@ int main(int argc, char* argv[])
        }
      }
    }
-   return 0;
+   SYCL_TIMER_DUMP();
+return 0;
 }

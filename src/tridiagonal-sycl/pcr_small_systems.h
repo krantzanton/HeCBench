@@ -13,6 +13,7 @@
  * NVIDIA, Nikolai Sakharnykh, 2009
  */
 
+#include "../sycl_timer.hpp"
 #ifndef _PCR_SMALL_SYSTEMS_
 #define _PCR_SMALL_SYSTEMS_
 
@@ -66,7 +67,7 @@ double pcr_small_systems(sycl::queue &q, float *a, float *b, float *c, float *d,
   for (int iCycles = 0; iCycles < BENCH_ITERATIONS; iCycles++)
   {
     if (id == 0)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> lmem(sycl::range<1>((system_size+1)*5), cgh);
         cgh.parallel_for<class pcr>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           pcr_small_systems_kernel(item,
@@ -80,9 +81,9 @@ double pcr_small_systems(sycl::queue &q, float *a, float *b, float *c, float *d,
                                    num_systems,
                                    iterations);
         });
-      });
+      }));
     else
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> lmem(sycl::range<1>((system_size+1)*5), cgh);
         cgh.parallel_for<class pcr_opt>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           pcr_branch_free_kernel(item,
@@ -96,7 +97,7 @@ double pcr_small_systems(sycl::queue &q, float *a, float *b, float *c, float *d,
                                  num_systems,
                                  iterations);
         });
-      });
+      }));
   }
   q.wait();
   sum_time = shrDeltaT(0);

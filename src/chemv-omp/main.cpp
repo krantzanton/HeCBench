@@ -11,6 +11,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define REPEAT 1000
 #define N 370
 #define LDAT N
@@ -156,6 +157,7 @@ int main() {
       return EXIT_FAILURE;
     }
   printf("PASS\n");
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }
 

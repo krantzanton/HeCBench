@@ -3,6 +3,7 @@
 #include <string.h>     /* defines memcpy */
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 
 
@@ -241,7 +242,7 @@ int main(int argc, char** argv) {
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class jk3_hash>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         unsigned long id = item.get_global_id(0);
@@ -280,7 +281,7 @@ int main(int argc, char** argv) {
          */
         d_out[id] = mixRemainder(a, b, c, r0, r1, r2, length);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -312,5 +313,6 @@ int main(int argc, char** argv) {
   free(initvals);
   free(out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

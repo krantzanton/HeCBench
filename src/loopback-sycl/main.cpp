@@ -10,6 +10,7 @@
 #include "loopback.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 3) {
     printf("Usage: %s <dump> <repeat>\n", argv[0]);
@@ -82,7 +83,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> sm (sycl::range<1>(
         LOOKBACK_TAUSWORTHE_NUM_THREADS*LOOKBACK_MAX_T), cgh);
       cgh.parallel_for<class loopback>(
@@ -102,7 +103,7 @@ int main(int argc, char* argv[]) {
           sm.get_multi_ptr<sycl::access::decorated::no>().get(),
 	  item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -141,5 +142,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_lookback_MU, q);
   sycl::free(d_lookbackSimulationResultsMean, q);
   sycl::free(d_lookbackSimulationResultsVariance, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

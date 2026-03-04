@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include <chrono>
 #include <cmath>
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv)
 {
   int arrayLength = 52428800;
@@ -184,5 +185,6 @@ int main(int argc, char** argv)
     }
   }
   free(array);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

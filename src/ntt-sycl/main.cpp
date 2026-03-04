@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define  bidx  item.get_group(0)
 #define  tidx  item.get_local_id(0)
 
@@ -82,13 +83,13 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<uint64, 1> sm (sycl::range<1>(512), cgh);
       cgh.parallel_for<class intt_modcrt>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         intt_3_64k_modcrt(item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), d_res, d_ntt);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -107,5 +108,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_res, q);
   free(ntt);
   free(res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -35,6 +35,7 @@
 #include "stdio-wrapper.h"
 #include "haar.h"
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 int main (int argc, char *argv[]) 
@@ -105,5 +106,6 @@ int main (int argc, char *argv[])
   releaseTextClassifier();
   freeImage(image);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

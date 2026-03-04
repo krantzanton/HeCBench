@@ -38,6 +38,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Helper functions
 
 // This function displays correct usage and parameters
+#include "../sycl_timer.hpp"
 void usage(std::string programName) {
   std::cout << " Incorrect number of parameters " << std::endl;
   std::cout << " Usage: ";
@@ -115,7 +116,7 @@ void motion_device(float* particleX, float* particleY,
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class motionsim>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         size_t ii = item.get_global_id(0);
@@ -171,7 +172,7 @@ void motion_device(float* particleX, float* particleY,
         d_particleY[ii] = pY;
 
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -310,5 +311,6 @@ int main(int argc, char* argv[]) {
   delete[] map;
   delete[] map_ref;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define p_IJWID 6
 #define p_JID   4
 #define p_JWID  5
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
 
   // run kernel
   for(int test=0;test<Ntests;++test) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<dfloat, 2> s_cubD(sycl::range<2>{16,16}, cgh);
       sycl::local_accessor<dfloat, 2> s_cubInterpT(sycl::range<2>{8,16}, cgh);
       sycl::local_accessor<dfloat, 2> s_U(sycl::range<2>{8,8}, cgh);
@@ -266,7 +267,7 @@ int main(int argc, char **argv) {
           }
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -307,5 +308,6 @@ int main(int argc, char **argv) {
   free(h_cubInterpT    );
   free(h_u             );
   free(h_adv           );
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

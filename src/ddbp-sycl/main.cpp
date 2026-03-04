@@ -40,6 +40,7 @@ Original author: Rodrigo de Barros Vimieiro
 #include <sycl/sycl.hpp>
 
 // thread block size
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 // integration direction
@@ -428,12 +429,12 @@ void backprojectionDDb(
   for (int np = 0; np < nProj; np++) {
 
     // Pad on X coord direction
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class pad>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         pad_projections_kernel (item, d_pProj,
                                 nDetXMap, nDetYMap, nDetXMap, np);
       });
-    });
+    }));
 
     // Pad on Y coord direction
     d_pProj_tmp = d_pProj + (nDetXMap*nDetYMap*np) + 1;
@@ -453,43 +454,43 @@ void backprojectionDDb(
   lws[2] = maxThreadsPerBlock;
   gws[2] = (nDetX / maxThreadsPerBlock + 1) * maxThreadsPerBlock;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class map_detX>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       map_boudaries_kernel(item, d_pDetX, nDetXMap, (double)nDetX, -du, 0.0);
     });
-  });
+  }));
 
   gws[2] = (nDetY / maxThreadsPerBlock + 1) * maxThreadsPerBlock;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class map_detY>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       map_boudaries_kernel(item, d_pDetY, nDetYMap, nDetY / 2.0, dv, 0.0);
     });
-  });
+  }));
 
   gws[2] = (nPixX / maxThreadsPerBlock + 1) * maxThreadsPerBlock;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class map_pixX>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       map_boudaries_kernel(item, d_pObjX, nPixXMap, (double)nPixX, -dx, 0.0);
     });
-  });
+  }));
 
   gws[2] = (nPixY / maxThreadsPerBlock + 1) * maxThreadsPerBlock;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class map_pixY>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       map_boudaries_kernel(item, d_pObjY, nPixYMap, nPixY / 2.0, dy, 0.0);
     });
-  });
+  }));
 
   gws[2] = (nSlices / maxThreadsPerBlock + 1) * maxThreadsPerBlock;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class map_pixZ>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       map_boudaries_kernel(item, d_pObjZ, nSlices, 0.0, dz, DAG + (dz / 2.0));
     });
-  });
+  }));
 
   // Initiate variables value with 0
   q.memset(d_pDetZ, 0, nDetYMap * sizeof(double));
@@ -519,12 +520,12 @@ void backprojectionDDb(
   int Xk = (int)ceilf((float)nDetXMap / (8 - 1));
   for (int k = 0; k < Xk; k++) {
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class img_integralX>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         img_integration_kernel(item, d_pProj,
           nDetXMap, nDetYMap, integrateXcoord, 0, k * 9, nProj);
       });
-    });
+    }));
   }
 
   // Naive integration o the Y coord
@@ -539,12 +540,12 @@ void backprojectionDDb(
   int Yk = (int)ceilf((float)nDetYMap / (8 - 1));
   for (int k = 0; k < Yk; k++) {
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class img_integralY>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         img_integration_kernel(item, d_pProj,
             nDetXMap, nDetYMap, integrateYcoord, k * 9, 0, nProj);
       });
-    });
+    }));
   }
 
   // loop over all projections ?
@@ -586,12 +587,12 @@ void backprojectionDDb(
     gws[1] = 1;
     gws[0] = 1;
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rot_det>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         rot_detector_kernel(item, d_pRdetY, d_pRdetZ, d_pDetY, d_pDetZ,
                             isoY, isoZ, phi, nDetYMap);
       });
-    });
+    }));
 
     lws[2] = 16;
     lws[1] = 16;
@@ -606,7 +607,7 @@ void backprojectionDDb(
       gws[1] = (nDetXMap / 16 + 1) * 16;
       gws[0] = 1;
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class mapDet2Slice>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
           mapDet2Slice_kernel (
             item,
@@ -614,14 +615,14 @@ void backprojectionDDb(
             d_pDetX, d_pRdetY, d_pRdetZ,
             d_pObjZ, nDetXMap, nDetYMap, nz);
         });
-      });
+      }));
 
       //  S.2. Interpolation - Liu et al (2017)
 
       gws[2] = (nPixYMap / 16 + 1) * 16;
       gws[1] = (nPixXMap / 16 + 1) * 16;
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 11", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class bilinear_interp>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
           bilinear_interpolation_kernel (item,
             d_sliceI, d_pProj,
@@ -629,14 +630,14 @@ void backprojectionDDb(
             d_pDetmX + nDetYMap * (nDetXMap-2), d_pDetmY,
             nPixXMap, nPixYMap, nDetXMap, nDetYMap, nDetX, nDetY, p);
         });
-      });
+      }));
 
       // S.3. Differentiation - Eq. 24 - Liu et al (2017)
 
       gws[2] = (nPixY / 16 + 1) * 16;
       gws[1] = (nPixX / 16 + 1) * 16;
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 12", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class diff>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
           differentiation_kernel (
             item, d_pVolume, d_sliceI, 
@@ -644,7 +645,7 @@ void backprojectionDDb(
             d_pObjX, d_pObjY, d_pObjZ,
             nPixX, nPixY, nPixXMap, nPixYMap, du, dv, dx, dy, dz, nz);
         });
-      });
+      }));
 
     } // Loop end slices
 
@@ -660,12 +661,12 @@ void backprojectionDDb(
   gws[1] = (nPixX / 8 + 1) * 8;
   gws[0] = (nSlices / 4 + 1) * 4;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 13", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class div>(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       division_kernel (item, d_pVolume, 
                        nPixX, nPixY, nSlices, nProj2Run);
     });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -760,5 +761,6 @@ int main()
   free(h_pTubeAngle);
   free(h_pDetAngle);
   free(h_pProj);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -17,6 +17,7 @@
 #include "hwt.h"
 
 // rounds to a power of 2
+#include "../sycl_timer.hpp"
 template<typename T>
 T roundToPowerOf2(T val)
 {
@@ -121,5 +122,6 @@ int main(int argc, char * argv[])
   else
     std::cout << "FAIL" << std::endl;
   
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

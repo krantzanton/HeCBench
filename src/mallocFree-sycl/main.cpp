@@ -22,6 +22,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_SIZE 19  //size up to 16M
 #define NUM_ITER 500 //Total GPU memory up to 16M*500=8G
 
@@ -167,5 +168,6 @@ int main(int argc, char* argv[])
   }
 
   free(A);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

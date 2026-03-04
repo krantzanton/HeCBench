@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 inline float hd (const float2 ap, const float2 bp)
 {
   return (ap.x - bp.x) * (ap.x - bp.x)
@@ -95,5 +96,6 @@ int main(int argc, char* argv[]) {
   
   free(h_Apoints);
   free(h_Bpoints);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

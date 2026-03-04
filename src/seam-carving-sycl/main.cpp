@@ -11,6 +11,7 @@
 #include <sycl/sycl.hpp>
 
 //#define STBI_ONLY_BMP
+#include "../sycl_timer.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -215,5 +216,6 @@ int main(int argc, char **argv) {
   free(h_pixels);
   free(indices);
   free(imgv);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

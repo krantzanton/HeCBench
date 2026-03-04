@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 /* -------------------------------------------------------------------------- */
 /* Rainflow cycle counting algorithm according to:                            */
 /* ASTM E1049-85,                                                             */
@@ -216,5 +217,6 @@ int main(int argc, char* argv[]) {
   free(result_lengths);
   free(ref_result_lengths);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

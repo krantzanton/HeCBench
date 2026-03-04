@@ -5,6 +5,7 @@
 #include <random>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef float IMAGE_T;
 typedef int INT_T;
 
@@ -225,5 +226,6 @@ int main(int argc, char* argv[])
   printf("Average kernel execution time : %f (us)\n", time * 1e-3 / repeat);
   printf("Kernel checksum: %lf\n", checksum);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

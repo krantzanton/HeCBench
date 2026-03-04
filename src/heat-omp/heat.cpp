@@ -34,6 +34,7 @@
 #include <omp.h>
 
 // Key constants used in this program
+#include "../sycl_timer.hpp"
 #define LINE "--------------------\n" // A line for fancy output
 
 double solution(const double t, const double x, const double y, const double alpha, const double length);
@@ -187,6 +188,8 @@ int main(int argc, char *argv[]) {
   // Free the memory
   free(u);
   free(u_tmp);
+
+  SYCL_TIMER_DUMP();
 }
 
 

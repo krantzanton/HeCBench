@@ -46,6 +46,7 @@
 
 
 // Thread block size
+#include "../sycl_timer.hpp"
 #define TBSIZE 256
 
 // Number of thread blocks for the DOT kernel 
@@ -94,7 +95,7 @@ void init_arrays(sycl::queue &q,
   const int array_size = ARRAY_SIZE; 
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_kernel<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const int i = item.get_global_id(0);
@@ -102,7 +103,7 @@ void init_arrays(sycl::queue &q,
       db[i] = initB;
       dc[i] = initC;
     });
-  }).wait();
+  }));
 }
 
 
@@ -113,13 +114,13 @@ void copy(sycl::queue &q, T *da, T *dc)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class copy_kernel<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const int i = item.get_global_id(0);
       dc[i] = da[i];
     });
-  });
+  }));
   q.wait();
 }
 
@@ -130,14 +131,14 @@ void mul(sycl::queue &q, T *db, T *dc)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class mul_kernel<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const T scalar = SCALAR;
       const int i = item.get_global_id(0);
       db[i] = scalar * dc[i];
     });
-  });
+  }));
   q.wait();
 }
 
@@ -148,12 +149,12 @@ void add(sycl::queue &q, T *da, T *db, T *dc)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class add_kernel<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const int i = item.get_global_id(0);
       dc[i] = da[i] + db[i];
     });
-  }).wait();
+  }));
 }
 
 
@@ -164,14 +165,14 @@ void triad(sycl::queue &q, T *da, T *db, T *dc)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class triad_kernel<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const T scalar = SCALAR;
       const int i = item.get_global_id(0);
       da[i] = db[i] + scalar * dc[i];
     });
-  }).wait();
+  }));
 }
 
 
@@ -182,13 +183,13 @@ void nstream(sycl::queue &q, T *da, T *db, T *dc)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (array_size);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class nstream_kernel<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       const T scalar = SCALAR;
       const int i = item.get_global_id(0);
       da[i] += db[i] + scalar * dc[i];
     });
-  }).wait();
+  }));
 }
 
 // sum += da[i] * db[i] for each i
@@ -198,7 +199,7 @@ T dot(sycl::queue &q, T *da, T *db, T *dsum, T *sums)
   const int array_size = ARRAY_SIZE;
   sycl::range<1> gws (DOT_NUM_BLOCKS * TBSIZE);
   sycl::range<1> lws (TBSIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<T, 1> tb_sum(sycl::range<1>(TBSIZE), cgh);
     cgh.parallel_for<class dot_kernel<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -224,7 +225,7 @@ T dot(sycl::queue &q, T *da, T *db, T *dsum, T *sums)
       if (lid == 0)
         dsum[blockIdx] = tb_sum[lid];
     });
-  });
+  }));
 
   // sum up partial sums on a host
   q.memcpy(sums, dsum, DOT_NUM_BLOCKS * sizeof(T)).wait();  
@@ -446,6 +447,8 @@ int main(int argc, char *argv[])
   parseArguments(argc, argv);
   run<float>();
   run<double>();
+
+  SYCL_TIMER_DUMP();
 }
 
 

@@ -32,6 +32,7 @@ end;
 
 // float
 
+#include "../sycl_timer.hpp"
 template <int DEGREE>
 constexpr float approx_atan2f_P(float x);
 
@@ -424,12 +425,12 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class atan2f>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_f(n, dy, dx, df, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -454,12 +455,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class atan2i>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_i(n, dy, dx, di, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -484,12 +485,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class atan2s>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_s(n, dy, dx, ds, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -522,5 +523,6 @@ int main(int argc, char* argv[])
   free(rf);
   free(ri);
   free(rs);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

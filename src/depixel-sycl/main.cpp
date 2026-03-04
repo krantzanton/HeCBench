@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 #define nthreads 256
 
 int main(int argc, char** argv) {
@@ -61,19 +62,19 @@ int main(int argc, char** argv) {
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class check>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         check_connect(item, d_img, d_tmp, width, height);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class remove>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         eliminate_crosses(item, d_tmp, d_out, width, height);
       });
-    });
+    }));
   
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -103,5 +104,6 @@ int main(int argc, char** argv) {
   free(h_out);
   free(h_img);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

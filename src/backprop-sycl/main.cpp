@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
+#include "../sycl_timer.hpp"
 double get_time() {
   struct timeval t;
   gettimeofday(&t,NULL);
@@ -25,7 +26,8 @@ unsigned int num_blocks = 0;
 int main( int argc, char** argv) 
 {
   setup(argc, argv);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 int bpnn_train_kernel(BPNN *net, float *eo, float *eh)
@@ -84,14 +86,14 @@ int bpnn_train_kernel(BPNN *net, float *eo, float *eh)
   sycl::range<2> gws(BLOCK_SIZE*num_blocks, BLOCK_SIZE);
   sycl::range<2> lws(BLOCK_SIZE, BLOCK_SIZE);
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
     sycl::local_accessor <float, 1> input_node (sycl::range<1>(HEIGHT), cgh);
     sycl::local_accessor <float, 1> weight_matrix (sycl::range<1>(HEIGHT * WIDTH), cgh);
     cgh.parallel_for<class forward>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       #include "bpnn_layerforward.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
   q.memcpy(partial_sum, d_hidden_partial_sum, sizeof(float)*num_blocks*WIDTH).wait();
 
@@ -121,12 +123,12 @@ int bpnn_train_kernel(BPNN *net, float *eo, float *eh)
   float *d_input_prev_weights = sycl::malloc_device<float>((in+1)*(hid+1), q);
   q.memcpy(d_input_prev_weights, input_weights_prev_one_dim, sizeof(float)*(in+1)*(hid+1));
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class adjust_weights>(
     sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       #include "bpnn_adjust_weights.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
   q.memcpy(input_weights_one_dim, d_input_weights, sizeof(float)*(in+1)*(hid+1)).wait();
 

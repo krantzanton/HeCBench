@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -86,12 +87,12 @@ void eval_swish (const int N, const int repeat) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class swish>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         SwishKernel(item, N, d_X, d_Y);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -102,12 +103,12 @@ void eval_swish (const int N, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class swish_grad>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         SwishGradientKernel(item, N, d_X, d_Y, d_dY, d_dX);
       });
-    });
+    }));
   };
 
   q.wait();
@@ -156,5 +157,6 @@ int main(int argc, char* argv[])
 
   eval_swish<float>(N, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

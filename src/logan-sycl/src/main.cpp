@@ -1,6 +1,7 @@
 #include <sycl/sycl.hpp>
 #include "logan.hpp"
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 #define BATCH_SIZE 30000
@@ -158,5 +159,6 @@ int main(int argc, char **argv)
   std::chrono::duration<double> tot_time = end - start;
   std::cout << "Total execution time [seconds]:\t" << tot_time.count() << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

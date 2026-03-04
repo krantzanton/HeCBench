@@ -3,6 +3,7 @@
 #include <random>
 #include "reverse.hpp"
 
+#include "../sycl_timer.hpp"
 template <typename T>
 void eval_case(sycl::queue &q, T* d_in, T* h_in, T* d_out, T* h_out, 
                bool rowMajor, bool alongRows,
@@ -93,5 +94,6 @@ int main(int argc, char* argv[]) {
   printf("\nThe size of each matrix element is %zu bytes\n", sizeof(ulong));
   eval<ulong>(q, nrows, ncols, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

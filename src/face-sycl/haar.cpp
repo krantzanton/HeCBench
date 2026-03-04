@@ -23,6 +23,7 @@
 #include "image.h"
 #include "stdio-wrapper.h"
 
+#include "../sycl_timer.hpp"
 /* TODO: use matrices */
 /* classifier parameters */
 /************************************
@@ -305,7 +306,7 @@ void setImageForCascadeClassifier(
 
   int* data = sum->data;
   const int width = sum->width;
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class filtering>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int gid = item.get_global_id(0);
@@ -339,7 +340,7 @@ void setImageForCascadeClassifier(
         } /* end of branch if(k<2) */
       }   /* end of k loop */
     });
-  });
+  }));
 
   q.memcpy(scaled_rectangles_array,
            d_scaled_rectangles_array, total_nodes*12*sizeof(int*)).wait();

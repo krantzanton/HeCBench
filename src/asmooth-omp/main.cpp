@@ -6,6 +6,7 @@
 
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 5) {
     printf("./%s <image dimension> <threshold> <max box size> <iterations>\n", argv[0]);
@@ -138,5 +139,6 @@ int main(int argc, char* argv[]) {
   free(h_box);
   free(out);
   free(h_out);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

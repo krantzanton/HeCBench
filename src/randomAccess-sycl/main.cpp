@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef unsigned long long int u64Int;
 typedef long long int s64Int;
 
@@ -113,16 +114,16 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < repeat; i++) {
     /* initialize the table */
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class init_table>(
         sycl::nd_range<1>(gws1, lws1), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i < TableSize) d_Table[i] = i;
       });
-    });
+    }));
 
     /* update the table */
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       h.parallel_for<class update>(
         sycl::nd_range<1>(gws2, lws2), [=](sycl::nd_item<1> item) {
         int j = item.get_global_id(0);
@@ -136,7 +137,7 @@ int main(int argc, char** argv) {
           atm.fetch_xor(ran);
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -166,5 +167,6 @@ int main(int argc, char** argv) {
 
   free( Table );
   sycl::free(d_Table, q);
-  return failure;
+  SYCL_TIMER_DUMP();
+return failure;
 }

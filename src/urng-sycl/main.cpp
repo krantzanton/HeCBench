@@ -1,10 +1,10 @@
 /**********************************************************************
-  Copyright ©2013 Advanced Micro Devices, Inc. All rights reserved.
+  Copyright 2013 Advanced Micro Devices, Inc. All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-  •   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-  •   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+     Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+     Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -22,6 +22,7 @@
 #include "urng.h"
 #include "kernel.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv)
 {
   if (argc != 3) {
@@ -101,7 +102,7 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for(int i = 0; i < iterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int, 1> iv (sycl::range<1>(NTAB * GROUP_SIZE), cgh);
       cgh.parallel_for<class noise_uniform>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -113,7 +114,7 @@ int main(int argc, char** argv)
           iv.get_multi_ptr<sycl::access::decorated::no>().get(),
           item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -161,5 +162,6 @@ int main(int argc, char** argv)
   free(inputImageData);
   free(outputImageData);
   free(verificationOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

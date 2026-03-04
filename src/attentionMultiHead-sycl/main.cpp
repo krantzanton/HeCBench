@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void mha (
    const float *__restrict q, 
    const float *__restrict k, 
@@ -195,7 +196,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<float, 1> shared(sycl::range<1>(shared_size), cgh);
       sycl::local_accessor<float, 0> s_max_val(cgh);
       sycl::local_accessor<float, 0> s_sum(cgh);
@@ -205,7 +206,7 @@ int main(int argc, char* argv[])
         mha(dq, dk, dv, beamsize, n_steps, qk_col, v_col, nhead, scaler,
             THRESHOLD, dst, item, shared.get_multi_ptr<sycl::access::decorated::no>().get(), s_max_val, s_sum);
         });
-    });
+    }));
   }
 
   q.wait();
@@ -240,5 +241,6 @@ int main(int argc, char* argv[])
   free(r_dst);
 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

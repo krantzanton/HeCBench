@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 const int nContractions = 18;  // the device kernel contains 18 cases
 
 template <typename T>
@@ -403,5 +404,6 @@ int main(int argc, char* argv[]) {
   contract<float>(max_N, max_C, repeat);
   contract<double>(max_N, max_C, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

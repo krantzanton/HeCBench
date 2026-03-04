@@ -8,6 +8,7 @@
 #include "reference.h"
 
 // transpose
+#include "../sycl_timer.hpp"
 double* t(const double *idata, const int width, const int height)
 {
   double *odata = (double*) malloc (sizeof(double) * width * height);
@@ -84,12 +85,12 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k1>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_probs(d_alphas, d_rands, d_probs, n, K, M, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -113,12 +114,12 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_probs_unitStrides(d_alphas, d_rands, d_probs, n, K, M, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -138,14 +139,14 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<double, 1> sm (sycl::range<1>(K * threads_per_block * 2), cgh);
       cgh.parallel_for<class k3>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
         compute_probs_unitStrides_sharedMem(d_alphas, d_rands, d_probs, n, K, M,
                                             sm.get_multi_ptr<sycl::access::decorated::no>().get(), item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -166,5 +167,6 @@ int main(int argc, char* argv[]) {
   free(t_rands);
   free(probs);
   free(probs_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

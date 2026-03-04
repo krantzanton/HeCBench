@@ -11,6 +11,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 #define  FORCE_INLINE inline __attribute__((always_inline))
@@ -214,5 +215,6 @@ int main(int argc, char** argv)
   free(d_keys);
   free(d_out);
   free(d_length);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

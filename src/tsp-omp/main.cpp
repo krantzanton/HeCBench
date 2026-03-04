@@ -51,6 +51,7 @@ Purpose Processing Using GPUs (10 pages). February 2015.
 // no point in using precise FP math or double precision as we are rounding
 // the results to the nearest integer anyhow
 
+#include "../sycl_timer.hpp"
 /******************************************************************************/
 /*** 2-opt with random restarts ***********************************************/
 /******************************************************************************/
@@ -380,5 +381,6 @@ int main(int argc, char *argv[])
   free(posx);
   free(posy);
   free(glob);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

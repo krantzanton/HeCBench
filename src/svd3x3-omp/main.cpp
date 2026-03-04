@@ -10,6 +10,7 @@
 
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 void runDevice(float* input, float* output, int testsize, int repeat)
 {
   #pragma omp target data map(to: input[0:9*testsize]) map(from: output[0:21*testsize])
@@ -116,5 +117,6 @@ int main(int argc, char* argv[])
   free(input);
   free(result);
   free(result_h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

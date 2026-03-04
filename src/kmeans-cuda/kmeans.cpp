@@ -4,6 +4,7 @@
 #include <math.h>
 #include "kmeans.h"
 
+#include "../sycl_timer.hpp"
 #ifdef WIN
 	#include <windows.h>
 #else
@@ -23,6 +24,7 @@ int main( int argc, char** argv)
 
 	setup(argc, argv);
 
-	return 0;
+	SYCL_TIMER_DUMP();
+return 0;
 }
 

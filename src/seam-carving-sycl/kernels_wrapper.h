@@ -1,5 +1,6 @@
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using uchar4 = sycl::uchar4;
 
 /* ################# wrappers ################### */
@@ -18,7 +19,7 @@ void compute_costs(
   sycl::range<2> gws (COSTS_BLOCKSIZE_Y * ((h-1)/(COSTS_BLOCKSIZE_Y-1) + 1),
                       COSTS_BLOCKSIZE_X * ((current_w-1)/(COSTS_BLOCKSIZE_X-2) + 1));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<pixel, 1> sm (sycl::range<1>(COSTS_BLOCKSIZE_Y * COSTS_BLOCKSIZE_X), cgh);
     cgh.parallel_for<class compute_costs>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       compute_costs_kernel(item,
@@ -29,7 +30,7 @@ void compute_costs(
                            d_costs_right,
                            w, h, current_w);
     });
-  });
+  }));
 
 #else
 
@@ -37,7 +38,7 @@ void compute_costs(
   sycl::range<2> gws (COSTS_BLOCKSIZE_Y * ((h-1)/COSTS_BLOCKSIZE_Y + 1),
                       COSTS_BLOCKSIZE_X * ((current_w-1)/COSTS_BLOCKSIZE_X + 1));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<pixel, 1> sm (
       sycl::range<1>((COSTS_BLOCKSIZE_Y+1) * (COSTS_BLOCKSIZE_X+2)), cgh);
     cgh.parallel_for<class compute_costs_full>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -49,7 +50,7 @@ void compute_costs(
                                 d_costs_right,
                                 w, h, current_w);
     });
-  });
+  }));
 
 #endif
 }
@@ -68,7 +69,7 @@ void compute_M(
     sycl::range<1> gws (current_w);
     sycl::range<1> lws (current_w);
     //compute_M_kernel_small<<<num_blocks, threads_per_block, 2*current_w*sizeof(int)>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, h, current_w);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int> sm (sycl::range<1>(2*current_w), cgh);
       cgh.parallel_for<class compute_M_small>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_M_kernel_small(item,
@@ -79,7 +80,7 @@ void compute_M(
                                d_M,
                                w, h, current_w);
       });
-    });
+    }));
   }
   else{
     sycl::range<1> lws (COMPUTE_M_BLOCKSIZE_X);
@@ -91,7 +92,7 @@ void compute_M(
     int base_row = 0;
     for(int i = 0; i < num_iterations; i++){
       //compute_M_kernel_step1<<<num_blocks, threads_per_block>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, h, current_w, base_row);
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<int, 1> sm (
           sycl::range<1>(2*COMPUTE_M_BLOCKSIZE_X), cgh);
         cgh.parallel_for<class compute_M_step1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -103,10 +104,10 @@ void compute_M(
                                  d_M,
                                  w, h, current_w, base_row);
         });
-      });
+      }));
 
       //compute_M_kernel_step2<<<num_blocks2, threads_per_block>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, h, current_w, base_row);
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class compute_M_step2>(sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
           compute_M_kernel_step2(item,
                                  d_costs_left,
@@ -115,7 +116,7 @@ void compute_M(
                                  d_M,
                                  w, h, current_w, base_row);
         });
-      });
+      }));
 
       base_row = base_row + (COMPUTE_M_BLOCKSIZE_X/2) - 1;
     }
@@ -130,7 +131,7 @@ void compute_M(
 
   int num_el = (current_w-1)/block_size + 1;
   //compute_M_kernel_single<<<num_blocks, threads_per_block, 2*current_w*sizeof(int)>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, h, current_w, num_el);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<int> sm (2*current_w, cgh);
     cgh.parallel_for<class compute_M_single>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       compute_M_kernel_single(item,
@@ -141,7 +142,7 @@ void compute_M(
                               d_M,
                               w, h, current_w, num_el);
       });
-    });
+    }));
 
 #else
 #ifdef COMPUTE_M_ITERATE
@@ -150,7 +151,7 @@ void compute_M(
   sycl::range<1> lws (COMPUTE_M_BLOCKSIZE_X);
 
   //compute_M_kernel_iterate0<<<num_blocks, threads_per_block>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, current_w);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class compute_M_iter0>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       compute_M_kernel_iterate0(item,
                                 d_costs_left,
@@ -159,11 +160,11 @@ void compute_M(
                                 d_M,
                                 w, current_w);
       });
-    });
+    }));
 
   for(int row = 1; row < h; row++){
   //  compute_M_kernel_iterate1<<<num_blocks, threads_per_block>>>(d_costs_left, d_costs_up, d_costs_right, d_M, w, current_w, row);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_M_iter1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute_M_kernel_iterate1(item,
                                   d_costs_left,
@@ -172,7 +173,7 @@ void compute_M(
                                   d_M,
                                   w, current_w, row);
         });
-      });
+      }));
     }
 
 #endif
@@ -197,7 +198,7 @@ void find_min_index(
     int num_blocks_x = (reduce_num_elements-1)/(REDUCE_BLOCKSIZE_X*REDUCE_ELEMENTS_PER_THREAD) + 1;
     gws[0] = REDUCE_BLOCKSIZE_X * num_blocks_x;
     // min_reduce<<<num_blocks, threads_per_block>>>(reduce_row, d_indices, reduce_num_elements);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int, 1> sm_val (sycl::range<1>(REDUCE_BLOCKSIZE_X), cgh);
       sycl::local_accessor<int, 1> sm_ix (sycl::range<1>(REDUCE_BLOCKSIZE_X), cgh);
       cgh.parallel_for<class reduce>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -208,7 +209,7 @@ void find_min_index(
                    d_indices,
                    reduce_num_elements);
       });
-    });
+    }));
     reduce_num_elements = num_blocks_x;
   }while(reduce_num_elements > 1);
 }
@@ -221,11 +222,11 @@ void find_seam(
     int *d_seam )
 {
   //find_seam_kernel<<<1, 1>>>(d_M, d_indices, d_seam, w, h, current_w);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
     cgh.single_task<class find_seam>( [=] () {
       find_seam_kernel(d_M, d_indices, d_seam, w, h, current_w);
     });
-  });
+  }));
 }
 
 void remove_seam(
@@ -243,7 +244,7 @@ void remove_seam(
                       REMOVE_BLOCKSIZE_X * num_blocks_x);
 
   //remove_seam_kernel<<<num_blocks, threads_per_block>>>(d_pixels, d_pixels_swap, d_seam, w, h, current_w);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 11", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class update_seam>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       remove_seam_kernel(item,
                          d_pixels,
@@ -251,7 +252,7 @@ void remove_seam(
                          d_seam,
                          w, h, current_w);
     });
-  });
+  }));
 }
 
 void update_costs(
@@ -273,7 +274,7 @@ void update_costs(
   sycl::range<2> gws (UPDATE_BLOCKSIZE_Y * num_blocks_y,
                       UPDATE_BLOCKSIZE_X * num_blocks_x);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 12", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class update_costs>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       update_costs_kernel (item,
                            d_pixels,
@@ -286,7 +287,7 @@ void update_costs(
                            d_seam,
                            w, h, current_w);
     });
-  });
+  }));
 }
 
 void approx_setup(
@@ -304,7 +305,7 @@ void approx_setup(
                       num_blocks_x * APPROX_SETUP_BLOCKSIZE_X);
 
   sycl::range<1> sm_size (APPROX_SETUP_BLOCKSIZE_Y*APPROX_SETUP_BLOCKSIZE_X);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 13", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<pixel, 1> p_sm (sm_size, cgh);
     sycl::local_accessor<short, 1> l_sm (sm_size, cgh);
     sycl::local_accessor<short, 1> u_sm (sm_size, cgh);
@@ -322,7 +323,7 @@ void approx_setup(
                           d_M,
                           w, h, current_w);
     });
-  });
+  }));
 }
 
 void approx_M(
@@ -339,13 +340,13 @@ void approx_M(
   int step = 1;
   while(num_blocks_y > 0){
    // approx_M_kernel<<<num_blocks, threads_per_block>>>(d_offset_map, d_M, w, h, current_w, step);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 14", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class approx_M>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         approx_M_kernel(item,
                         d_offset_map, d_M,
                         w, h, current_w, step);
       });
-    });
+    }));
 
     num_blocks_y = num_blocks_y/2;
     step = step*2;
@@ -360,9 +361,9 @@ void approx_seam(
     int *d_seam )
 {
   //approx_seam_kernel<<<1, 1>>>(d_index_map, d_indices, d_seam, w, h);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 15", q.submit([&] (sycl::handler &cgh) {
     cgh.single_task<class approx_seam>( [=] () {
       approx_seam_kernel(d_index_map, d_indices, d_seam, w, h);
     });
-  });
+  }));
 }

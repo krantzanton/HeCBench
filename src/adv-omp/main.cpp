@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define p_IJWID 6
 #define p_JID   4
 #define p_JWID  5
@@ -284,5 +285,6 @@ int main(int argc, char **argv) {
   free(cubInterpT    );
   free(u             );
   free(adv           );
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

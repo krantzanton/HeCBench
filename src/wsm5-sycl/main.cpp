@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   if (argc != 2) {
@@ -65,7 +66,7 @@ int main(int argc, char* argv[])
     Q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    Q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", Q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class weather>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         wsm (item,
@@ -95,7 +96,7 @@ int main(int argc, char* argv[])
              djps+1 , djpe ,        // jps, jpe
              dkps+1 , dkpe) ;       // kps, kpe
       });
-    });
+    }));
 
     Q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -130,5 +131,6 @@ int main(int argc, char* argv[])
 
   printf("Average kernel execution time: %lf (ms)\n", (time * 1e-6) / repeat);
   printf("Checksum: rain = %f snow = %f\n", rain_sum, snow_sum);
-  return(0) ;
+  SYCL_TIMER_DUMP();
+return(0) ;
 }

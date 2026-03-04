@@ -3,6 +3,7 @@
 //  MAIN FUNCTION
 //=====================================================================
 
+#include "../sycl_timer.hpp"
 double master(
     sycl::queue &q,
     fp timeinst,
@@ -59,9 +60,9 @@ double master(
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
     kernel(timeinst, d_initvalu, d_finavalu, d_params, d_com, item);
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

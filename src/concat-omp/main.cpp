@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <typename T>
 void concat (const T *__restrict inp1,
              const T *__restrict inp2,
@@ -116,4 +117,6 @@ int main(int argc, char* argv[])
     free(outp);
     free(outp_ref);
   }
+
+  SYCL_TIMER_DUMP();
 }

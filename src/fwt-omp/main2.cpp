@@ -30,6 +30,7 @@
 #include <math.h>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define ELEMENTARY_LOG2SIZE 11
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -525,4 +526,6 @@ int main(int argc, char *argv[])
 
     printf("L2 norm: %E\n", L2norm);
     printf(L2norm < 1e-6 ? "Test passed\n" : "Test failed!\n");
+
+  SYCL_TIMER_DUMP();
 }

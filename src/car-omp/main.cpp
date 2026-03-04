@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define max(a,b) (a) > (b) ? (a) : (b)
 #define min(a,b) (a) < (b) ? (a) : (b)
 
@@ -148,6 +149,7 @@ int main(int argc, char* argv[]) {
   free(kernel);
   free(output);
   free(output_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

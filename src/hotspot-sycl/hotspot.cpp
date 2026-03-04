@@ -3,6 +3,7 @@
 #include "hotspot.h"
 
 // Returns the current system time in microseconds
+#include "../sycl_timer.hpp"
 long long get_time() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -110,7 +111,7 @@ int compute_tran_temp(
     // Specify kernel arguments
     int iter = MIN(num_iterations, total_iterations - t);
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       auto power_acc = MatrixPower;
       auto temp_src_acc = MatrixTemp[src];
       auto temp_dst_acc = MatrixTemp[dst];
@@ -121,7 +122,7 @@ int compute_tran_temp(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
          #include "kernel_hotspot.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     // Swap input and output GPU matrices
     src = 1 - src;
@@ -228,5 +229,6 @@ int main(int argc, char** argv) {
   free(FilesavingTemp);
   free(FilesavingPower);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

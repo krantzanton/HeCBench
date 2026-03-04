@@ -5,6 +5,7 @@
 #include "TensorInfo.h"
 #include "reducer.h"
 
+#include "../sycl_timer.hpp"
 #define THREADS 256
 #define BLOCKS(N) (N + THREADS - 1) / THREADS
 
@@ -76,11 +77,11 @@ void scatter(sycl::queue &q, int64_t num_elems, int repeat) {
   for (int i = 0; i < repeat; i++) {
     q.memcpy(d_out, h_out, out_size_bytes).wait();
     auto start = std::chrono::steady_clock::now();
-    q.parallel_for(sycl::nd_range<3>(gws, lws),
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<3>(gws, lws),
                      [=](sycl::nd_item<3> item) {
         scatter_kernel<scalar_t, REDUCE>(
            d_src, index_info, d_out, E, K, N, num_elems, item);
-    }).wait();
+    }));
     auto end = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   }
@@ -149,5 +150,6 @@ int main(int argc, char* argv[])
   scatter<double, SUM>(q, num_elements, repeat);
   scatter<double, MIN>(q, num_elements, repeat);
   scatter<double, MAX>(q, num_elements, repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

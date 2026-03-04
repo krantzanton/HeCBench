@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 template <typename T>
 void haccmk (
     const int repeat,
@@ -234,5 +235,6 @@ int main( int argc, char *argv[] )
 
   printf("%s\n", error ? "FAIL" : "PASS");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

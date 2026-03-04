@@ -14,6 +14,7 @@
 
 // declaration, forward
 
+#include "../sycl_timer.hpp"
 void printHelp(void);
 
 // Main program
@@ -86,7 +87,7 @@ int main(int argc, char **argv){
   printf("local work size = %d %d %d \n", BLOCK_X, BLOCK_Y, 1);
 
   // Warmup
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sm (3*KOFF, cgh);
     cgh.parallel_for<class warmup>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -94,13 +95,13 @@ int main(int argc, char **argv){
                 d_u1, d_u2,
                 sm.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  }).wait();
+  }));
 
   // Execute GPU kernel
   auto start = std::chrono::steady_clock::now();
 
   for (i = 1; i <= REPEAT; ++i) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> sm (3*KOFF, cgh);
       cgh.parallel_for<class eval>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -108,7 +109,7 @@ int main(int argc, char **argv){
                   d_u1, d_u2,
                   sm.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
     std::swap(d_u1, d_u2);
   }
 
@@ -151,7 +152,8 @@ int main(int argc, char **argv){
   free(h_u2);
   free(h_u3);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

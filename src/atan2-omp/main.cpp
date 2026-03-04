@@ -32,6 +32,7 @@ end;
 
 // float
 
+#include "../sycl_timer.hpp"
 template <int DEGREE>
 constexpr float approx_atan2f_P(float x);
 
@@ -476,5 +477,6 @@ int main(int argc, char* argv[])
   free(rf);
   free(ri);
   free(rs);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

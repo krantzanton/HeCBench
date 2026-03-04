@@ -14,6 +14,7 @@
 #include <sycl/sycl.hpp>
 #include "WKFUtils.h"
 
+#include "../sycl_timer.hpp"
 #define MAXATOMS 4000
 
 #define UNROLLX       8
@@ -165,7 +166,7 @@ int main(int argc, char** argv) {
 
     // RUN the kernel...
     wkf_timer_start(runtimer);
-    q.submit([&](auto &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](auto &h) {
       h.parallel_for(sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item) {
         unsigned int xindex = item.get_group(2) * item.get_local_range(2) * UNROLLX + item.get_local_id(2);
         unsigned int yindex = item.get_group(1) * item.get_local_range(1) + item.get_local_id(1);
@@ -221,7 +222,7 @@ int main(int argc, char** argv) {
         doutput[outaddr+6*BLOCKSIZEX] += energyvalx7;
         doutput[outaddr+7*BLOCKSIZEX] += energyvalx8;
       });
-    }).wait();
+    }));
     wkf_timer_stop(runtimer);
     runtotal += wkf_timer_time(runtimer);
   }
@@ -264,5 +265,6 @@ int main(int argc, char** argv) {
   free(energy);
   sycl::free(doutput, q);
   sycl::free(datominfo, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

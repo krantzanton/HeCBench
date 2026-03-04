@@ -2,6 +2,7 @@
 #include <sycl/sycl.hpp>
 #include "nearestNeighbor.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[]) {
   std::vector<Record> records;
   float *recordDistances;
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]) {
       printf("%s --> Distance=%f\n",records[i].recString,records[i].distance);
     }
   free(recordDistances);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 void SyclFindNearestNeighbors(
@@ -79,7 +81,7 @@ void SyclFindNearestNeighbors(
 
   // measure the total kernel execution time
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class nn>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int gid = item.get_global_id(0);
         if (gid < numRecords) {
@@ -88,7 +90,7 @@ void SyclFindNearestNeighbors(
            (lat-latLong.lat)*(lat-latLong.lat)+(lng-latLong.lng)*(lng-latLong.lng));
         }
       });
-    });
+    }));
   }
 
   q.wait();

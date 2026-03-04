@@ -5,6 +5,7 @@
 #include "neuron_update.h"
 #include "neuron_update_host.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   if (argc != 3) {
@@ -103,5 +104,6 @@ int main(int argc, char* argv[])
   free(h_t);
   free(not_refract);
   free(h_not_refract);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

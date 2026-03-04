@@ -5,6 +5,7 @@
 #include "utils.hpp"
 #include "noise.hpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv) {
 
   NoiseParams params;
@@ -70,5 +71,6 @@ int main(int argc, char **argv) {
   sycl::free(d_gradientX, default_stream);
   sycl::free(d_gradientY, default_stream);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

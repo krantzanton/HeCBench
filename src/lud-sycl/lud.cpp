@@ -9,6 +9,7 @@
 #include <sycl/sycl.hpp>
 #include "common.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 16
 
 double gettime() {
@@ -132,18 +133,18 @@ int main ( int argc, char *argv[] )
 
     offset = i;  // add the offset
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <float, 1> shadow (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       cgh.parallel_for<class diagonal>(
         sycl::nd_range<1>(global_work1, local_work1), [=] (sycl::nd_item<1> item) {
         #include "kernel_lud_diagonal.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     sycl::range<1> global_work2 (BLOCK_SIZE * 2 * ((matrix_dim-i)/BLOCK_SIZE-1));
     sycl::range<1> local_work2 (BLOCK_SIZE * 2);
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <float, 1> dia (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       sycl::local_accessor <float, 1> peri_row (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       sycl::local_accessor <float, 1> peri_col (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
@@ -151,19 +152,19 @@ int main ( int argc, char *argv[] )
         sycl::nd_range<1>(global_work2, local_work2), [=] (sycl::nd_item<1> item) {
         #include "kernel_lud_perimeter.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
     sycl::range<2> global_work3(BLOCK_SIZE * ((matrix_dim-i)/BLOCK_SIZE-1), BLOCK_SIZE * ((matrix_dim-i)/BLOCK_SIZE-1));
     sycl::range<2> local_work3(BLOCK_SIZE, BLOCK_SIZE);
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k3 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <float, 1> peri_row (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       sycl::local_accessor <float, 1> peri_col (sycl::range<1>(BLOCK_SIZE * BLOCK_SIZE), cgh);
       cgh.parallel_for<class internal>(
         sycl::nd_range<2>(global_work3, local_work3) , [=] (sycl::nd_item<2> item) {
         #include "kernel_lud_internal.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
   } // for
 
   offset = i;  // add the offset
@@ -197,4 +198,6 @@ int main ( int argc, char *argv[] )
 
   free(m);
   sycl::free(d_m, q);
+
+  SYCL_TIMER_DUMP();
 }

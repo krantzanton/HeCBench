@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "ecdh.h"
 
+#include "../sycl_timer.hpp"
 #define P_x 5
 #define P_y 1
 #define MODULUS 17
@@ -65,5 +66,6 @@ int main(int argc, char **argv)
   free(pk_slow_y);
   free(pk_fast_x);
   free(pk_fast_y);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

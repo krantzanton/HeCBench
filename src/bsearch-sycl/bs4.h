@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 template <typename T>
 class BS4;
 
@@ -16,7 +17,7 @@ void bs4 (sycl::queue &q,
   q.wait();
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor<size_t, 1> k (sycl::range<1>(1), cgh);
       cgh.parallel_for<class BS4<T>>(ndr, [=](sycl::nd_item<1> item) {
          size_t i = item.get_global_id(0);
@@ -42,7 +43,7 @@ void bs4 (sycl::queue &q,
          }
          d_r[i] = idx;
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();

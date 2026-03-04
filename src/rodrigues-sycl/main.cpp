@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using float3 = sycl::float3;
 using float4 = sycl::float4;
 
@@ -117,11 +118,11 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rr>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         rotate(item, n, angle, w, d);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -133,12 +134,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rr2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         rotate2(item, n, angle, w, d2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -150,5 +151,6 @@ int main(int argc, char* argv[])
   sycl::free(d2, q);
   free(h);
   free(h2);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

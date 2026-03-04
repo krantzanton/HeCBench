@@ -27,6 +27,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <typename T>
 class overlay;
 
@@ -84,12 +85,12 @@ int DetectionOverlay(
     const sycl::range<2> lws (8, 8);
     const sycl::range<2> gws ((boxHeight+7)/8*8, (boxWidth+7)/8*8);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class overlay<T>>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         DetectionOverlayBox<T>(item, input, output,
           width, height, boxLeft, boxTop, boxWidth, boxHeight, colors);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -169,5 +170,6 @@ int main(int argc, char* argv[]) {
   free(output);
   free(ref_output);
   free(detections);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

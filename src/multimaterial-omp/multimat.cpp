@@ -37,6 +37,7 @@
 #include <string.h>
 #include <algorithm>
 #include <chrono>
+#include "../sycl_timer.hpp"
 #ifdef KNL
 #include <hbwmalloc.h>
 #else
@@ -738,5 +739,6 @@ end:
   hbw_free(ccc.nextfrac); hbw_free(frac2cell); hbw_free(ccc.matids);
   hbw_free(ccc.Vf_compact_list); hbw_free(ccc.rho_compact_list);
   hbw_free(ccc.t_compact_list); hbw_free(ccc.p_compact_list);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

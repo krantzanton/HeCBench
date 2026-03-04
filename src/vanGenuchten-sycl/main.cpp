@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void vanGenuchten(
   const double *__restrict__ Ksat,
   const double *__restrict__ psi,
@@ -112,11 +113,11 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++)
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         vanGenuchten(d_Ksat, d_psi, d_C, d_theta, d_K, size, item);
       });
-    });
+    }));
 
   q.wait();
 
@@ -156,5 +157,6 @@ int main(int argc, char* argv[])
   delete[] theta_ref;
   delete[] K_ref;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

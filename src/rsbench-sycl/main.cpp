@@ -1,5 +1,6 @@
 #include "rsbench.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char * argv[])
 {
 	// =====================================================================
@@ -84,5 +85,6 @@ int main(int argc, char * argv[])
 
 	border_print();
 
-	return is_invalid;
+	SYCL_TIMER_DUMP();
+return is_invalid;
 }

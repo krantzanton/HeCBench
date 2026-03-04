@@ -6,6 +6,7 @@
 #include "tensorAccessor.h"
 
 // A demo of packed tensor accessors in Pytorch
+#include "../sycl_timer.hpp"
 void tensor_packed_accessor_kernel (
     sycl::nd_item<1> &item,
     PackedTensorAccessor64<float, 1, RestrictPtrTraits> r,
@@ -111,30 +112,30 @@ int main(int argc, char* argv[])
 
   printf("Warmup..\n");
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class packed_warmup>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tensor_packed_accessor_kernel(item, r_acc, m_acc, v_acc);
       });
-    });
-    q.submit([&] (sycl::handler &cgh) {
+    }));
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class raw_warmup>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         raw_accessor_kernel(item, nrow, ncol, d_r, d_m, d_v);
       });
-    });
+    }));
   }
 
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class raw>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         raw_accessor_kernel(item, nrow, ncol, d_r, d_m, d_v);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -146,12 +147,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class packed>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tensor_packed_accessor_kernel(item, r_acc, m_acc, v_acc);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -182,5 +183,6 @@ int main(int argc, char* argv[])
   free(r);
   free(r_ref);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 #include "reference.h"
 
@@ -252,5 +253,6 @@ int main(int argc, char* argv[])
   printf("\nFP32 atomic add\n");
   atomicPerf<float>(n, len, repeat); 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

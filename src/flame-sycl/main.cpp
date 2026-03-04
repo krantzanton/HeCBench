@@ -27,6 +27,7 @@
 #include <sycl/sycl.hpp>
 #include "flame.hpp"
 
+#include "../sycl_timer.hpp"
 #define VARPARM(a,b) const_mem_params.variation_parameters[a][b]
 #define FUNC_COLOR(a) const_mem_params.function_colors[a]
 #define FUNC_WEIGHT(a) function_weights[a]
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
     sycl::range<1> gws (NUM_THREADS);
     sycl::range<1> lws (THREADS_PER_BLOCK);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class init>(
          sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
          kernel_initialize (short_points,
@@ -182,12 +183,12 @@ int main(int argc, char **argv)
                             const_mem_params, 
                             item);
       });
-    }).wait();
+    }));
 
     perm_pos++;
 
     for(int i = 0; i < NUM_ITERATIONS; i++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class iterate>(
            sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
            kernel_iterate (short_points,
@@ -198,12 +199,12 @@ int main(int argc, char **argv)
                            const_mem_params,
                            item);
         });
-      }).wait();
+      }));
       perm_pos++;
       perm_pos %= NUM_PERMUTATIONS;
     }
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class generate>(
          sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
          kernel_generate_points (vertices,
@@ -215,7 +216,7 @@ int main(int argc, char **argv)
                                  const_mem_params,
                                  item);
       });
-    }).wait();
+    }));
     perm_pos++;
     perm_pos += NUM_POINTS_PER_THREAD - 1;
     perm_pos %= NUM_PERMUTATIONS;
@@ -247,5 +248,6 @@ int main(int argc, char **argv)
   delete[] points_tmp;
   delete[] perm_data;
   delete[] to_sort;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

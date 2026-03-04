@@ -10,6 +10,7 @@
 /* Default Constructor for the GSimulation class which sets up the default
  * values for number of particles, number of integration steps, time steo and
  * sample frequency */
+#include "../sycl_timer.hpp"
 GSimulation::GSimulation() {
   std::cout << "==============================="
             << "\n";
@@ -124,7 +125,7 @@ void GSimulation::Start() {
 
     // Submitting first kernel to device which computes acceleration of all
     // particles
-    q.submit([&](sycl::handler& h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& h) {
       h.parallel_for<class compute_acceleration>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -157,9 +158,9 @@ void GSimulation::Start() {
         pi.acc[2] = acc2;
         p[i] = pi;
       });
-    });
+    }));
     // Second kernel updates the velocity and position for all particles
-    q.submit([&](sycl::handler& h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& h) {
       h.parallel_for<class update_velocity_position>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         auto i = item.get_global_id(0);
@@ -185,15 +186,15 @@ void GSimulation::Start() {
 
         p[i] = pi;
       });
-    });
+    }));
     /* Third kernel accumulates the energy of this Nbody system
      * Reduction operation can be done using reducer interface in SYCL 2020
      */
-    q.submit([&](sycl::handler& h) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler& h) {
       h.single_task<class accumulate_energy>([=]() {
         for (int i = 1; i < n; i++) e[0] += e[i];
       });
-    });
+    }));
 
     q.wait();
     double elapsed_seconds = ts0.Elapsed();

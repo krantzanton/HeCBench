@@ -118,6 +118,7 @@
 #include <iomanip>
 #include <vector>
 #include <omp.h>
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // to avoid integer overflow, n should not exceed this constant
@@ -492,5 +493,6 @@ int main(int argc, char **argv) {
   //run_gpu<24>(known_results);
   //run_gpu<27>(known_results);
   //run_gpu<28>(known_results);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

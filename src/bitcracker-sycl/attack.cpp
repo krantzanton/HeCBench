@@ -41,6 +41,7 @@
 #include "bitcracker.h"
 #include "aes.h"
 
+#include "../sycl_timer.hpp"
 inline unsigned int __byte_perm(unsigned int a, unsigned int b,
                                 unsigned int s) {
   unsigned int res;
@@ -1025,7 +1026,7 @@ void attack(
       // launch kernel
       unsigned int wg_size  = 256; // wg_size tuned to 256
       unsigned int in_range = ((num_read_pswd + wg_size -1) / wg_size) * wg_size;
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
           cgh.parallel_for(sycl::nd_range<1>(in_range, wg_size),
               [=](sycl::nd_item<1> item) {
               decrypt_vmk_with_mac(
@@ -1053,7 +1054,7 @@ void attack(
                   item);
               }
           );
-      }).wait();
+      }));
 
       auto end = std::chrono::steady_clock::now();
       total_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

@@ -13,6 +13,7 @@
 #include <sycl/sycl.hpp>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 void gate(sycl::nd_item<1> &item, double* __restrict m_gate, 
           const long nCells, const double* __restrict Vm) 
 {
@@ -94,12 +95,12 @@ int main(int argc, char* argv[])
       kernel_starttime = secs_elapsed();
     }
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class mgate>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         gate(item, d_m_gate, nCells, d_Vm);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -126,5 +127,6 @@ int main(int argc, char* argv[])
   if (m_gate != NULL) free(m_gate);
   if (m_gate_h != NULL) free(m_gate_h);
   if (Vm != NULL) free(Vm);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

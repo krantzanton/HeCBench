@@ -20,6 +20,7 @@
 
 
 // halo width along one direction when advancing to the next iteration
+#include "../sycl_timer.hpp"
 #define HALO     1
 #define STR_SIZE 256
 #define DEVICE   0
@@ -57,7 +58,8 @@ int main(int argc, char** argv)
   }
   else
   {
-    printf("Usage: %s <column length> <row length> <pyramid_height>\n", argv[0]);
+    printf("Usage: %s <column length> <row length> <pyramid_height>\n", argv[0]);
+
     exit(0);
   }
 
@@ -136,7 +138,7 @@ int main(int argc, char** argv)
     // Calculate this for the kernel argument...
     int iteration = MIN(pyramid_height, rows-t-1);
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       sycl::local_accessor <int, 1> prev (lws, cgh);
       sycl::local_accessor <int, 1> result (lws, cgh);
       // Set the kernel arguments.
@@ -144,7 +146,7 @@ int main(int argc, char** argv)
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           #include "kernel.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     int* temp = d_gpuResult;
     d_gpuResult = d_gpuSrc;
@@ -185,5 +187,6 @@ int main(int argc, char** argv)
   delete[] result;
   free(outputBuffer);
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

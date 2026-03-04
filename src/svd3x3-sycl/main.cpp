@@ -10,6 +10,7 @@
 
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 void runDevice(float* input, float* output, int n, int repeat)
 {
 #ifdef USE_GPU
@@ -30,12 +31,12 @@ void runDevice(float* input, float* output, int n, int repeat)
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class svd3x3_soa>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         svd3_SOA(d_input, d_answer, n, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -125,5 +126,6 @@ int main(int argc, char* argv[])
   free(input);
   free(result);
   free(result_h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

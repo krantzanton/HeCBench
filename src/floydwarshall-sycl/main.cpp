@@ -27,6 +27,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define MAXDISTANCE    (200)
 
 /**
@@ -233,7 +234,7 @@ int main(int argc, char** argv) {
 
     for(unsigned int k = 0; k < numPasses; k++)
     {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class path_distance>(
           sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           int xValue = item.get_global_id(1);
@@ -249,7 +250,7 @@ int main(int argc, char** argv) {
               pathBuffer[yValue * numNodes + xValue] = k;
           }
         });
-      });
+      }));
     }
 
     q.wait();
@@ -294,5 +295,6 @@ int main(int argc, char** argv) {
   free(pathMatrix);
   free(verificationPathDistanceMatrix);
   free(verificationPathMatrix);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

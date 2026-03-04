@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void cube_select(sycl::nd_item<1> &item, int b, int n, int radius, const int* xyz, int* idx_out) {
   int batch_idx = item.get_group(0);
   xyz += batch_idx * n * 3;
@@ -180,12 +181,12 @@ int main(int argc, char* argv[])
   q.wait();
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class select>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cube_select(item, b, n, radius, d_xyz, d_out); 
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -199,12 +200,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class select2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cube_select_two(item, b, n, radius, d_xyz, d_out2); 
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -218,12 +219,12 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class select4>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cube_select_four(item, b, n, radius, d_xyz, d_out4); 
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -247,5 +248,6 @@ int main(int argc, char* argv[])
   sycl::free(d_out, q);
   sycl::free(d_out2, q);
   sycl::free(d_out4, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

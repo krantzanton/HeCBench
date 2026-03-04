@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define idx(i,j)   (i)*x_points+(j)
 
 int main(int argc, char* argv[])
@@ -101,7 +102,7 @@ int main(int argc, char* argv[])
 
   for(int itr = 0; itr < num_itrs; itr++) {
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class core>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         int i = item.get_global_id(0) + 1;
@@ -120,10 +121,10 @@ int main(int argc, char* argv[])
             (del_t/del_y)*d_v[idx(i,j)] * (d_v[idx(i,j)] - d_v[idx(i-1,j)]);
         }
       });
-    });
+    }));
 
     // Boundary conditions
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bound_h>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -134,9 +135,9 @@ int main(int argc, char* argv[])
           d_v_new[idx(y_points-1,i)] = 1.0;
         }
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bound_v>(
         sycl::nd_range<1>(gws3, lws3), [=] (sycl::nd_item<1> item) {
         int j = item.get_global_id(0);
@@ -147,10 +148,10 @@ int main(int argc, char* argv[])
           d_v_new[idx(j,x_points-1)] = 1.0;
         }
       });
-    });
+    }));
 
     // Updating older values to newer ones
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class update>(
         sycl::nd_range<1>(gws4, lws4), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -159,7 +160,7 @@ int main(int argc, char* argv[])
           d_v[i] = d_v_new[i];
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -252,5 +253,6 @@ int main(int argc, char* argv[])
   sycl::free(d_u_new, q);
   sycl::free(d_v_new, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 // measure cost of additions without atomics
@@ -71,12 +72,12 @@ void atomicCost (int length, int size, int repeat)
   auto start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class noAtomicKernel<T>>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         wiAtomicOnGlobalMem<T>(d_result_wi, size, item);
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -88,12 +89,12 @@ void atomicCost (int length, int size, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class atomicKernel<T>>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         woAtomicOnGlobalMem<T>(d_result_wo, size, item);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -133,5 +134,6 @@ int main(int argc, char* argv[])
   printf("\nFP32 atomic add\n");
   atomicCost<float>(length, nelems, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

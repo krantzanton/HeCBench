@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef WITH_FULL_W_MATRIX
 #define R_W_MATRICES_SMEM_SLOTS 15
 #else
@@ -1002,7 +1003,7 @@ void do_run(sycl::queue &q,
   sycl::range<1> gws_gen_paths (grid_dim * NUM_THREADS_PER_BLOCK0);
   sycl::range<1> lws_gen_paths (NUM_THREADS_PER_BLOCK0);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class generate_paths<Payoff>>(
       sycl::nd_range<1>(gws_gen_paths, lws_gen_paths), [=] (sycl::nd_item<1> item) {
       generate_paths_kernel<NUM_THREADS_PER_BLOCK0>(
@@ -1017,7 +1018,7 @@ void do_run(sycl::queue &q,
         d_samples,
         d_paths);
     });
-  });
+  }));
 
   // Reset the all_out_of_the_money array.
   q.memset(d_all_out_of_the_money, 0, num_timesteps*sizeof(int));
@@ -1027,7 +1028,7 @@ void do_run(sycl::queue &q,
   sycl::range<1> gws_prepare_svd ((num_timesteps-1) * NUM_THREADS_PER_BLOCK1);
   sycl::range<1> lws_prepare_svd (NUM_THREADS_PER_BLOCK1);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<int, 1> scan_input(sycl::range<1>(NUM_THREADS_PER_BLOCK1), cgh);
     sycl::local_accessor<int, 1> scan_output(sycl::range<1>(1+NUM_THREADS_PER_BLOCK1), cgh);
     sycl::local_accessor<sycl::double4, 0> lsums (cgh);
@@ -1048,7 +1049,7 @@ void do_run(sycl::queue &q,
           d_all_out_of_the_money,
           d_svds);
     });
-  });
+  }));
 
   // The constant to discount the payoffs.
   const double exp_min_r_dt = std::exp(-r*dt);
@@ -1073,7 +1074,7 @@ void do_run(sycl::queue &q,
     // Compute beta (two kernels) for that timestep.
     sycl::range<1> gws_partial_beta (NUM_THREADS_PER_BLOCK2 * NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_partial_beta (NUM_THREADS_PER_BLOCK2);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<sycl::double3, 0> lsums (cgh);
       sycl::local_accessor<double, 1> shared_svds (sycl::range<1>(R_W_MATRICES_SMEM_SLOTS), cgh);
       cgh.parallel_for<class partial_beta<Payoff>>(
@@ -1090,12 +1091,12 @@ void do_run(sycl::queue &q,
           d_all_out_of_the_money + timestep,
           d_temp_storage);
       });
-    });
+    }));
 
     // Compute beta (two kernels) for that timestep.
     sycl::range<1> gws_final_beta (NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_final_beta (NUM_THREADS_PER_BLOCK2);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<sycl::double3, 0> lsums (cgh);
       cgh.parallel_for<class final_beta<Payoff>>(
         sycl::nd_range<1>(gws_final_beta, lws_final_beta), [=] (sycl::nd_item<1> item) {
@@ -1105,11 +1106,11 @@ void do_run(sycl::queue &q,
           d_all_out_of_the_money + timestep,
           d_temp_storage);
       });
-    });
+    }));
 
     sycl::range<1> gws_cashflow (update_cashflow_grid * NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_cashflow (NUM_THREADS_PER_BLOCK2);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class update_cashflow<Payoff>>(
         sycl::nd_range<1>(gws_cashflow, lws_cashflow), [=] (sycl::nd_item<1> item) {
         update_cashflow_kernel<NUM_THREADS_PER_BLOCK2>(
@@ -1122,7 +1123,7 @@ void do_run(sycl::queue &q,
           d_all_out_of_the_money + timestep,
           d_cashflows);
       });
-    });
+    }));
   }
 
   // Compute the final sum.
@@ -1131,7 +1132,7 @@ void do_run(sycl::queue &q,
 
   sycl::range<1> gws_partial_sum (grid_dim * NUM_THREADS_PER_BLOCK4);
   sycl::range<1> lws_partial_sum (NUM_THREADS_PER_BLOCK4);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<double, 0> lsum (cgh);
     cgh.parallel_for<class partial_sums<Payoff>>(
       sycl::nd_range<1>(gws_partial_sum, lws_partial_sum), [=] (sycl::nd_item<1> item) {
@@ -1142,11 +1143,11 @@ void do_run(sycl::queue &q,
         d_cashflows,
         d_temp_storage);
     });
-  });
+  }));
 
   sycl::range<1> gws_final_sum (NUM_THREADS_PER_BLOCK4);
   sycl::range<1> lws_final_sum (NUM_THREADS_PER_BLOCK4);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<double, 0> lsum (cgh);
     cgh.parallel_for<class final_sums<Payoff>>(
       sycl::nd_range<1>(gws_final_sum, lws_final_sum), [=] (sycl::nd_item<1> item) {
@@ -1158,7 +1159,7 @@ void do_run(sycl::queue &q,
         lsum,
         d_temp_storage);
     });
-  });
+  }));
 
   // Copy the result to the host.
   q.memcpy(h_price, d_temp_storage, sizeof(double)).wait();
@@ -1401,5 +1402,6 @@ int main(int argc, char **argv)
   sycl::free(d_paths, q);
   sycl::free(d_samples, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

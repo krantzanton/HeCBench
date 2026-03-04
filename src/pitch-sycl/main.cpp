@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 float sigmoid (float x) {
   return (1.f / (1.f + sycl::exp(-x)));
 }
@@ -65,20 +66,20 @@ void malloc2D (sycl::queue &q, int repeat, int width, int height) {
 
   char* devPitchedPtr = (char*) sycl::malloc_device(pitch * height, q);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       parallelPitched2DAccess(item, devPitchedPtr, pitch, width, height);
     });
-  }).wait();
+  }));
 
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         parallelPitched2DAccess(item, devPitchedPtr, pitch, width, height);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -87,20 +88,20 @@ void malloc2D (sycl::queue &q, int repeat, int width, int height) {
 
   float* devPtr = sycl::malloc_device<float>(width * height, q);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       parallelSimple2DAccess(item, devPtr, width, height);
     });
-  }).wait();
+  }));
 
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         parallelSimple2DAccess(item, devPtr, width, height);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -125,20 +126,20 @@ void malloc3D (sycl::queue &q, int repeat, int width, int height, int depth) {
 
   char* devPitchedPtr = (char*) sycl::malloc_device(pitch * height * depth, q);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       parallelPitched3DAccess(item, devPitchedPtr, pitch, width, height, depth);
     });
-  }).wait();
+  }));
 
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         parallelPitched3DAccess(item, devPitchedPtr, pitch, width, height, depth);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -147,20 +148,20 @@ void malloc3D (sycl::queue &q, int repeat, int width, int height, int depth) {
 
   float *devPtr = sycl::malloc_device<float>(width * height * depth, q);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
       parallelSimple3DAccess(item, devPtr, width, height, depth);
     });
-  }).wait();
+  }));
 
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         parallelSimple3DAccess(item, devPtr, width, height, depth);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -201,5 +202,6 @@ int main(int argc, char* argv[])
     for (int j = 0; j < 2; j++)
       malloc3D(q, repeat, w[i], h[i], d[j]);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

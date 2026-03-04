@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void MRCGradient (
     sycl::nd_item<1> &item,
     const int N, const int* Y, const float* X1, const float* X2, const float* dOutput,
@@ -95,27 +96,27 @@ int main(int argc, char* argv[])
 
   // warmup
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         MRCGradient(item, length, d_Y, d_X1, d_X2, d_O, m, d_dX1, d_dX2);
       });
-    });
-    q.submit([&] (sycl::handler &cgh) {
+    }));
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         MRCGradient2(item, length, d_Y, d_X1, d_X2, d_O, m, d_dX1, d_dX2);
       });
-    });
+    }));
   }
 
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         MRCGradient(item, length, d_Y, d_X1, d_X2, d_O, m, d_dX1, d_dX2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -126,11 +127,11 @@ int main(int argc, char* argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         MRCGradient2(item, length, d_Y, d_X1, d_X2, d_O, m, d_dX1, d_dX2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -167,5 +168,6 @@ int main(int argc, char* argv[])
   free(h_dX1);
   free(h_dX2);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

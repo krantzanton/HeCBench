@@ -3,6 +3,7 @@
 #include "OptionParser.h"
 #include "Utility.h"
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // Forward Declarations
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
         ret = 1;
     }
 
-    return ret;
+    SYCL_TIMER_DUMP();
+return ret;
 }
 

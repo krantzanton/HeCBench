@@ -19,6 +19,7 @@
 
 #include <string.h>    // memcpy
 #include "vector.h"
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 #ifndef CPU_ONLY
@@ -70,14 +71,14 @@ Vector::Vector(int n)
   sycl::range<1> gws (((n - 1) / BLOCK_SIZE + 1) * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     auto real_part_t = real_part;
     auto imag_part_t = imag_part;
     cgh.parallel_for<class reset>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gpu_set_zero(item, n, real_part_t, imag_part_t);
     });
-  });
+  }));
 #else
   initialize_cpu(n);
   cpu_set_zero(n, real_part, imag_part);
@@ -120,7 +121,7 @@ Vector::Vector(Vector& original)
   sycl::range<1> gws (((size - 1) / BLOCK_SIZE + 1) * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     auto real_part_dst = real_part;
     auto imag_part_dst = imag_part;
     auto real_part_src = original.real_part;
@@ -130,7 +131,7 @@ Vector::Vector(Vector& original)
       gpu_copy_state(item, size, real_part_src, imag_part_src,
                      real_part_dst, imag_part_dst);
     });
-  });
+  }));
 #else
   initialize_cpu(original.n);
   cpu_copy_state(n, original.real_part, original.imag_part, real_part, imag_part);
@@ -182,7 +183,7 @@ void Vector::add(Vector& other)
   sycl::range<1> gws (((size - 1) / BLOCK_SIZE + 1) * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     auto real_part_dst = real_part;
     auto imag_part_dst = imag_part;
     auto real_part_src = other.real_part;
@@ -194,7 +195,7 @@ void Vector::add(Vector& other)
         size, real_part_src, imag_part_src,
         real_part_dst, imag_part_dst);
     });
-  });
+  }));
 #else
   cpu_add_state(n, other.real_part, other.imag_part, real_part, imag_part);
 #endif
@@ -207,7 +208,7 @@ void Vector::copy(Vector& other)
   sycl::range<1> gws (((size - 1) / BLOCK_SIZE + 1) * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     auto real_part_dst = real_part;
     auto imag_part_dst = imag_part;
     auto real_part_src = other.real_part;
@@ -217,7 +218,7 @@ void Vector::copy(Vector& other)
       gpu_copy_state(item, size, real_part_src, imag_part_src,
                      real_part_dst, imag_part_dst);
     });
-  });
+  }));
 #else
   cpu_copy_state(n, other.real_part, other.imag_part, real_part, imag_part);
 #endif
@@ -265,7 +266,7 @@ void Vector::apply_sz(Vector& other)
   sycl::range<1> gws (((size - 1) / BLOCK_SIZE + 1) * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     auto real_part_dst = real_part;
     auto imag_part_dst = imag_part;
     auto real_part_src = other.real_part;
@@ -275,7 +276,7 @@ void Vector::apply_sz(Vector& other)
       gpu_apply_sz(item, size, real_part_src, imag_part_src,
                      real_part_dst, imag_part_dst);
     });
-  });
+  }));
 #else
   cpu_apply_sz(n, other.real_part, other.imag_part, real_part, imag_part);
 #endif
@@ -425,7 +426,7 @@ void Vector::inner_product_1(int number_of_atoms, Vector& other, Vector& target,
 #ifndef CPU_ONLY
   sycl::range<1> gws (grid_size * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     auto real_part_t = real_part;
     auto imag_part_t = imag_part;
     auto other_real_part = other.real_part;
@@ -449,7 +450,7 @@ void Vector::inner_product_1(int number_of_atoms, Vector& other, Vector& target,
        s_data_imag.get_multi_ptr<sycl::access::decorated::no>().get(),
        offset);
     });
-  });
+  }));
 #else
   cpu_find_inner_product_1(
     grid_size, number_of_atoms, real_part, imag_part, other.real_part, other.imag_part,
@@ -545,7 +546,7 @@ void Vector::inner_product_2(int number_of_atoms, int number_of_moments, Vector&
   sycl::range<1> gws (number_of_moments * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     auto real_part_dst = target.real_part;
     auto imag_part_dst = target.imag_part;
     auto real_part_src = real_part;
@@ -564,7 +565,7 @@ void Vector::inner_product_2(int number_of_atoms, int number_of_moments, Vector&
         s_data_real.get_multi_ptr<sycl::access::decorated::no>().get(),
         s_data_imag.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 #else
   int grid_size = (number_of_atoms - 1) / BLOCK_SIZE + 1;
   cpu_find_inner_product_2(

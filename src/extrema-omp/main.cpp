@@ -17,6 +17,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #pragma omp declare target
 inline void clip_plus( const bool &clip, const int &n, int &plus ) {
   if ( plus >= n ) plus = clip ? n - 1 : plus - n;
@@ -198,5 +199,6 @@ int main(int argc, char* argv[]) {
   printf("Total kernel execution time: %lf (s)", time * 1e-9);
   printf("\n-----------------------------------------------\n");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

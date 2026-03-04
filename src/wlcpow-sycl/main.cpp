@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 void bond_wlcpowallvisc(
     r64 *__restrict force_x, r64 *__restrict force_y,
     r64 *__restrict force_z, const float4 *__restrict coord_merged,
@@ -265,7 +266,7 @@ int main(int argc, char *argv[]) {
 
   // note the outputs are not reset for each run
   for (i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<r32, 1> sm (sycl::range<1>(sm_size), cgh);
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         bond_wlcpowallvisc(dev_force_x, dev_force_y, dev_force_z,
@@ -275,7 +276,7 @@ int main(int argc, char *argv[]) {
                            period, padding, n_type, n, item,
                            sm.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
   }
 
   q.wait();
@@ -344,5 +345,6 @@ int main(int argc, char *argv[]) {
   sycl::free(dev_gamt, q);
   sycl::free(dev_sigc, q);
   sycl::free(dev_sigt, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

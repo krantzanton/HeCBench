@@ -10,6 +10,7 @@
 #include <omp.h>
 #include "utils.hpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 5) {
     printf("Usage: %s <image width> <image height> <block size> <repeat>\n", argv[0]);
@@ -93,5 +94,6 @@ int main(int argc, char* argv[]) {
 #ifdef DEBUG
   image.write("fractal_gamma_parallel.bmp");
 #endif
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

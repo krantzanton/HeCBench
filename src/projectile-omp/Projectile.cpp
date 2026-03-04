@@ -10,6 +10,7 @@
 #include "Projectile.hpp"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 static const int num_elements = 10000000;
 const int BLOCK_SIZE = 256;
 
@@ -82,5 +83,6 @@ int main(int argc, char* argv[]) {
     }
   }
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

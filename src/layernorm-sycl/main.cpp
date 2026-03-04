@@ -8,6 +8,7 @@ Kernels for layernorm forward pass.
 #include "common.hpp"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void layernorm_forward_kernel1(sycl::nd_item<1> id, float* __restrict__ out, float* __restrict__ mean, float* __restrict__ rstd,
                                const float*  __restrict__ inp, const float*  __restrict__ weight,
                                const float* __restrict__ bias, int N, int C) {
@@ -110,9 +111,9 @@ void layernorm_forward1(sycl::queue &q, float* out, float* mean, float* rstd,
     assert(block_size % 32 == 0);
     const int N = B * T;
     const int grid_size = ceil_div(N * 32, block_size);
-    q.parallel_for(sycl::nd_range<1>(grid_size * block_size, block_size), [=](sycl::nd_item<1> id) {
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(grid_size * block_size, block_size), [=](sycl::nd_item<1> id) {
         layernorm_forward_kernel1(id, out, mean, rstd, inp, weight, bias, N, C);
-    }).wait();
+    }));
 }
 
 void layernorm_forward2(sycl::queue &q, float* out, float* mean, float* rstd,
@@ -122,9 +123,9 @@ void layernorm_forward2(sycl::queue &q, float* out, float* mean, float* rstd,
     assert(block_size % 32 == 0);
     const int N = B * T;
     const int grid_size = ceil_div(N * 32, block_size);
-    q.parallel_for(sycl::nd_range<1>(grid_size * block_size, block_size), [=](sycl::nd_item<1> id) {
+    SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(grid_size * block_size, block_size), [=](sycl::nd_item<1> id) {
         layernorm_forward_kernel2(id, out, mean, rstd, inp, weight, bias, N, C);
-    }).wait();
+    }));
 }
 
 // kernel version dispatch
@@ -238,5 +239,6 @@ int main(int argc, char** argv) {
     sycl::free(d_weight, q);
     sycl::free(d_bias, q);
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

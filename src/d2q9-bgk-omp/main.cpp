@@ -59,6 +59,7 @@
 #include <iostream>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define WARMUPS         1000
 #define NSPEEDS         9
 #define LOCALSIZEX      128
@@ -510,7 +511,8 @@ int main(int argc, char* argv[])
   free(tot_up);
   free(tot_cellsp);
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }
 
 float av_velocity(const t_param params, t_speed* cells, int* obstacles)

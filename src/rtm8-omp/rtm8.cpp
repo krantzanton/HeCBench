@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <vector>
 
+#include "../sycl_timer.hpp"
 #define nx 680
 #define ny 134
 #define nz 450
@@ -205,5 +206,6 @@ int main(int argc, char *argv[]) {
   free(image_cpu);
   free(image_gpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace sycl;
 
 #include "util.h"
@@ -60,7 +61,7 @@ int main(int argc, char* argv[])
   for (int i = 0; i < repeat; i++) {
     q.memset(d_output, 0, output_image_size);
 
-    q.submit([&] (handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (handler &cgh) {
       local_accessor<LDSPixelT, 1> apron(range<1>(apron_rows * apron_cols), cgh);
       cgh.parallel_for<class debayer>(
         nd_range<2>(gws, lws), [=] (nd_item<2> item) {
@@ -72,7 +73,7 @@ int main(int argc, char* argv[])
           d_output, output_image_pitch,
           bayer_pattern );
       });
-    });
+    }));
   }
 
   q.wait();
@@ -90,5 +91,6 @@ int main(int argc, char* argv[])
   free(output);
   free(d_input, q);
   free(d_output, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

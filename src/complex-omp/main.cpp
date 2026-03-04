@@ -5,6 +5,7 @@
 #include "complex.h"
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 bool check (const char *cs, int n)
 {
   bool ok = true;
@@ -68,5 +69,6 @@ int main(int argc, char* argv[]) {
 
   free(cs);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

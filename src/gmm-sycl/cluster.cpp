@@ -6,6 +6,7 @@
  * written by Mike Dinolfo 12/98
  * version 1.0
  */
+#include "../sycl_timer.hpp"
 void invert_cpu(float* data, int actualsize, float* log_determinant)  {
   int maxsize = actualsize;
   int n = actualsize;
@@ -381,7 +382,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
   // seed_clusters sets initial pi values, 
   // finds the means / covariances and copies it to all the clusters
   // seed_clusters_kernel<<< 1, NUM_THREADS_MSTEP >>>( d_fcs_data_by_event, d_clusters, num_dimensions, original_num_clusters, num_events);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> means(sycl::range<1>(NUM_DIMENSIONS), cgh);
     sycl::local_accessor<float, 0> avgvar(cgh);
     sycl::local_accessor<float, 0> total_variance(cgh);
@@ -465,13 +466,13 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
         }
       }
     });
-  });
+  }));
 
   // Computes the R matrix inverses, and the gaussian constant
   // constants_kernel<<<original_num_clusters, NUM_THREADS_MSTEP>>>(d_clusters,original_num_clusters,num_dimensions);
   sycl::range<1> constants_gws(original_num_clusters*NUM_THREADS_MSTEP);
   sycl::range<1> constants_lws(NUM_THREADS_MSTEP);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> matrix(sycl::range<1>(NUM_DIMENSIONS*NUM_DIMENSIONS), cgh);
     sycl::local_accessor<float, 0> determinant_arg(cgh);
     sycl::local_accessor<float, 0> sum(cgh);
@@ -490,7 +491,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
                         original_num_clusters, 
                         num_dimensions);
     });
-  });
+  }));
 
   // copy clusters from the device
   copyClusterFromDevice(q, &clusters, d_N, d_R, d_Rinv, d_pi, d_constant, d_avgvar, d_means, 
@@ -557,7 +558,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
   //  estep1<<<dim3(num_clusters,NUM_BLOCKS), NUM_THREADS_ESTEP>>>(d_fcs_data_by_dimension,d_clusters,num_dimensions,num_events);
     sycl::range<2> estep1_gws (NUM_BLOCKS, num_clusters*NUM_THREADS_ESTEP);
     sycl::range<2> estep1_lws (1, NUM_THREADS_ESTEP);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> means (sycl::range<1>(NUM_DIMENSIONS), cgh);
       sycl::local_accessor<float, 1> Rinv (sycl::range<1>(NUM_DIMENSIONS*NUM_DIMENSIONS), cgh);
       cgh.parallel_for<class init_estep1>(
@@ -575,12 +576,12 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
             num_dimensions, 
             num_events); 
       });
-    });
+    }));
 
     //  estep2<<<NUM_BLOCKS, NUM_THREADS_ESTEP>>>(d_fcs_data_by_dimension,d_clusters,num_dimensions,num_clusters,num_events,d_likelihoods);
     sycl::range<1> estep2_gws (NUM_BLOCKS*NUM_THREADS_ESTEP);
     sycl::range<1> estep2_lws (NUM_THREADS_ESTEP);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> total_likelihoods (sycl::range<1>(NUM_THREADS_ESTEP), cgh);
       cgh.parallel_for<class init_estep2>(
         sycl::nd_range<1>(estep2_gws, estep2_lws), [=] (sycl::nd_item<1> item) {
@@ -593,7 +594,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
             num_clusters, 
             num_events); 
        });
-    });
+    }));
 
     regroup_iterations++;
 
@@ -622,7 +623,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
       //mstep_N<<<num_clusters, NUM_THREADS_MSTEP>>>(d_clusters,num_dimensions,num_clusters,num_events);
     sycl::range<1> mStepN_gws (num_clusters*NUM_THREADS_MSTEP);
     sycl::range<1> mStepN_lws (NUM_THREADS_MSTEP);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> temp_sums (sycl::range<1>(NUM_THREADS_MSTEP), cgh);
       cgh.parallel_for<class mstepN>(
         sycl::nd_range<1>(mStepN_gws, mStepN_lws), [=] (sycl::nd_item<1> item) {
@@ -654,7 +655,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
           d_pi[c] = sum;
         }
       });
-    });
+    }));
  
     q.memcpy(clusters.N, d_N, sizeof(float)*num_clusters);
 
@@ -662,7 +663,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
     sycl::range<2> mstepMeans_gws (num_dimensions, num_clusters*NUM_THREADS_MSTEP);
     sycl::range<2> mstepMeans_lws (1, NUM_THREADS_MSTEP);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> temp_sum (sycl::range<1>(NUM_THREADS_MSTEP), cgh);
       cgh.parallel_for<class mstepMeans>(
         sycl::nd_range<2>(mstepMeans_gws, mstepMeans_lws), [=] (sycl::nd_item<2> item) {
@@ -690,7 +691,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
         sum = temp_sum[tid];
         if(tid == 0) d_means[c*num_dimensions+d] = sum;
       });
-    });
+    }));
 
 
     q.memcpy(clusters.means, d_means, sizeof(float)*num_clusters*num_dimensions).wait();
@@ -719,7 +720,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
                            (num_clusters+NUM_CLUSTERS_PER_BLOCK-1)/NUM_CLUSTERS_PER_BLOCK*NUM_THREADS_MSTEP); 
     sycl::range<2> cov2_lws (1, NUM_THREADS_MSTEP);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> means_row (sycl::range<1>(NUM_CLUSTERS_PER_BLOCK), cgh);
       sycl::local_accessor<float, 1> means_col (sycl::range<1>(NUM_CLUSTERS_PER_BLOCK), cgh);
       // 256 * 6
@@ -812,7 +813,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
           }
         }
       });
-    });
+    }));
 
     q.memcpy(clusters.R, d_R, sizeof(float)*num_clusters*num_dimensions*num_dimensions).wait();
 
@@ -845,7 +846,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
     // Inverts the R matrices, computes the constant, normalizes cluster probabilities
     // constants_kernel<<<num_clusters, NUM_THREADS_MSTEP>>>(d_clusters,num_clusters,num_dimensions);
     sycl::range<1> constants2_gws(num_clusters*NUM_THREADS_MSTEP);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> matrix(NUM_DIMENSIONS*NUM_DIMENSIONS, cgh);
       sycl::local_accessor<float, 0> determinant_arg(cgh);
       sycl::local_accessor<float, 0> sum(cgh);
@@ -864,7 +865,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
                           num_clusters, // original_num_clusters, 
                           num_dimensions);
       });
-    });
+    }));
 
     q.memcpy(clusters.constant, d_constant, sizeof(float)*num_clusters).wait();
 
@@ -875,7 +876,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
 
       // Compute new cluster membership probabilities for all the events
       // estep1<<<dim3(num_clusters,NUM_BLOCKS), NUM_THREADS_ESTEP>>>(d_fcs_data_by_dimension,d_clusters,num_dimensions,num_events);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> means (sycl::range<1>(NUM_DIMENSIONS), cgh);
       sycl::local_accessor<float, 1> Rinv (sycl::range<1>(NUM_DIMENSIONS*NUM_DIMENSIONS), cgh);
       cgh.parallel_for<class estep1>(
@@ -893,9 +894,9 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
             num_dimensions, 
             num_events); 
       });
-    });
+    }));
   //    estep2<<<NUM_BLOCKS, NUM_THREADS_ESTEP>>>(d_fcs_data_by_dimension,d_clusters,num_dimensions,num_clusters,num_events,d_likelihoods);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> total_likelihoods (sycl::range<1>(NUM_THREADS_ESTEP), cgh);
       cgh.parallel_for<class estep2>(
         sycl::nd_range<1>(estep2_gws, estep2_lws), [=] (sycl::nd_item<1> item) {
@@ -908,7 +909,7 @@ clusters_t* cluster(int original_num_clusters, int desired_num_clusters,
             num_clusters, 
             num_events); 
       });
-    });
+    }));
 
     regroup_iterations++;
 

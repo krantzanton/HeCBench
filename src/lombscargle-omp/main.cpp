@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <chrono>
 
+#include "../sycl_timer.hpp"
 void lombscargle_cpu( const int x_shape,
     const int freqs_shape,
     const float *__restrict x,
@@ -179,5 +180,6 @@ int main(int argc, char* argv[]) {
   free(f);
   free(p);
   free(p2);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

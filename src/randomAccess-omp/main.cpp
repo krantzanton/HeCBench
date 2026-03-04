@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef unsigned long long int u64Int;
 typedef long long int s64Int;
 
@@ -140,6 +141,7 @@ int main(int argc, char** argv) {
   else failure = 1;
 
   free( Table );
-  return failure;
+  SYCL_TIMER_DUMP();
+return failure;
 }
 

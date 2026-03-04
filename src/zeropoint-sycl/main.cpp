@@ -7,6 +7,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void zero_point (
     sycl::nd_item<1> &item,
     const float* x_min,
@@ -138,7 +139,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class zp>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         zero_point(
@@ -152,7 +153,7 @@ int main(int argc, char* argv[])
             d_scale,
             d_zp);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -186,5 +187,6 @@ int main(int argc, char* argv[])
   free(min);
   free(max);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

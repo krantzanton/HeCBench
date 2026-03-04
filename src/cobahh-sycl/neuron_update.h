@@ -1,6 +1,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 inline int _timestep(float t, float dt)
 {
   return (int)((t + 1e-3f*dt)/dt); 
@@ -94,7 +95,7 @@ void neurongroup_stateupdater (
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iteration; i++) {
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class nstep>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int _idx = item.get_global_id(0);
@@ -127,7 +128,7 @@ void neurongroup_stateupdater (
         d_gi[_idx] = _gi;
         d_not_refractory[_idx] = not_refractory;
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();

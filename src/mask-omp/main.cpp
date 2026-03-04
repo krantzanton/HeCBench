@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_THREADS 256
 
 #define KERNEL_LOOP(index, range) \
@@ -348,5 +349,6 @@ int main(int argc, char* argv[])
 
   eval_mask<int>(M, N, B, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

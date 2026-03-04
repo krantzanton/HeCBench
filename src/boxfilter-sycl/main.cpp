@@ -15,6 +15,7 @@
 #include <sycl/sycl.hpp>
 #include "shrUtils.h"
 
+#include "../sycl_timer.hpp"
 extern
 void BoxFilterHost( unsigned int* uiInputImage, unsigned int* uiTempImage, unsigned int* uiOutputImage,
                     int uiWidth, int uiHeight, int r, float fScale );
@@ -79,7 +80,7 @@ void BoxFilterGPU ( sycl::queue &q,
 
     for (int i = 0; i < iCycles; i++) {
       // Launch row kernel
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<sycl::uchar4, 1> uc4LocalData(
            sycl::range<1>(iRadiusAligned + uiNumOutputPix + iRadius), cgh);
         cgh.parallel_for<class row_kernel>(
@@ -124,10 +125,10 @@ void BoxFilterGPU ( sycl::queue &q,
               cmBufTmp[iGlobalOffset] = rgbaFloat4ToUint(f4Sum, fScale);
           }
         });
-      });
+      }));
 
       // Launch column kernel
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class col_kernel>(
           sycl::nd_range<1>(col_gws, col_lws), [=] (sycl::nd_item<1> item) {
           int globalPosX = item.get_global_id(0);
@@ -166,7 +167,7 @@ void BoxFilterGPU ( sycl::queue &q,
               uiOutputImage[y * uiWidth] = rgbaFloat4ToUint(f4Sum, fScale);
           }
         });
-     });
+     }));
    }
 
    q.wait();
@@ -267,5 +268,6 @@ int main(int argc, char** argv)
   free(uiTmp);
   free(uiDevOutput);
   free(uiHostOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

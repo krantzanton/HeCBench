@@ -11,6 +11,7 @@
 #include "Projectile.hpp"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 static const int num_elements = 10000000;
 const int BLOCK_SIZE = 256;
 
@@ -34,7 +35,7 @@ void GpuParallel(sycl::queue& q,
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler& h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& h) {
       h.parallel_for<class projectile>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -50,7 +51,7 @@ void GpuParallel(sycl::queue& q,
 
         bufout_vect[i].setRangeandTime(max_range, total_time, proj_angle, proj_vel, max_height);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -104,5 +105,6 @@ int main(int argc, char* argv[]) {
     }
   }
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

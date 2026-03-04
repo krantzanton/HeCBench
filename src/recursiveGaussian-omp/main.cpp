@@ -1,4 +1,5 @@
 
+#include "../sycl_timer.hpp"
 #define CLAMP_TO_EDGE 
 #define MAC
 
@@ -385,5 +386,6 @@ int main(int argc, char** argv)
   free(uiInput);
   free(uiTmp);
   free(uiOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

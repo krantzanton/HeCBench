@@ -5,6 +5,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define WIDTH        256
 #define HEIGHT       256
 #define NSUBSAMPLES  2
@@ -381,5 +382,6 @@ int main(int argc, char **argv)
   saveppm( "ao.ppm", WIDTH, HEIGHT, img );
   free( img );
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

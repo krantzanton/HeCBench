@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define min(x, y) ((x) < (y) ? (x) : (y))
 
 template <class T, std::size_t CHANNELS_PER_ITER>
@@ -200,5 +201,6 @@ int main(int argc, char* argv[]) {
   printf("\nBilinear resizing\n");
   resize_image<unsigned int>(in_width, in_height, out_width, out_height, num_channels, repeat, true);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

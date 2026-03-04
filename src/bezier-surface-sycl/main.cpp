@@ -42,6 +42,7 @@
 #include <sycl/sycl.hpp>
 
 
+#include "../sycl_timer.hpp"
 #if DOUBLE_PRECISION
 #define FLOAT double
 #else
@@ -248,7 +249,7 @@ void run(XYZ *in, int in_size_i, int in_size_j, int out_size_i, int out_size_j, 
   q.wait();
   auto kstart = std::chrono::steady_clock::now();
 
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class bs>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int i, j, ki, kj;
@@ -276,7 +277,7 @@ void run(XYZ *in, int in_size_i, int in_size_j, int out_size_i, int out_size_j, 
         d_out[i * out_size_j + j] = out;
       }
     });
-  });
+  }));
 
   q.wait();
   auto kend = std::chrono::steady_clock::now();
@@ -309,5 +310,6 @@ int main(int argc, char **argv) {
   run(h_in, p.in_size_i, p.in_size_j, p.out_size_i, p.out_size_j, p);
 
   free(h_in);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

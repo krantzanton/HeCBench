@@ -12,6 +12,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void reference(
     const   int *d_tisspoints,
     const float *d_gtt,
@@ -150,20 +151,20 @@ int main(int argc, char** argv) {
 
   // quick verification and warmup
   for (int i = 0; i < 2; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warmup>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tissue(item, d_tisspoints, d_gtt, d_gbartt, d_ct, d_ctprev, d_qt,
                nnt, nntDev, step, 1);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warmup2>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tissue(item, d_tisspoints, d_gtt, d_gbartt, d_ct, d_ctprev, d_qt,
                nnt, nntDev, step, 2);
       });
-    });
+    }));
   }
 
   for (int i = 0; i < 2; i++) {
@@ -188,21 +189,21 @@ int main(int argc, char** argv) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class timing>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tissue(item, d_tisspoints, d_gtt, d_gbartt, d_ct, d_ctprev, d_qt,
                nnt, nntDev, step, 1);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class timing2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         tissue(item, d_tisspoints, d_gtt, d_gbartt, d_ct, d_ctprev, d_qt,
                nnt, nntDev, step, 2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -224,5 +225,6 @@ int main(int argc, char** argv) {
   sycl::free(d_ctprev, q);
   sycl::free(d_qt, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

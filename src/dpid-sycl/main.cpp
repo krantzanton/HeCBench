@@ -13,6 +13,7 @@
 // SHARED
 //-------------------------------------------------------------------
 
+#include "../sycl_timer.hpp"
 double LCG_random_double(uint64_t * seed)
 {
   const uint64_t m = 9223372036854775808ULL; // 2^63
@@ -85,5 +86,6 @@ int main(int argc, char** argv) {
 
   free(hInput);
   free(hOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

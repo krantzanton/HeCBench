@@ -7,6 +7,7 @@
 */
 
 
+#include "../sycl_timer.hpp"
 #define C_a 1.387039845322148f //!< a = (2^0.5) * cos(    pi / 16);  Used in forward and inverse DCT.  
 #define C_b 1.306562964876377f //!< b = (2^0.5) * cos(    pi /  8);  Used in forward and inverse DCT.  
 #define C_c 1.175875602419359f //!< c = (2^0.5) * cos(3 * pi / 16);  Used in forward and inverse DCT.  
@@ -248,7 +249,7 @@ void run_DCT2D8x8(
   const sycl::range<2> lws,  
   const sycl::range<2> gws)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1>
       lmem(sycl::range<1>(KER2_BLOCK_HEIGHT * KER2_SMEMBLOCK_STRIDE), cgh);
     cgh.parallel_for<class dct>(
@@ -256,7 +257,7 @@ void run_DCT2D8x8(
       DCT2D8x8(item, lmem.get_multi_ptr<sycl::access::decorated::no>().get(),
                transformed_stacks, gathered_stacks, size);
     });
-  });
+  }));
 }
 
 void run_IDCT2D8x8(
@@ -267,7 +268,7 @@ void run_IDCT2D8x8(
   const sycl::range<2> lws,  
   const sycl::range<2> gws)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1>
       lmem(sycl::range<1>(KER2_BLOCK_HEIGHT * KER2_SMEMBLOCK_STRIDE), cgh);
     cgh.parallel_for<class idct>(
@@ -275,5 +276,5 @@ void run_IDCT2D8x8(
       IDCT2D8x8(item, lmem.get_multi_ptr<sycl::access::decorated::no>().get(),
                 gathered_stacks, transformed_stacks, size);
     });
-  });
+  }));
 }

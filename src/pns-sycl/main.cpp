@@ -41,6 +41,7 @@ T(r+3,c-1)-> P(r+3,c) -> T(r+3,c)->
 
 */
 
+#include "../sycl_timer.hpp"
 #define __syncthreads() item.barrier(sycl::access::fence_space::local_space)
 #include "rand_gen.cpp"
 #include "petri_kernel.cpp"
@@ -108,7 +109,8 @@ int main(int argc, char** argv)
   printf("mean_vars: %f    var_vars: %f\n", results[0], results[1]);
   printf("mean_maxs: %f    var_maxs: %f\n", results[2], results[3]);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 void compute_statistics()
@@ -169,7 +171,7 @@ void PetrinetOnDevice(long long &time)
     q.wait();
     auto start = get_time();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<uint32, 1> mt(sycl::range<1>(MERS_N), cgh);
       cgh.parallel_for<class pn_loop>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -181,7 +183,7 @@ void PetrinetOnDevice(long long &time)
           g_maxs,
           n, s, 5489*(i+1));
       });
-    }).wait();
+    }));
 
     auto end = get_time();
     time += end - start;
@@ -198,7 +200,7 @@ void PetrinetOnDevice(long long &time)
   q.wait();
   auto start = get_time();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<uint32, 1> mt(sycl::range<1>(MERS_N), cgh);
     cgh.parallel_for<class pn_final>(
       sycl::nd_range<1>(gws1, lws), [=] (sycl::nd_item<1> item) {
@@ -210,7 +212,7 @@ void PetrinetOnDevice(long long &time)
         g_maxs,
         n, s, 5489*(i+1));
     });
-  }).wait();
+  }));
 
   auto end = get_time();
   time += end - start;

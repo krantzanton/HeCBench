@@ -7,6 +7,7 @@
 #include <utility>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NTX 16
 #define NTY 16
 
@@ -132,10 +133,10 @@ int main(int argc, char *argv[]) {
   /* Fixed number of threads per block (in x- and y-direction), number
      of blocks per direction determined by dimensions Lx, Ly */
   for(i=0; i<niter; i++) {
-    q.parallel_for(
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         dev_lapl_iter(d_out, d_in, xdelta, xnorm, Lx, Ly, item);
-    });
+    }));
     std::swap(d_out, d_in);
   }
 
@@ -168,5 +169,6 @@ int main(int argc, char *argv[]) {
   free(h_out);
   free(h_in);
   free(d_res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

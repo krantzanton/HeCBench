@@ -8,6 +8,7 @@
 #include "benchmark.h"
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 void run_benchmark(const int repeat)
 {
   int i, j, cnt, val_ref, val_eff;
@@ -133,5 +134,6 @@ int main(int argc, char *argv[])
   set_nintegers();
   run_benchmark(repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -8,6 +8,7 @@
 // B spline smoothing kernel
 ////////////////////////////////////////////////////////////////////////////
 
+#include "../sycl_timer.hpp"
 double W(double3 p_pos, double3 q_pos, double h)
 {
   double r = sycl::sqrt((p_pos.x()-q_pos.x())*(p_pos.x()-q_pos.x())
@@ -368,7 +369,7 @@ int main(int argc, char *argv[])
 
   // Main simulation loop
   for(int n=0; n<params.number_steps; n++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class updatePressure>(
         sycl::nd_range<1>(gws_FP, lws), [=] (sycl::nd_item<1> item) {
           int num_d_fluid_particles = d_params[0].number_fluid_particles;
@@ -386,9 +387,9 @@ int main(int argc, char *argv[])
           d_fluid_particles[i].density = density;
           d_fluid_particles[i].pressure = computePressure(density, d_params);
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class updateAccelerationFP>(
         sycl::nd_range<1>(gws_FP, lws), [=] (sycl::nd_item<1> item) {
 
@@ -425,9 +426,9 @@ int main(int argc, char *argv[])
         d_fluid_particles[i].a.y() = ay;
         d_fluid_particles[i].a.z() = az;
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class updateAccelerationBP>(
         sycl::nd_range<1>(gws_BP, lws), [=] (sycl::nd_item<1> item) {
         int num_d_fluid_particles = d_params[0].number_fluid_particles;
@@ -454,9 +455,9 @@ int main(int argc, char *argv[])
         d_fluid_particles[i].a.y() = ay;
         d_fluid_particles[i].a.z() = az;
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class updatePositions>(
         sycl::nd_range<1>(gws_FP, lws), [=] (sycl::nd_item<1> item) {
         int num_d_fluid_particles = d_params[0].number_fluid_particles;
@@ -488,7 +489,7 @@ int main(int argc, char *argv[])
         d_fluid_particles[i].v      = v;
         d_fluid_particles[i].pos    = pos;
       });
-    });
+    }));
   }
 
   q.wait();
@@ -505,5 +506,6 @@ int main(int argc, char *argv[])
   sycl::free(d_fluid_particles, q);
   sycl::free(d_boundary_particles, q);
   sycl::free(d_params, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

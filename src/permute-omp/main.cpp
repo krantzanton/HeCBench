@@ -7,6 +7,7 @@
 #include "common.h"
 
 // CPU code reference
+#include "../sycl_timer.hpp"
 void permuate_cpu(float *inp, float *q, float *k, float *v, int B, int T, int C, int NH) {
   int i = 0;
   for (int b = 0; b < B; b++) {
@@ -112,5 +113,6 @@ int main(int argc, char **argv) {
   free(v);
   free(out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

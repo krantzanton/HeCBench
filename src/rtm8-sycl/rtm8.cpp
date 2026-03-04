@@ -5,6 +5,7 @@
 #include <vector>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define nx 680
 #define ny 134
 #define nz 450
@@ -146,7 +147,7 @@ int main(int argc, char *argv[]) {
   t0 = mysecond();
 
   for (int t = 0; t < repeat; t++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class kernel1>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         int x = item.get_global_id(2);
@@ -190,7 +191,7 @@ int main(int argc, char *argv[]) {
           image_d[indexTo1D(x,y,z)] = next_s_d[indexTo1D(x,y,z)] * next_r_d[indexTo1D(x,y,z)];
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -241,5 +242,6 @@ int main(int argc, char *argv[]) {
   sycl::free(image_d, q);
   sycl::free(a_d, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

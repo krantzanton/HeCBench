@@ -28,6 +28,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Misaligned types
 ////////////////////////////////////////////////////////////////////////////////
+#include "../sycl_timer.hpp"
 typedef unsigned char uchar_misaligned;
 
 typedef unsigned short int ushort_misaligned;
@@ -303,4 +304,6 @@ int main(int argc, char **argv)
 
   printf("Test passed\n");
   exit(EXIT_SUCCESS);
+
+  SYCL_TIMER_DUMP();
 }

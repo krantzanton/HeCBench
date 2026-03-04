@@ -2,6 +2,7 @@
 #include <sycl/sycl.hpp>
 
 // SYCL lambda function kernel names
+#include "../sycl_timer.hpp"
 class make_back;
 class dslash;
 
@@ -73,7 +74,7 @@ double dslash_fn(
     std::cout << "Setting workgroup size to " << 1 << std::endl;
   }
   auto back_start = Clock::now();
-  q.submit( [&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit( [&](sycl::handler& cgh) {
     cgh.parallel_for<class make_back>(sycl::nd_range<1> {total_wi, wgsize}, [=](sycl::nd_item<1> item) {
       size_t mySite = item.get_global_id(0);
       if (mySite < total_even_sites) {
@@ -85,7 +86,7 @@ double dslash_fn(
 	}
       }
     }); // end of the kernel lambda function
-  }).wait();   // end of command group
+  }));   // end of command group
   double back_time = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now()-back_start).count();
   if (verbose > 1) {
     std::cout << "Time to create back links = " << back_time/1.0e6 << " secs\n";
@@ -106,7 +107,7 @@ double dslash_fn(
       tstart = Clock::now();
     }
     // Dslash kernel
-    q.submit( [&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit( [&](sycl::handler& cgh) {
       cgh.parallel_for<class dslash>(
         sycl::nd_range<1> {total_wi, wgsize}, [=](sycl::nd_item<1> item) {
 	size_t mySite = item.get_global_id(0);
@@ -149,7 +150,7 @@ double dslash_fn(
 	  sub_su3_vector(&d_dst[mySite], &v, &d_dst[mySite]);
 	} // end of if mySite
       }); // end of the kernel lambda function
-    }).wait();   // end of command group
+    }));   // end of command group
   } // end of iteration loop
   double ttotal = std::chrono::duration_cast<std::chrono::microseconds>(
                   Clock::now()-tstart).count();

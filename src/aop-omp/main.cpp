@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #ifdef WITH_FULL_W_MATRIX
 #define R_W_MATRICES_SMEM_SLOTS 15
 #else
@@ -1136,5 +1137,6 @@ int main(int argc, char **argv)
   free(h_samples);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

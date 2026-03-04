@@ -42,6 +42,7 @@
 #include <sycl/sycl.hpp>
 #include "bitcracker.h"
 
+#include "../sycl_timer.hpp"
 #define ROR(x, i) (((x) << (32 - (i))) | ((x) >> (i)))
 
 #define LOADSCHEDULE_WPRE(j, i)  \
@@ -190,9 +191,9 @@ int evaluate_w_block(
   auto start = std::chrono::steady_clock::now();
 
   // launch kernel
-  q.parallel_for(sycl::nd_range<1>(1024*16, 16), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(1024*16, 16), [=](sycl::nd_item<1> item) {
     kernel_w_block(salt_d, padding_d, d_w_words_uint32, item);
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_OF_BLOCKS 1048576
 #define NUM_OF_THREADS 256
 
@@ -107,12 +108,12 @@ int main(int argc, char *argv[])
   sycl::range<1> lws (NUM_OF_THREADS);
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class f16_max_v2_warmup>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         hmax<sycl::half2>(item, d_a, d_b, d_r, size);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -120,12 +121,12 @@ int main(int argc, char *argv[])
 
   // run hmax2
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class f16_max_v2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         hmax<sycl::half2>(item, d_a, d_b, d_r, size);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -153,12 +154,12 @@ int main(int argc, char *argv[])
 
   // run hmax (the size is doubled)
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class f16_max_warmup>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         hmax<sycl::half>(item, (sycl::half*)d_a, (sycl::half*)d_b, (sycl::half*)d_r, size*2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -166,12 +167,12 @@ int main(int argc, char *argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class f16_max>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         hmax<sycl::half>(item, (sycl::half*)d_a, (sycl::half*)d_b, (sycl::half*)d_r, size*2);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -205,5 +206,6 @@ int main(int argc, char *argv[])
   free(b);
   free(r);
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

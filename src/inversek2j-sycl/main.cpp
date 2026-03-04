@@ -11,6 +11,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define MAX_LOOP 25
 #define MAX_DIFF 0.15f
 #define NUM_JOINTS 3
@@ -187,7 +188,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < iteration; n++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class inversek>(
         sycl::nd_range<1>(sycl::range<1>(global_work_size), sycl::range<1>(BLOCK_SIZE)),
         [=] (sycl::nd_item<1> item) {
@@ -266,7 +267,7 @@ int main(int argc, char* argv[])
           angle_out_d[idx * NUM_JOINTS + 2] = angle_out[2];
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -311,5 +312,6 @@ int main(int argc, char* argv[])
   else 
     std::cout << "PASS\n";
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

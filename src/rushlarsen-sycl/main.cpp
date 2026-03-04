@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[])
 {
   double t_start = 0;
@@ -76,13 +77,13 @@ int main(int argc, char *argv[])
   clock_gettime(CLOCK_MONOTONIC_RAW, &timestamp_start);
 
   for (int it = 0; it < num_timesteps; it++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_forward_rush_larsen(item, d_states, t, dt,
                               d_parameters, num_nodes);
       });
-    });
+    }));
     t += dt;
   }
 
@@ -109,5 +110,6 @@ int main(int argc, char *argv[])
   sycl::free(d_states, q);
   sycl::free(d_parameters, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

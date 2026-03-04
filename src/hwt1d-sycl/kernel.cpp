@@ -1,5 +1,5 @@
 /**********************************************************************
-Copyright ©2013 Advanced Micro Devices, Inc. All rights reserved.
+Copyright 2013 Advanced Micro Devices, Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -35,6 +35,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include "hwt.h"
 
+#include "../sycl_timer.hpp"
 void dwtHaar1D(sycl::nd_item<1> &item,
                 const float *__restrict inSignal,
                       float *__restrict coefsSignal,
@@ -165,7 +166,7 @@ int runKernel(
 
     sycl::range<1> gws (curSignalLength >> 1);
     sycl::range<1> lws (groupSize);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> lmem (sycl::range<1>(groupSize*2), cgh);
       cgh.parallel_for<class dwt>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -179,7 +180,7 @@ int runKernel(
                   levelsDone,
                   maxLevelsOnDevice);
       });
-    });
+    }));
 
     q.memcpy(dOutData, outDataBuf, signalLengthByte);
 

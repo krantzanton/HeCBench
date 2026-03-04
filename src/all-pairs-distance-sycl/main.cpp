@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
     gettimeofday(&tp, &tzp);
     start_gpu = tp.tv_sec*1000000+tp.tv_usec;
 
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class k1>(
         sycl::nd_range<2> (gws, lws), [=] (sycl::nd_item<2> item) {
         int idx = item.get_local_id(1);
@@ -148,7 +149,7 @@ int main(int argc, char **argv) {
           ao.fetch_add(count);
         }
       });
-    }).wait();
+    }));
 
     gettimeofday(&tp, &tzp);
     stop_gpu = tp.tv_sec*1000000+tp.tv_usec;
@@ -172,7 +173,7 @@ int main(int argc, char **argv) {
 
     /*  coalesced GPU implementation of the all-pairs kernel using
         character data types, registers, and shared memory */
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &h) {
       sycl::local_accessor<int, 1> dist(sycl::range<1>(THREADS), h); 
       h.parallel_for<class k2>(
         sycl::nd_range<2> (gws, lws), [=] (sycl::nd_item<2> item) {
@@ -231,7 +232,7 @@ int main(int argc, char **argv) {
           d_distance[INSTANCES*gy + gx] = dist[0];
         }
       });
-    }).wait();
+    }));
 
     gettimeofday(&tp, &tzp);
     stop_gpu = tp.tv_sec*1000000+tp.tv_usec;
@@ -253,7 +254,7 @@ int main(int argc, char **argv) {
     gettimeofday(&tp, &tzp);
     start_gpu = tp.tv_sec*1000000+tp.tv_usec;
 
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class k3>(
         sycl::nd_range<2> (gws, lws), [=] (sycl::nd_item<2> item) {
         int idx = item.get_local_id(1);
@@ -286,7 +287,7 @@ int main(int argc, char **argv) {
           d_distance[INSTANCES*gy + gx] = sum;
         }
       });
-    }).wait();
+    }));
 
     gettimeofday(&tp, &tzp);
     stop_gpu = tp.tv_sec*1000000+tp.tv_usec;
@@ -307,5 +308,6 @@ int main(int argc, char **argv) {
   sycl::free(d_data, q);
   sycl::free(d_distance, q);
 
-  return status;
+  SYCL_TIMER_DUMP();
+return status;
 }

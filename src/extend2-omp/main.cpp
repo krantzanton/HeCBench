@@ -29,6 +29,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 static void check(int a, int b, const char *s)
 {
   if (a != b) printf("Error: %s %d %d\n", s, a, b);
@@ -229,5 +230,6 @@ int main(int argc, char *argv[])
     time += extend2(&d);
   }
   printf("Average offload time %f (us)\n", (time * 1e-3f) / repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

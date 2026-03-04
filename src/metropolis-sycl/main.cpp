@@ -30,6 +30,7 @@
 #include "kernel_metropolis.h"
 #include "kernel_reduction.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv) {
 
   int L         = 32;
@@ -153,7 +154,7 @@ int main(int argc, char **argv) {
     apcgb[k] = sycl::malloc_device<uint64_t>((N / 4), q);
     // offset and sequence approach
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       auto apcga_k = apcga[k];
       auto apcgb_k = apcgb[k];
 
@@ -161,7 +162,7 @@ int main(int argc, char **argv) {
         kernel_gpupcg_setup(apcga_k, apcgb_k, N / 4,
         seed + N / 4 * k, k, item);
       });
-    });
+    }));
   }
 
   /* host memory setup for each replica */
@@ -203,13 +204,13 @@ int main(int argc, char **argv) {
     printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
 
     /* distribution for H */
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
       auto apcga_ct2 = apcga[0];
       auto apcgb_ct3 = apcgb[0];
       cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
         kernel_reset_random_gpupcg(dH, N, apcga_ct2, apcgb_ct3, item);
       });
-    });
+    }));
 
     /* reset ex counters */
     reset_array(aex, rpool, 0.0f);
@@ -221,14 +222,14 @@ int main(int argc, char **argv) {
     seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
 
     for (int k = 0; k < ar; ++k) {
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
         auto mdlat_k = mdlat[k];
         cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<int>(mdlat_k, N, 1, item);
         });
-      });
+      }));
 
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
         auto apcga_k = apcga[k];
         auto apcgb_k = apcgb[k];
         cgh.parallel_for(sycl::nd_range<1>(prng_gws, prng_lws), [=](sycl::nd_item<1> item) {
@@ -236,7 +237,7 @@ int main(int argc, char **argv) {
                               seed + (uint64_t)(N / 4 * k), k,
                               item);
         });
-      });
+      }));
     }
 
     /* parallel tempering */
@@ -247,7 +248,7 @@ int main(int argc, char **argv) {
       /* metropolis simulation */
       for(int i = 0; i < ams; ++i) {
         for(int k = 0; k < ar; ++k) {
-          q.submit([&](sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -261,13 +262,13 @@ int main(int argc, char **argv) {
                                 apcgb_k_ct7, 0, item,
                                 ss_acc.get_multi_ptr<sycl::access::decorated::no>().get());
             });
-          });
+          }));
         }
 
         q.wait();
 
         for(int k = 0; k < ar; ++k) {
-          q.submit([&](sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -281,7 +282,7 @@ int main(int argc, char **argv) {
                                 apcgb_k_ct7, 1, item,
                                 ss_acc.get_multi_ptr<sycl::access::decorated::no>().get());
             });
-          });
+          }));
         }
 
         q.wait();
@@ -292,17 +293,17 @@ int main(int argc, char **argv) {
 
       /* compute energies for exchange */
       // adapt_ptenergies(s, tid);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 7", q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<1>(reset_gws2, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<float>(dE, ar, 0.0f, item);
         });
-      });
+      }));
       q.wait();
 
       /* compute one energy reduction for each replica */
       for(int k = 0; k < ar; ++k){
         /* launch reduction kernel for k-th replica */
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 8", q.submit([&](sycl::handler &cgh) {
           sycl::local_accessor<float, 1> shared_acc(sycl::range<1>(32), cgh);
 
           auto mdlat_k = mdlat[k];
@@ -312,7 +313,7 @@ int main(int argc, char **argv) {
             kernel_redenergy<float>(mdlat_k, L, dE + k, dH, h, item,
                                     shared_acc.get_multi_ptr<sycl::access::decorated::no>().get());
           });
-        });
+        }));
         q.wait();
       }
       q.memcpy(aexE, dE, ar * sizeof(float)).wait();
@@ -418,5 +419,6 @@ int main(int argc, char **argv) {
   free(atrs);
   free(aT);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

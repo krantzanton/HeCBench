@@ -13,6 +13,7 @@
 #include <sycl/sycl.hpp>
 #include "conv.h"
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -46,7 +47,7 @@ void convolutionRows(
     sycl::range<2> lws (ROWS_BLOCKDIM_Y, ROWS_BLOCKDIM_X);
     sycl::range<2> gws (imageH, imageW / ROWS_RESULT_STEPS);
 
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k1 = q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 2>
         l_Data(sycl::range<2>{ROWS_BLOCKDIM_Y, (ROWS_RESULT_STEPS + 2 * ROWS_HALO_STEPS) * ROWS_BLOCKDIM_X}, cgh);
 
@@ -91,7 +92,7 @@ void convolutionRows(
             dst_new[i * ROWS_BLOCKDIM_X] = sum;
         }
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 }
 
 void convolutionColumns(
@@ -111,7 +112,7 @@ void convolutionColumns(
     sycl::range<2> lws (COLUMNS_BLOCKDIM_Y, COLUMNS_BLOCKDIM_X);
     sycl::range<2> gws (imageH / COLUMNS_RESULT_STEPS, imageW);
 
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k2 = q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 2>
         l_Data(sycl::range<2>{COLUMNS_BLOCKDIM_X, (COLUMNS_RESULT_STEPS + 2 * COLUMNS_HALO_STEPS) * COLUMNS_BLOCKDIM_Y + 1}, cgh);
 
@@ -158,5 +159,5 @@ void convolutionColumns(
             dst_new[i * COLUMNS_BLOCKDIM_Y * pitch] = sum;
         }
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 template <class T, std::size_t CHANNELS_PER_ITER>
 
 void resize (
@@ -197,7 +198,7 @@ void resize_image (
   // default grid size is 256 * 114
   if (bilinear) {
     for (int i = 0; i < repeat; i++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
           resize_bilinear<T, 8>(out_images_d, out_size, out_height,
@@ -205,11 +206,11 @@ void resize_image (
                                 in_width, fx, fy, true,
                                 item);
         });
-      });
+      }));
     }
   } else {
     for (int i = 0; i < repeat; i++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
           resize<T, 8>(out_images_d, out_size, out_height,
@@ -217,7 +218,7 @@ void resize_image (
                        in_width, fx, fy, true, true,
                        item);
         });
-      });
+      }));
     }
   }
 
@@ -275,5 +276,6 @@ int main(int argc, char* argv[]) {
   printf("\nBilinear resizing\n");
   resize_image<unsigned int>(q, in_width, in_height, out_width, out_height, num_channels, repeat, true);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

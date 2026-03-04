@@ -3,6 +3,7 @@
 #include <cstring>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -131,7 +132,7 @@ long lstm_n5( sycl::queue &q,
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class lstm>(
       sycl::nd_range<1>(sycl::range<1>(N), sycl::range<1>(WGS)),
       [=] (sycl::nd_item<1> item) {
@@ -193,7 +194,7 @@ long lstm_n5( sycl::queue &q,
         d_y[gid * SAMPLE_TEST_LEN + t] = y;
       }
     });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -277,5 +278,6 @@ int main(int argc, char* argv[])
   free(infer1_out);
   free(infer2_out);
   printf("Processing complete.\n");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

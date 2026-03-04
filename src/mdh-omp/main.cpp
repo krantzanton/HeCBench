@@ -19,6 +19,7 @@
 #include <omp.h>
 #include "WKFUtils.h"
 
+#include "../sycl_timer.hpp"
 #define SEP printf("\n")
 
 void gendata(float *ax,float *ay,float *az,
@@ -255,5 +256,6 @@ int main(int argc, const char **argv) {
 
   wkf_timer_destroy(timer);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

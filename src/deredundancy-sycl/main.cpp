@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv) {
   Option option;
   checkOption(argc, argv, option);
@@ -48,12 +49,12 @@ int main(int argc, char **argv) {
   sycl::range<1> baseToNum_gws(128*128);
   sycl::range<1> baseToNum_lws(128);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class baseToNum> (
       sycl::nd_range<1>(baseToNum_gws, baseToNum_lws), [=] (sycl::nd_item<1> item) {
       kernel_baseToNumber(d_reads, total_length, item);
     });
-  });
+  }));
 
   unsigned int *d_compressed = sycl::malloc_device<unsigned int>(total_length / 16, q);
   int *d_gaps = sycl::malloc_device<int>(readsCount, q);
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
   sycl::range<1> compress_gws((readsCount+127)/128*128);
   sycl::range<1> compress_lws(128);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class compressData> (
       sycl::nd_range<1>(compress_gws, compress_lws), [=] (sycl::nd_item<1> item) {
       kernel_compressData(
@@ -73,7 +74,7 @@ int main(int argc, char **argv) {
         readsCount,
         item);
     });
-  });
+  }));
 
   //createIndex(data, option);
 
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
   sycl::range<1> index_lws (128);
   switch (wordLength) {
     case 4:
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for<class index4> (
           sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
           kernel_createIndex4(
@@ -105,10 +106,10 @@ int main(int argc, char **argv) {
             readsCount,
             item);
         });
-      });
+      }));
       break;
     case 5:
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for<class index5> (
           sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
           kernel_createIndex5(
@@ -122,10 +123,10 @@ int main(int argc, char **argv) {
             readsCount,
             item);
         });
-      });
+      }));
       break;
     case 6:
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for<class index6> (
           sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
           kernel_createIndex6(
@@ -139,10 +140,10 @@ int main(int argc, char **argv) {
             readsCount,
             item);
         });
-      });
+      }));
       break;
     case 7:
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for<class index7> (
           sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
           kernel_createIndex7(
@@ -156,7 +157,7 @@ int main(int argc, char **argv) {
             readsCount,
             item);
         });
-      });
+      }));
       break;
   }
 
@@ -164,7 +165,7 @@ int main(int argc, char **argv) {
   float threshold = option.threshold;
   int *d_wordCutoff = sycl::malloc_device<int>(readsCount, q);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class createCutoff> (
       sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
       kernel_createCutoff(
@@ -176,7 +177,7 @@ int main(int argc, char **argv) {
         readsCount,
         item);
     });
-  });
+  }));
 
   // sortIndex(data);
   q.memcpy(h_indexs, d_indexs, sizeof(unsigned short) * total_length);
@@ -196,7 +197,7 @@ int main(int argc, char **argv) {
   // mergeIndex(data);
   q.memcpy(d_indexs, h_indexs, sizeof(unsigned short) * total_length);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 8", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class mergeIndex> (
       sycl::nd_range<1>(index_gws, index_lws), [=] (sycl::nd_item<1> item) {
       kernel_mergeIndex(
@@ -207,7 +208,7 @@ int main(int argc, char **argv) {
         readsCount,
         item);
     });
-  });
+  }));
 
   int* h_cluster = (int*) malloc (sizeof(int) * readsCount);
   for (int i = 0; i < readsCount; i++) {
@@ -244,7 +245,7 @@ int main(int argc, char **argv) {
     }
     //std::cout << r << "/" << readsCount << std::endl;
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class makeTable>(
         sycl::nd_range<1>(makeTable_gws, makeTable_lws), [=] (sycl::nd_item<1> item) {
         kernel_makeTable(
@@ -256,9 +257,9 @@ int main(int argc, char **argv) {
           r,
           item);
       });
-    }); // create table
+    })); // create table
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 10", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class magic>(
         sycl::nd_range<1>(magic_gws, magic_lws), [=] (sycl::nd_item<1> item) {
         kernel_magic(
@@ -270,10 +271,10 @@ int main(int argc, char **argv) {
           readsCount,
           item);
       });
-    }); // magic filter
+    })); // magic filter
 
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 11", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 1> result (sycl::range<1>(128), cgh);
       cgh.parallel_for<class filter>(
         sycl::nd_range<1>(filter_gws, filter_lws), [=] (sycl::nd_item<1> item) {
@@ -292,9 +293,9 @@ int main(int argc, char **argv) {
           item,
           result.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    }); // word filter
+    })); // word filter
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 12", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class align>(
         sycl::nd_range<1>(align_gws, align_lws), [=] (sycl::nd_item<1> item) {
         kernel_align(
@@ -308,9 +309,9 @@ int main(int argc, char **argv) {
           readsCount,
           item);
       });
-    }); // dynamic programming
+    })); // dynamic programming
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 13", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class cleanTable>(
         sycl::nd_range<1>(cleanTable_gws, cleanTable_lws), [=] (sycl::nd_item<1> item) {
         kernel_cleanTable(
@@ -322,7 +323,7 @@ int main(int argc, char **argv) {
           r,
           item);
       }); // table fill zero
-    });
+    }));
   }
 
   q.memcpy(h_cluster, d_cluster, sizeof(int) * readsCount).wait();
@@ -363,5 +364,6 @@ int main(int argc, char **argv) {
   sycl::free(d_wordCutoff, q);
   sycl::free(d_cluster, q);
   sycl::free(d_table, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

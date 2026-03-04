@@ -41,6 +41,7 @@ SOFTWARE.
 #include <cmath>
 #include <algorithm>
 
+#include "../sycl_timer.hpp"
 #ifndef _HISTOGRAM_KERNEL_H_
 #define _HISTOGRAM_KERNEL_H_
 
@@ -104,14 +105,14 @@ void GPUHistogram(unsigned int *h_result, unsigned int *d_idata, int num, sycl::
   sycl::range<3> grid(1, 1, numBlocks);
   sycl::range<3> threads(1, 1, NUMTHREADS);
 
-  stream.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", stream.submit([&](sycl::handler &cgh) {
     auto d_odata_p = d_odata;
     sycl::local_accessor<unsigned char, 1> s_Hist(sycl::range<1>(MEMPERBLOCK), cgh);
     cgh.parallel_for(sycl::nd_range<3>(grid * threads, threads), [=](sycl::nd_item<3> item) {
       histoKernel(d_odata_p, d_idata, num >> 2, item,
                   s_Hist.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   // If there are fewer blocks than MAXBLOCKSEND+1, we can move on to compiling the sub-histograms.
   const int endNumBlocks = std::min(MAXBLOCKSEND, numBlocks);
@@ -119,12 +120,12 @@ void GPUHistogram(unsigned int *h_result, unsigned int *d_idata, int num, sycl::
     // Otherwise we used the merge kernel to reduce the number of sub-histograms to MAXBLOCKSEND.
     sycl::range<3> gws (1, 1, NUMBINS * MAXBLOCKSEND);
     sycl::range<3> lws (1, 1, NUMBINS);
-    stream.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", stream.submit([&](sycl::handler &cgh) {
       auto d_odata_p = d_odata;
       cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item) {
         mergeKernel(d_odata_p, numBlocks, item);
       });
-    });
+    }));
   }
   // Copy at most MAXBLOCKSEND sub-histograms to h_odata.
   stream.memcpy(h_odata, d_odata, endNumBlocks * HISTOSIZE).wait();

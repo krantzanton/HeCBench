@@ -118,6 +118,7 @@
 #include <iomanip>
 #include <vector>
 #include <sycl/sycl.hpp>
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // to avoid integer overflow, n should not exceed this constant
@@ -351,7 +352,7 @@ void run_gpu_d(sycl::queue &q, Results<n>& final_results) {
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<Availability<n>, 1>
       availability(sycl::range<1>(kThreadsPerBlock), cgh);
     sycl::local_accessor<Open<n>, 1>
@@ -373,7 +374,7 @@ void run_gpu_d(sycl::queue &q, Results<n>& final_results) {
       pgpualigned[lid],
       result_index);
       });
-  });
+  }));
 
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -509,5 +510,6 @@ int main(int argc, char **argv) {
   //run_gpu<24>(q, known_results);
   //run_gpu<27>(q, known_results);
   //run_gpu<28>(q, known_results);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

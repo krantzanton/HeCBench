@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "mv.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[])
 {
   size_t nnz = 0;
@@ -80,5 +81,6 @@ int main(int argc, char *argv[])
   free(x);
   free(matrix);
   for (int i = 0; i < 4; i++) free(y[i]);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

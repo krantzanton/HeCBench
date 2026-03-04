@@ -41,6 +41,7 @@
 #include <limits>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 void ParallelBitonicSort(int input[], int n) {
@@ -74,7 +75,7 @@ void ParallelBitonicSort(int input[], int n) {
       int two_power = 1 << (step - stage);
 
       // Offload the work to kernel.
-      q.submit([&](sycl::handler &h) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
         h.parallel_for(sycl::nd_range<1>(
           sycl::range<1>(size), sycl::range<1>(BLOCK_SIZE)), [=](sycl::nd_item<1> item) {
           int i = item.get_global_id(0);
@@ -110,7 +111,7 @@ void ParallelBitonicSort(int input[], int n) {
             }
           }
         });
-      });
+      }));
     }  // end stage
   }    // end step
 
@@ -234,5 +235,6 @@ int main(int argc, char *argv[]) {
   free(data_cpu);
   free(data_gpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

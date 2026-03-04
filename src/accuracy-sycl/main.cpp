@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_NUM_THREADS 256
 
 template <typename T>
@@ -106,12 +107,12 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i < repeat; i++) {
       q.memset(d_count, 0, sizeof(int));
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class accuracy>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           accuracy_kernel(item, nrows, ndims, top_k, d_data, d_label, d_count);
 	});
-      });
+      }));
     }
 
     q.wait();
@@ -133,5 +134,6 @@ int main(int argc, char* argv[])
   free(label);
   free(data);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

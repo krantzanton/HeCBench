@@ -5,6 +5,7 @@
 #include <cmath>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 const float GDC_DEG_TO_RAD = 3.141592654 / 180.0 ;  /* Degrees to radians */
 const float GDC_FLATTENING = 1.0 - ( 6356752.31424518 / 6378137.0 ) ;
 const float GDC_ECCENTRICITY = ( 6356752.31424518 / 6378137.0 ) ;
@@ -93,7 +94,7 @@ void distance_device(const sycl::float4* VA, float* VC, const size_t N, const in
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < iteration; n++) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class geodesic_distance>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         const int i = item.get_global_id(0);
@@ -151,7 +152,7 @@ void distance_device(const sycl::float4* VA, float* VC, const size_t N, const in
                 X ) * D / 4.0f + CZ ) * SY * D + Y ) * C * GC_SEMI_MINOR ;
         d_C[i] = dist;
       });
-    });
+    }));
   }
   q.wait();
 
@@ -238,5 +239,6 @@ int main(int argc, char** argv) {
   free(input);
   free(output);
   free(expected_output);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

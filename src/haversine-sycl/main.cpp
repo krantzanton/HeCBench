@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "distance.h"
 
+#include "../sycl_timer.hpp"
 void distance_device(const sycl::double4* loc, double* dist,
                      const int n, const int iteration) {
 
@@ -24,7 +25,7 @@ void distance_device(const sycl::double4* loc, double* dist,
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iteration; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class haversine>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -43,7 +44,7 @@ void distance_device(const sycl::double4* loc, double* dist,
           out[i] = 2.0 * EARTH_RADIUS_KM * sycl::asin(sycl::sqrt(sinysqrd + sinxsqrd * scale));
         }
       });
-    });
+    }));
   }
   
   q.wait();
@@ -142,5 +143,6 @@ int main(int argc, char* argv[]) {
   free(input);
   free(output);
   free(expected_output);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -21,6 +21,7 @@
 #include <sycl/sycl.hpp>
 
 // A multiple of thread block size
+#include "../sycl_timer.hpp"
 #define N 2048
 
 #define IDX(i, j) ((i) + (j) * N)
@@ -182,7 +183,7 @@ int main() {
     q.memset(d_error, 0, 4);
 
     // Perform a Jacobi relaxation step
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<float[18][18], 0> f_old_tile (cgh);
       sycl::local_accessor<float, 1> reduction_array(sycl::range<1>(16), cgh);
       cgh.parallel_for(
@@ -190,7 +191,7 @@ int main() {
           jacobi_step(d_f, d_f_old, d_error, item, f_old_tile,
                       reduction_array.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
 
     // Swap the old data and the new data
     std::swap(d_f, d_f_old);
@@ -239,5 +240,6 @@ int main() {
   double duration = total_time * 1e-9;
   std::cout << "Total elapsed time: " << std::setprecision(4) << duration << " seconds" << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

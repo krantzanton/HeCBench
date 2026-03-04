@@ -33,6 +33,7 @@
 #include "file.h"
 #include "computeQ.cpp"
 
+#include "../sycl_timer.hpp"
 int main (int argc, char *argv[]) {
   if (argc != 3) {
     printf("Usage: %s <input filename> <output filename>\n", argv[0]);
@@ -130,5 +131,6 @@ int main (int argc, char *argv[]) {
   free (kVals);
   free (Qr);
   free (Qi);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

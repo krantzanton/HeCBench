@@ -8,6 +8,7 @@
 // Reference
 // https://pytorch.org/docs/stable/generated/torch.linalg.cross.html#torch.linalg.cross
 
+#include "../sycl_timer.hpp"
 template <typename T, typename StrideType>
 void cross_kernel(
     int numel,
@@ -191,5 +192,6 @@ int main(int argc, char* argv[])
   printf("=========== Data type is FP64 ==========\n");
   eval<double>(nrows, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

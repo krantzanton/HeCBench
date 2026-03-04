@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define _QUEENS_BLOCK_SIZE_   128
 #define _EMPTY_      -1
 
@@ -178,7 +179,7 @@ void nqueens(short size, int initial_depth, unsigned int n_explorers, QueenRoot 
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class nqueen>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         BP_queens_root_dfs(item,
@@ -189,7 +190,7 @@ void nqueens(short size, int initial_depth, unsigned int n_explorers, QueenRoot 
                            vector_of_tree_size_d,
                            sols_d);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -265,5 +266,6 @@ int main(int argc, char *argv[])
   free(root_prefixes_h);
   free(vector_of_tree_size_h);
   free(solutions_h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

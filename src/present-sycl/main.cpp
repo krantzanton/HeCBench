@@ -39,6 +39,7 @@
 #include <random>       // std::default_random_engine
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef unsigned char uint8_t;
 
 static const uint8_t sbox[16] = {
@@ -570,13 +571,13 @@ int main(int argc, char **argv) {
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class kernel>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         present(num, rounds, d_plain, d_key, d_cipher, d_sbox, d_sbox_pmt_0,
                 d_sbox_pmt_1, d_sbox_pmt_2, d_sbox_pmt_3, item);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     if (n > 0)
@@ -603,4 +604,6 @@ int main(int argc, char **argv) {
   sycl::free(d_sbox_pmt_2, q);
   sycl::free(d_sbox_pmt_1, q);
   sycl::free(d_sbox_pmt_0, q);
+
+  SYCL_TIMER_DUMP();
 }

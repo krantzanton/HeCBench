@@ -35,6 +35,7 @@
 #include <sycl/sycl.hpp>
 
 // Key constants used in this program
+#include "../sycl_timer.hpp"
 #define LINE "--------------------" // A line for fancy output
 
 void initial_value(sycl::queue &q, const unsigned int n, const double dx, const double length, double *u);
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
   const int n_ceil = (grid_size+block_size-1) / block_size * block_size;
 
   // Set the initial value of the grid under the MMS scheme
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class initial_value_kernel>(
       sycl::nd_range<1>(sycl::range<1>(n_ceil), sycl::range<1>(block_size)),
       [=](sycl::nd_item<1> item) {
@@ -139,16 +140,16 @@ int main(int argc, char *argv[]) {
         u[i+j*n] = sycl::sin(acos(-1.0) * x / length) * sycl::sin(acos(-1.0) * y / length);
       }
     });
-  });
+  }));
 
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class zero_kernel>(
       sycl::nd_range<1>(sycl::range<1>(n_ceil), sycl::range<1>(block_size)),
       [=](sycl::nd_item<1> item) {
       int idx = item.get_global_id(0);
       if (idx < grid_size) u_tmp[idx] = 0.0;
     });
-  });
+  }));
 
   // Ensure everything is initalised on the device
   q.wait();
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]) {
     // Call the solve kernel
     // Computes u_tmp at the next timestep
     // given the value of u at the current timestep
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler& cgh) {
       // Loop over the nxn grid
       cgh.parallel_for<class solve_kernel>(
         sycl::nd_range<1>(sycl::range<1>(n_ceil), sycl::range<1>(block_size)),
@@ -186,7 +187,7 @@ int main(int argc, char *argv[]) {
           r * ((j > 0)   ? u[i+(j-1)*n] : 0.0);
         }
       });
-    });
+    }));
 
     // Pointer swap
     auto tmp = u;
@@ -221,6 +222,8 @@ int main(int argc, char *argv[]) {
   sycl::free(u, q);
   sycl::free(u_tmp, q);
   delete[] u_host;
+
+  SYCL_TIMER_DUMP();
 }
 
 

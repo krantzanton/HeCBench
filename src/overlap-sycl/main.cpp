@@ -31,6 +31,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void incKernel(sycl::nd_item<3> &item, int *g_out, const int *g_in,
                int N, int inner_reps) {
   int idx = item.get_global_id(2);
@@ -133,6 +134,8 @@ int main(int argc, char *argv[]) {
 
   // Test result
   exit(bResults ? EXIT_SUCCESS : EXIT_FAILURE);
+
+  SYCL_TIMER_DUMP();
 }
 
 float processWithStreams(int streams_used) {

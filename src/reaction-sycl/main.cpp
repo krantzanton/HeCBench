@@ -5,6 +5,7 @@
 #include "util.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     printf("Usage: %s <timesteps>\n", argv[0]);
@@ -98,163 +99,163 @@ int main(int argc, char* argv[]) {
     // calculate laplacian for A
     if(zeroflux) {
       // x2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class x2_zeroflux_a>(
           sycl::nd_range<2>(gws_x, lws_x), [=] (sycl::nd_item<2> item) {
           derivative_x2_zeroflux(d_a, d_dx2, sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my);
         });
-      });
+      }));
 
       // y2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class y2_zeroflux_a>(
           sycl::nd_range<2>(gws_y, lws_y), [=] (sycl::nd_item<2> item) {
           derivative_y2_zeroflux(d_a, d_dy2,
                                  sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // z2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class z2_zeroflux_a>(
           sycl::nd_range<2>(gws_z, lws_z), [=] (sycl::nd_item<2> item) {
           derivative_z2_zeroflux(d_a, d_dz2,
                                  sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, mz, pencils);
         });
-      });
+      }));
     } else {
       // x2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class x2_pbc_a>(
           sycl::nd_range<2>(gws_x, lws_x), [=] (sycl::nd_item<2> item) {
           derivative_x2_pbc(d_a, d_dx2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // y2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class y2_pb_a>(
           sycl::nd_range<2>(gws_y, lws_y), [=] (sycl::nd_item<2> item) {
           derivative_y2_pbc(d_a, d_dy2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // z2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class z2_pbc_a>(
           sycl::nd_range<2>(gws_z, lws_z), [=] (sycl::nd_item<2> item) {
           derivative_z2_pbc(d_a, d_dz2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, mz, pencils);
         });
-      });
+      }));
     }
 
     // sum all three derivative components
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sum_a>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         construct_laplacian(d_da, d_dx2, d_dy2,
                             d_dz2, item, ncells, diffcon_a);
       });
-    });
+    }));
 
     // calculate laplacian for B
     if(zeroflux) {
       // x2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class x2_zeroflux_b>(
           sycl::nd_range<2>(gws_x, lws_x), [=] (sycl::nd_item<2> item) {
           derivative_x2_zeroflux(d_b, d_dx2,
                                  sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my);
         });
-      });
+      }));
 
       // y2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class y2_zeroflux_b>(
           sycl::nd_range<2>(gws_y, lws_y), [=] (sycl::nd_item<2> item) {
           derivative_y2_zeroflux(d_b, d_dy2,
                                  sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // z2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class z2_zeroflux_b>(
           sycl::nd_range<2>(gws_z, lws_z), [=] (sycl::nd_item<2> item) {
           derivative_z2_zeroflux(d_b, d_dz2,
                                  sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, mz, pencils);
         });
-      });
+      }));
     } else {
       // x2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 11", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class x2_pbc_b>(
           sycl::nd_range<2>(gws_x, lws_x), [=] (sycl::nd_item<2> item) {
           derivative_x2_pbc(d_b, d_dx2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // y2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 12", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class y2_pb_b>(
           sycl::nd_range<2>(gws_y, lws_y), [=] (sycl::nd_item<2> item) {
           derivative_y2_pbc(d_b, d_dy2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, pencils);
         });
-      });
+      }));
 
       // z2 derivative
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 13", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sf (sycl::range<1>(shared_mem_size), cgh);
         cgh.parallel_for<class z2_pbc_b>(
           sycl::nd_range<2>(gws_z, lws_z), [=] (sycl::nd_item<2> item) {
           derivative_z2_pbc(d_b, d_dz2,
                             sf.get_multi_ptr<sycl::access::decorated::no>().get(), item, mx, my, mz, pencils);
         });
-      });
+      }));
     }
 
     // sum all three derivative components
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 14", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sum_b>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         construct_laplacian(d_db, d_dx2, d_dy2,
                             d_dz2, item, ncells, diffcon_b);
       });
-    });
+    }));
 
     // calculate reaction
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 15", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class gray_scott>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         reaction_gray_scott(d_a, d_b, d_ra, d_rb,
                             item, ncells, c1, c2);
       });
-    });
+    }));
 
     // update
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 16", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class integrate>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         update(d_a, d_b, d_da, d_db,
                d_ra, d_rb, item, ncells, dt);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -283,5 +284,6 @@ int main(int argc, char* argv[]) {
 
   delete [] a;
   delete [] b;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

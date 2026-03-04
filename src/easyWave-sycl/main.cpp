@@ -30,6 +30,7 @@
  * limitations under the Licence.
  */
 
+#include "../sycl_timer.hpp"
 #define HEADER "\neasyWave ver.2013-04-11\n"
 
 #include <stdio.h>
@@ -882,7 +883,7 @@ int main( int argc, char **argv )
     }
 
     // sea floor topography (mass conservation)
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class mass_conservation>(
         sycl::nd_range<2>(sycl::range<2>((Imax-Imin+16)/16*16, (Jmax-Jmin+16)/16*16), 
                           sycl::range<2>(16,16), sycl::id<2>(Imin, Jmin)), [=](sycl::nd_item<2> item) {
@@ -902,9 +903,9 @@ int main( int argc, char **argv )
             if( Par.sshArrivalThreshold && NodeD(m, iTime) < 0 && absH > Par.sshArrivalThreshold ) NodeD(m, iTime) = (float)Par.time;
           }
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       h.single_task<class update_bound>([=] () {
         int i, j, m;
         // open bondary conditions
@@ -955,10 +956,10 @@ int main( int argc, char **argv )
           if( NodeD(m-1, iN) < 0 ) NodeD(m, iH) = - NodeD(m, iH);
         }
       });
-    });
+    }));
 
     // moment conservation
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &h) {
       h.parallel_for<class moment_conservation>(
       sycl::nd_range<2>(sycl::range<2>((Imax-Imin+16)/16*16, (Jmax-Jmin+16)/16*16), 
                         sycl::range<2>(16,16), sycl::id<2>(Imin, Jmin)), [=](sycl::nd_item<2> item) {
@@ -973,14 +974,14 @@ int main( int argc, char **argv )
             NodeD(m, iN) = NodeD(m, iN) - NodeD(m, iR4)*(NodeD(m+1, iH)-NodeD(m, iH));
         }
       });
-    });
+    }));
 
     q.memcpy(d_Imin, &Imin, sizeof(int));
     q.memcpy(d_Jmin, &Jmin, sizeof(int));
     q.memcpy(d_Imax, &Imax, sizeof(int));
     q.memcpy(d_Jmax, &Jmax, sizeof(int));
 
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &h) {
       h.single_task<class update_bound2>([=] () {
         // open boundaries
         int i, j, m;
@@ -1048,7 +1049,7 @@ int main( int argc, char **argv )
           if( enlarge ) { d_Jmax[0]++; if( d_Jmax[0] > (NLat-1) ) d_Jmax[0] = NLat-1; }
         }
       });
-    });
+    }));
 
     q.memcpy(&Imin, d_Imin, sizeof(int));
     q.memcpy(&Jmin, d_Jmin, sizeof(int));
@@ -1194,7 +1195,8 @@ int main( int argc, char **argv )
   free( C4 );
 
   printf_v("Runtime: %.3lf\n", diff(start, end) * 1000.0);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

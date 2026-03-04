@@ -27,6 +27,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define MAXDISTANCE    (200)
 
 /**
@@ -274,5 +275,6 @@ int main(int argc, char** argv) {
   free(pathMatrix);
   free(verificationPathDistanceMatrix);
   free(verificationPathMatrix);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

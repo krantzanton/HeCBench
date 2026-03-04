@@ -7,6 +7,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <typename T>
 void init_p(T *p_real, T *p_imag, int width, int height) {
   double s = 64.0;
@@ -84,7 +85,7 @@ void tsa(sycl::queue &q, int width, int height, int repeat) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<T[BLOCK_Y][BLOCK_X], 0> rl_acc(cgh);
       sycl::local_accessor<T[BLOCK_Y][BLOCK_X], 0> im_acc(cgh);
 
@@ -100,7 +101,7 @@ void tsa(sycl::queue &q, int width, int height, int repeat) {
                 a, b, width, height, d_real_ping, d_imag_ping,
                 d_real_pong, d_imag_pong, item, rl_acc, im_acc);
       });
-    });
+    }));
     sense = 1 - sense; // swap
   }
 
@@ -158,5 +159,6 @@ int main(int argc, char** argv) {
 
   printf("TSA in float64\n");
   tsa<double>(q, width, height, repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

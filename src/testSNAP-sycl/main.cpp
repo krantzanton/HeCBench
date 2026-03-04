@@ -24,6 +24,7 @@
 #include "snap.h"
 #include "utils.cpp"
 
+#include "../sycl_timer.hpp"
 #if REFDATA_TWOJ == 14
 #include "refdata_2J14_W.h"
 #elif REFDATA_TWOJ == 8
@@ -437,17 +438,17 @@ int main(int argc, char* argv[])
 
     sycl::range<1> gws_k1 ((num_atoms*idxu_max+255)/256*256);
     sycl::range<1> lws_k1 (256);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class reset_ulisttot>(
         sycl::nd_range<1>(gws_k1, lws_k1), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i < num_atoms*idxu_max) d_ulisttot[i] = {0.0, 0.0};
       });
-    });
+    }));
 
     sycl::range<1> gws_k2 ((num_atoms+255)/256*256);
     sycl::range<1> lws_k2 (256);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class set_ulisttot>(
         sycl::nd_range<1>(gws_k2, lws_k2), [=] (sycl::nd_item<1> item) {
         int natom = item.get_global_id(0);
@@ -460,12 +461,12 @@ int main(int argc, char* argv[])
             }
           }
       });
-    });
+    }));
 
     sycl::range<2> gws_k3 ((num_nbor+15)/16*16, (num_atoms+15)/16*16);
     sycl::range<2> lws_k3 (16, 16);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class update_ulisttot>(sycl::nd_range<2>(gws_k3, lws_k3), [=] (sycl::nd_item<2> item) {
 	int nbor = item.get_global_id(0);
 	int natom = item.get_global_id(1);
@@ -604,7 +605,7 @@ int main(int argc, char* argv[])
           }
         }
       });
-    });
+    }));
 
     q.wait();
     end = system_clock::now();
@@ -618,18 +619,18 @@ int main(int argc, char* argv[])
     // Initialize ylist elements to zeros
     sycl::range<1> gws_k4 ((num_atoms*idxdu_max+255)/256*256);
     sycl::range<1> lws_k4 (256);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class reset_ylist>(
         sycl::nd_range<1>(gws_k4, lws_k4), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i < num_atoms*idxdu_max) d_ylist[i] = {0.0, 0.0};
       });
-    });
+    }));
 
     sycl::range<2> gws_k5 ((idxz_max+15)/16*16, (num_atoms+15)/16*16);
     sycl::range<2> lws_k5 (16, 16);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_yi>(
         sycl::nd_range<2>(gws_k5, lws_k5), [=] (sycl::nd_item<2> item) {
         int jjz = item.get_global_id(0);
@@ -706,7 +707,7 @@ int main(int argc, char* argv[])
 
         } // end jjz and natom loop
       });
-    });
+    }));
 
     q.wait();
     end = system_clock::now();
@@ -719,7 +720,7 @@ int main(int argc, char* argv[])
     sycl::range<2> gws_k6 ((num_nbor+15)/16*16, (num_atoms+15)/16*16);
     sycl::range<2> lws_k6 (16, 16);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_duidrj>(
         sycl::nd_range<2>(gws_k6, lws_k6), [=] (sycl::nd_item<2> item) {
 	int nbor = item.get_global_id(0);
@@ -748,7 +749,7 @@ int main(int argc, char* argv[])
                           d_dulist);
          }
       });
-    });
+    }));
 
     q.wait();
     end = system_clock::now();
@@ -760,7 +761,7 @@ int main(int argc, char* argv[])
     sycl::range<2> gws_k7 ((num_nbor+15)/16*16, (num_atoms+15)/16*16);
     sycl::range<2> lws_k7 (16, 16);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_deidrj>(
         sycl::nd_range<2>(gws_k7, lws_k7), [=] (sycl::nd_item<2> item) {
 	int nbor = item.get_global_id(0);
@@ -819,7 +820,7 @@ int main(int argc, char* argv[])
             d_dedr[ULIST_INDEX(natom, nbor, k)] *= 2.0;
         }
       });
-    });
+    }));
 
     q.wait();
     end = system_clock::now();
@@ -918,5 +919,6 @@ int main(int argc, char* argv[])
   free(dulist);
   free(f);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

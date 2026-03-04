@@ -14,6 +14,7 @@
 #include "shrUtils.h"
 #include "MedianFilter.cpp"
 
+#include "../sycl_timer.hpp"
 #ifndef min
 #define min(a,b) (a < b ? a : b)
 #endif
@@ -122,7 +123,8 @@ int main(int argc, char** argv)
   else
     printf("FAIL\n");
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }
 
 // Copies input data from host buf to the device, runs kernel, 
@@ -156,7 +158,7 @@ double MedianFilterGPU(
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<sycl::uchar4, 1>
       uc4LocalData(sycl::range<1>(iLocalPixPitch * (iBlockDimY + 2)), cgh);
     cgh.parallel_for<class media_filter>(
@@ -165,7 +167,7 @@ double MedianFilterGPU(
                uc4LocalData.get_multi_ptr<sycl::access::decorated::no>().get(),
                iLocalPixPitch, uiImageWidth, uiImageHeight);
     });
-  });
+  }));
 
   q.wait();
   auto end = std::chrono::steady_clock::now();

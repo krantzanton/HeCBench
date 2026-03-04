@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cmath>
 
+#include "../sycl_timer.hpp"
 #define MAX_LOOP 25
 #define MAX_DIFF 0.15f
 #define NUM_JOINTS 3
@@ -276,5 +277,6 @@ int main(int argc, char* argv[])
   else 
     std::cout << "PASS\n";
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

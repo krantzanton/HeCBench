@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "ecdh.h"
 
+#include "../sycl_timer.hpp"
 #define P_x 5
 #define P_y 1
 #define MODULUS 17
@@ -46,14 +47,14 @@ int main(int argc, char **argv)
   gettimeofday(&start_slow,NULL);
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ecdh_slow>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_slow(item, 18, P_x, P_y,
                d_pk_x, d_pk_y,
                MODULUS, a, num_pk);  
       });
-    });
+    }));
   }
 
   q.wait();
@@ -71,14 +72,14 @@ int main(int argc, char **argv)
   gettimeofday(&start_fast,NULL);
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ecdh_fast>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_fast(item, 18, P_x, P_y,
                d_pk_x, d_pk_y,
                MODULUS, a, num_pk);  
       });
-    });
+    }));
   }
 
   q.wait();
@@ -103,5 +104,6 @@ int main(int argc, char **argv)
   free(pk_slow_y);
   free(pk_fast_x);
   free(pk_fast_y);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

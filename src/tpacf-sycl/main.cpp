@@ -28,6 +28,7 @@
 #include "kernel.h"
 #include "args.h"
 
+#include "../sycl_timer.hpp"
 #define TDIFF(ts, te) (te.tv_sec - ts.tv_sec + (te.tv_usec - ts.tv_usec) * 1e-6)
 
 #define d2r M_PI/180.0
@@ -106,7 +107,8 @@ int main(int argc, char* argv[])
 
   write_results(DD, RR, DR, args.njk, tempnbins, args.bins_per_dec, args.min_angle, args.random_count, args.output_name);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 void calculatejkSizes(int njk, int ndPoints, int** jkSizes) {

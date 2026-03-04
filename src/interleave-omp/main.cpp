@@ -6,6 +6,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NUM_ELEMENTS 4096
 #define COUNT 4096       // accumulation count
 
@@ -157,5 +158,6 @@ int main(int argc, char* argv[]) {
                            repeat, NUM_ELEMENTS);
   add_test_interleaved(interleaved_dst, interleaved_src, repeat, NUM_ELEMENTS);
   verify(interleaved_dst, non_interleaved_dst, NUM_ELEMENTS);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

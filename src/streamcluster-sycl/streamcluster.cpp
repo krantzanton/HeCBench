@@ -22,6 +22,7 @@
 #include <sycl/sycl.hpp>
 #include "streamcluster.h"
 
+#include "../sycl_timer.hpp"
 #ifdef USE_GPU
   sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
 #else
@@ -983,5 +984,6 @@ int main(int argc, char **argv)
   __parsec_bench_end();
 #endif
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

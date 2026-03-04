@@ -1,6 +1,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef union type_caster_union { /* a union between a float and an integer */
   public:
     float f;
@@ -89,13 +90,13 @@ void log2_approx (
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int k = 0; k < repeat; ++k) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         const int p = precision[i];
         cgh.parallel_for<class approx>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           compute_log(item, d_outputs, d_inputs, i, num_inputs, p);
         });
-      });
+      }));
     }
 
     q.wait();

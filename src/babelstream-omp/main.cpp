@@ -47,6 +47,7 @@
 
 
 // Thread block size
+#include "../sycl_timer.hpp"
 #define TBSIZE 256
 
 // Number of thread blocks for the DOT kernel 
@@ -349,6 +350,8 @@ int main(int argc, char *argv[])
   parseArguments(argc, argv);
   run<float>();
   run<double>();
+
+  SYCL_TIMER_DUMP();
 }
 
 

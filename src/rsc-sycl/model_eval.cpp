@@ -36,6 +36,7 @@
 #include <sycl/sycl.hpp>
 #include "support/common.h"
 
+#include "../sycl_timer.hpp"
 void RANSAC_kernel_block(sycl::nd_item<1> &item, 
                          int *__restrict outlier_block_count,
                          const float *__restrict model_param_local,
@@ -115,7 +116,7 @@ void call_RANSAC_kernel_block(sycl::queue &q, int blocks, int threads, float *mo
 {
   sycl::range<1> gws (threads * blocks);
   sycl::range<1> lws (threads);
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<int, 1> sm (sycl::range<1>(l_mem_size), cgh);
     cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       RANSAC_kernel_block(item, sm.get_multi_ptr<sycl::access::decorated::no>().get(),
@@ -123,5 +124,5 @@ void call_RANSAC_kernel_block(sycl::queue &q, int blocks, int threads, float *mo
                           flowvector_count, max_iter, error_threshold, convergence_threshold,
                           g_out_id, model_candidate, outliers_candidate);
     });
-  });
+  }));
 }

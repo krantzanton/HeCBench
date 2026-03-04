@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define P1 55
 #define P2 119
 #define P3 179
@@ -186,26 +187,26 @@ void gLFIB4(sycl::queue &q, uint32_t n, uint32_t *x, int s, int r, uint32_t *see
   sycl::range<1> gws (P4);
   sycl::range<1> lws (P4);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<uint32_t, 1> cx (sycl::range<1>(2 * P4), cgh);
     cgh.parallel_for<class firstCol>(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       firstColGPU(x, s, item, cx.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<uint32_t, 1> cy (sycl::range<1>(3 * P4), cgh);
     cgh.parallel_for<class colY>(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       colYGPU(y, s, item, cy.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   sycl::range<1> gws2 (2*P4);
   sycl::range<1> lws2 (2*P4);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<uint32_t, 1> a0 (sycl::range<1>(3 * P4), cgh);
     sycl::local_accessor<uint32_t, 1> b0 (sycl::range<1>(2 * P4), cgh);
     sycl::local_accessor<uint32_t, 1> c0 (sycl::range<1>(2 * P4), cgh);
@@ -218,16 +219,16 @@ void gLFIB4(sycl::queue &q, uint32_t n, uint32_t *x, int s, int r, uint32_t *see
                  c0.get_multi_ptr<sycl::access::decorated::no>().get(),
                  d0.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   sycl::range<1> gws3 ((r / LKNB + (r % LKNB ? 1 : 0)) * P4);
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
     sycl::local_accessor<uint32_t, 2> cx (sycl::range<2>(LKNB, 2 * P4), cgh);
     cgh.parallel_for<class cols>(
       sycl::nd_range<1>(gws3, lws), [=](sycl::nd_item<1> item) {
       colsGPU(x, s, r, item, cx);
     });
-  });
+  }));
 
   q.wait();
   sycl::free(y, q);
@@ -300,5 +301,6 @@ int main(int argc, char **argv) {
   }
 
   free(x);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

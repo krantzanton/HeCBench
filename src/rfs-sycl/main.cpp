@@ -22,6 +22,7 @@
 // For summing x_i, i = 1 to n:
 // @param max The maximum seen floating point value abs(x_i)
 // @param n The number of elements for the sum, or an upper bound estimate
+#include "../sycl_timer.hpp"
 inline float
 createRoundingFactor(float max, int n) {
   float delta = (max * (float)n) / (1.f - 2.f * (float)n * FLT_EPSILON);
@@ -157,12 +158,12 @@ int main(int argc, char* argv[]) {
   for (int n = 0; n < nArrays; n++) {
     // sum over each array
     const float f = factor[n];
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sum_array>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         sumArray (item, f, nElems, d_arrays + n * nElems, d_result + n);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -179,12 +180,12 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
 
   // sum over arrays
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class sum_arrays>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       sumArrays (item, nArrays, nElems, d_arrays, d_result, d_maxVal);
     });
-  }).wait();
+  }));
 
   end = std::chrono::steady_clock::now();
   time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -205,5 +206,6 @@ int main(int argc, char* argv[]) {
   free(factor);
   free(result_ref);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

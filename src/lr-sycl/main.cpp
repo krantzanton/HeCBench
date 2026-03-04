@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include "linear.h"
 
+#include "../sycl_timer.hpp"
 double gettime() {
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -95,5 +96,6 @@ int main(int argc, char* argv[]) {
   printf("\n> TEMPERATURE REGRESSION (%d)\n\n", TEMP_SIZE);
   print_results(&results);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

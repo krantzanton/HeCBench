@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define  bidx  omp_get_team_num()
 #define  tidx  omp_get_thread_num()
 
@@ -91,5 +92,6 @@ int main(int argc, char* argv[]) {
 
   free(ntt);
   free(res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_NUM_THREADS 256
 
 void SigmoidCrossEntropyWithLogitsKernel(
@@ -117,5 +118,6 @@ int main(int argc, char* argv[])
   free(h_out);
   free(r_out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -10,6 +10,7 @@
 #include "reference.h"
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 void md (
     const POSVECTYPE* __restrict position,
     FORCEVECTYPE* __restrict force,
@@ -140,5 +141,6 @@ int main(int argc, char** argv)
   free(force);
   free(neighborList);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

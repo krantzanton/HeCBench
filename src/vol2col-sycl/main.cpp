@@ -7,6 +7,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define threadsPerBlock 512
 
 // Kernel for fast unfold+copy on volumes
@@ -218,7 +219,7 @@ void eval (
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class v2c>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         vol2col_kernel<T>(
@@ -233,7 +234,7 @@ void eval (
           depth_col, height_col, width_col,
           d_data_col);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -260,7 +261,7 @@ void eval (
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class c2v>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         col2vol_kernel<T, T>(
@@ -275,7 +276,7 @@ void eval (
           depth_col, height_col, width_col,
           d_data_vol);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -352,5 +353,6 @@ int main(int argc, char* argv[])
                  dilation_t, dilation_h, dilation_w);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

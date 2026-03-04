@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 
 // thread block size
+#include "../sycl_timer.hpp"
 #define BSIZE 256
 
 template <class T>
@@ -198,7 +199,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k<float>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         KernelPool2DGrad<AvgPoolGrad<float>, float>(
@@ -207,7 +208,7 @@ int main(int argc, char* argv[])
           ksize_width, stride_height, stride_width, padding_height, padding_width,
           pool_process, exclusive, d_input_grad, channel_last);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -242,5 +243,6 @@ int main(int argc, char* argv[])
   sycl::free(d_input_grad, q);
   sycl::free(d_output, q);
   sycl::free(d_output_grad, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

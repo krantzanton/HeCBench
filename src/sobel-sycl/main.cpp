@@ -1,10 +1,10 @@
 /**********************************************************************
-  Copyright ©2013 Advanced Micro Devices, Inc. All rights reserved.
+  Copyright 2013 Advanced Micro Devices, Inc. All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-  •   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-  •   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+     Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+     Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -19,6 +19,7 @@
 #include <cmath>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using uchar4 = sycl::uchar4;
 using float4 = sycl::float4;
  
@@ -137,12 +138,12 @@ int main(int argc, char * argv[])
 
   for(int i = 0; i < iterations; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sobel>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         sobel_filter(inputImageBuffer, outputImageBuffer, width, height, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -191,5 +192,6 @@ int main(int argc, char * argv[])
   free(verificationOutput);
   free(inputImageData);
   free(outputImageData);
-  return SDK_SUCCESS;
+  SYCL_TIMER_DUMP();
+return SDK_SUCCESS;
 }

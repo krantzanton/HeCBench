@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define TILE_SIZE 5900
 #define NTHREADS 256
 
@@ -112,5 +113,6 @@ int main(int argc, char **argv) {
   verify(input, output);
   delete [] input;
   delete [] output;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

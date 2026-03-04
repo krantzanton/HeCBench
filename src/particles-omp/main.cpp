@@ -9,6 +9,7 @@
  *
  */
 
+#include "../sycl_timer.hpp"
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD         0.30f
 #define GRID_SIZE         64
@@ -217,5 +218,6 @@ int main(int argc, char** argv)
   free(hIndex       );
   free(hCellStart   );
   free(hCellEnd     );
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define block_size 256
 
 void glu_kernel(
@@ -113,5 +114,6 @@ int main(int argc, char* argv[])
   free(Y);
   free(Y_ref);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

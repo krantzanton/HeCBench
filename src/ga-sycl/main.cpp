@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -108,14 +109,14 @@ int main(int argc, char* argv[])
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class genetic>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         ga (item, d_target, d_query, d_batch_result,
             length, qseq_size, coarse_match_length,
             coarse_match_threshold, current_position);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -137,5 +138,6 @@ int main(int argc, char* argv[])
   sycl::free(d_target, q);
   sycl::free(d_query, q);
   sycl::free(d_batch_result, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

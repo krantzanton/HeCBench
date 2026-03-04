@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "constants.h"
 
+#include "../sycl_timer.hpp"
 namespace mean_shift::gpu {
   void mean_shift(const float *data, float *data_next,
                   const int teams, const int threads) {
@@ -172,5 +173,6 @@ int main(int argc, char* argv[]) {
   }
 
   free(d_data_next);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

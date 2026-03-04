@@ -9,6 +9,7 @@
 #include <chrono>
 
 // leftrotate function definition
+#include "../sycl_timer.hpp"
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
 #define F(x,y,z) ((x & y) | ((~x) & z))
@@ -578,6 +579,7 @@ int main(int argc, char** argv)
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

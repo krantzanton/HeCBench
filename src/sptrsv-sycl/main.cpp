@@ -3,6 +3,7 @@
 #include "tranpose.h"
 #include "read_mtx.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char ** argv)
 {
     if(argc != 3)
@@ -66,5 +67,6 @@ int main(int argc, char ** argv)
     free(b);
     free(x);
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

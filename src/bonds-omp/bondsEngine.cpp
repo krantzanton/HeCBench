@@ -10,6 +10,7 @@
 #include "bondsKernelsGpu.cpp"
 #include "bondsKernelsCpu.cpp"
 
+#include "../sycl_timer.hpp"
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
@@ -386,5 +387,6 @@ int main(int argc, char* argv[])
   }
   const int repeat = atoi(argv[1]);
   runBoundsEngine(repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

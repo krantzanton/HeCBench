@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void ga(const char *__restrict target,
         const char *__restrict query,
               char *__restrict batch_result,
@@ -113,5 +114,6 @@ int main(int argc, char* argv[])
   }
   printf("Total kernel execution time %f (s)\n", total_time * 1e-9f);
   printf("%s\n", error ? "FAIL" : "PASS");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

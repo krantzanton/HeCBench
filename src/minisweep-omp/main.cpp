@@ -8,6 +8,7 @@
 #include "utils.cpp"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 /*===========================================================================*/
 /*---Main---*/
 
@@ -481,5 +482,6 @@ int main( int argc, char** argv )
   free(faceyz);
   free(vslocal);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 } /*---main---*/

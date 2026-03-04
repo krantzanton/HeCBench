@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template<typename opmath_t>
 opmath_t gelu(opmath_t x) {
     constexpr opmath_t kAlpha = M_SQRT1_2;
@@ -109,5 +110,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

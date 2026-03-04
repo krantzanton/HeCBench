@@ -8,6 +8,7 @@
 #include "util.hpp"
 #include "mandel.hpp"
 
+#include "../sycl_timer.hpp"
 void Execute(sycl::queue &q) {
   // Demonstrate the Mandelbrot calculation serial and parallel
   MandelParallel m_par(row_size, col_size, max_iterations);
@@ -73,5 +74,6 @@ int main(int argc, char *argv[]) {
     std::terminate();
   }
   std::cout << "Success\n";
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
