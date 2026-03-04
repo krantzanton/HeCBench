@@ -16,7 +16,9 @@ from typing import List, Optional, Tuple
 # ---------- helpers ----------
 
 
-def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> Tuple[int, str, str]:
+def run(
+    cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None
+) -> Tuple[int, str, str]:
     p = subprocess.Popen(
         cmd,
         cwd=str(cwd),
@@ -24,7 +26,7 @@ def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> 
         stderr=subprocess.PIPE,
         text=True,
         env=env,
-        start_new_session=True
+        start_new_session=True,
     )
 
     try:
@@ -42,6 +44,7 @@ def run(cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None) -> 
         p.wait()
         raise  # re-raise so main program stops
 
+
 def list_targets(make_tool: str, proj_dir: Path, timeout: int) -> List[str]:
     # Parse targets from `make -qp`. This prints make database; targets are lines ending with ':'
     code, out, err = run([make_tool, "-qp"], proj_dir, timeout)
@@ -58,8 +61,10 @@ def list_targets(make_tool: str, proj_dir: Path, timeout: int) -> List[str]:
             targets.add(tgt)
     return sorted(targets)
 
+
 def has_target(targets: List[str], name: str) -> bool:
     return name in targets
+
 
 def guess_executable(proj_dir: Path) -> Optional[Path]:
     # Prefer executables in ./bin (depth 1)
@@ -97,34 +102,74 @@ def guess_executable(proj_dir: Path) -> Optional[Path]:
     candidates.sort(key=lambda p: (p.stat().st_size, p.stat().st_mtime), reverse=True)
     return candidates[0]
 
+
 def write_text(p: Path, text: str):
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text)
 
+
 # ---------- main ----------
+
 
 def main():
     ap = argparse.ArgumentParser(description="Compile and test all *-sycl benchmarks.")
-    ap.add_argument("--sycl-root", default=".", help="Root directory containing *-sycl projects (default: .)")
+    ap.add_argument(
+        "--sycl-root",
+        default=".",
+        help="Root directory containing *-sycl projects (default: .)",
+    )
     ap.add_argument("--make", default="make", help="Make tool (default: make)")
-    ap.add_argument("--make-jobs", "-j", type=int, default=os.cpu_count() or 4, help="Parallel jobs for make")
-    ap.add_argument("--timeout-build", type=int, default=900, help="Build timeout per project in seconds (default: 900)")
-    ap.add_argument("--timeout-run", type=int, default=180, help="Run timeout per project in seconds (default: 60)")
-    ap.add_argument("--skip-run", action="store_true", help="Only compile (skip run/tests)")
-    ap.add_argument("--device-filter", default=None, help="Value for SYCL_DEVICE_FILTER if you want to set it")
-    ap.add_argument("--pattern", default="*-sycl", help="Glob to pick projects (default: *-sycl)")
-    ap.add_argument("--results-dir", default="sycl_test_results", help="Where to store logs/results")
-    ap.add_argument("--cflags-plus", default="", help="Append tokens to EXTRA_CFLAGS (passed to make as EXTRA_CFLAGS+=tok ...)")
+    ap.add_argument(
+        "--make-jobs",
+        "-j",
+        type=int,
+        default=os.cpu_count() or 4,
+        help="Parallel jobs for make",
+    )
+    ap.add_argument(
+        "--timeout-build",
+        type=int,
+        default=900,
+        help="Build timeout per project in seconds (default: 900)",
+    )
+    ap.add_argument(
+        "--timeout-run",
+        type=int,
+        default=900,
+        help="Run timeout per project in seconds (default: 60)",
+    )
+    ap.add_argument(
+        "--skip-run", action="store_true", help="Only compile (skip run/tests)"
+    )
+    ap.add_argument(
+        "--device-filter",
+        default=None,
+        help="Value for SYCL_DEVICE_FILTER if you want to set it",
+    )
+    ap.add_argument(
+        "--pattern", default="*-sycl", help="Glob to pick projects (default: *-sycl)"
+    )
+    ap.add_argument(
+        "--results-dir", default="sycl_test_results", help="Where to store logs/results"
+    )
+    ap.add_argument(
+        "--cflags-plus",
+        default="",
+        help="Append tokens to EXTRA_CFLAGS (passed to make as EXTRA_CFLAGS+=tok ...)",
+    )
     args = ap.parse_args()
 
     sycl_root = Path(args.sycl_root).resolve()
     results_root = Path(args.results_dir).resolve()
     results_root.mkdir(parents=True, exist_ok=True)
-   
+
     # Discover projects
     projects = sorted([p for p in sycl_root.glob(args.pattern) if p.is_dir()])
     if not projects:
-        log(f"No projects found under {sycl_root} matching {args.pattern}", file=sys.stderr)
+        log(
+            f"No projects found under {sycl_root} matching {args.pattern}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     summary_rows = []
@@ -148,45 +193,60 @@ def main():
             failure_stage = "makefile_missing"
             note = "No Makefile"
             write_text(build_log, "[SKIP] No Makefile found.\n")
-            summary_rows.append({
-                "benchmark": proj_name,
-                "compile": "SKIP",
-                "run": "SKIP",
-                "failure_stage": failure_stage,
-                "note": note,
-            })
+            summary_rows.append(
+                {
+                    "benchmark": proj_name,
+                    "compile": "SKIP",
+                    "run": "SKIP",
+                    "failure_stage": failure_stage,
+                    "note": note,
+                }
+            )
             continue
 
         # 1) Build
-        build_cmd = [args.make, f"-j{args.make_jobs}", "CXX=acpp", "USE_GPU=no", "VENDOR=AdaptiveCpp"]
+        build_cmd = [
+            args.make,
+            f"-j{args.make_jobs}",
+            "CXX=acpp",
+            "USE_GPU=no",
+            "VENDOR=AdaptiveCpp",
+        ]
         if args.cflags_plus:
             for tok in shlex.split(args.cflags_plus):
                 build_cmd.append(f"EXTRA_CFLAGS+={tok}")
         code, out, err = run(build_cmd, proj, args.timeout_build)
-        write_text(build_log, f"$ {' '.join(shlex.quote(c) for c in build_cmd)}\n\n[stdout]\n{out}\n\n[stderr]\n{err}\n\n[exit] {code}\n")
-        compiled_ok = (code == 0)
+        write_text(
+            build_log,
+            f"$ {' '.join(shlex.quote(c) for c in build_cmd)}\n\n[stdout]\n{out}\n\n[stderr]\n{err}\n\n[exit] {code}\n",
+        )
+        compiled_ok = code == 0
         if not compiled_ok:
             failure_stage = "compile"
             note = f"make exit {code}"
             # record and skip running
             write_text(run_log, "[SKIP] Build failed; not running.\n")
-            summary_rows.append({
-                "benchmark": proj_name,
-                "compile": "FAIL",
-                "run": "SKIP",
-                "failure_stage": failure_stage,
-                "note": note,
-            })
+            summary_rows.append(
+                {
+                    "benchmark": proj_name,
+                    "compile": "FAIL",
+                    "run": "SKIP",
+                    "failure_stage": failure_stage,
+                    "note": note,
+                }
+            )
             continue
 
         if args.skip_run:
-            summary_rows.append({
-                "benchmark": proj_name,
-                "compile": "PASS",
-                "run": "SKIP",
-                "failure_stage": None,
-                "note": "run skipped",
-            })
+            summary_rows.append(
+                {
+                    "benchmark": proj_name,
+                    "compile": "PASS",
+                    "run": "SKIP",
+                    "failure_stage": None,
+                    "note": "run skipped",
+                }
+            )
             continue
 
         # 2) Test/run
@@ -206,34 +266,45 @@ def main():
         run_cmd.append("run")
         run_code, r_out, r_err = run(run_cmd, proj, args.timeout_run, env=run_env)
 
-        write_text(run_log, f"[via] {ran_via}\n\n[stdout]\n{r_out}\n\n[stderr]\n{r_err}\n\n[exit] {run_code}\n")
-        run_ok = (run_code == 0)
+        write_text(
+            run_log,
+            f"[via] {ran_via}\n\n[stdout]\n{r_out}\n\n[stderr]\n{r_err}\n\n[exit] {run_code}\n",
+        )
+        run_ok = run_code == 0
         if not run_ok:
             failure_stage = "run"
             note = f"{ran_via or 'no-run'} exit {run_code}"
 
-        summary_rows.append({
-            "benchmark": proj_name,
-            "compile": "PASS" if compiled_ok else "FAIL",
-            "run": "PASS" if run_ok else "FAIL",
-            "failure_stage": failure_stage,
-            "note": note,
-        })
+        summary_rows.append(
+            {
+                "benchmark": proj_name,
+                "compile": "PASS" if compiled_ok else "FAIL",
+                "run": "PASS" if run_ok else "FAIL",
+                "failure_stage": failure_stage,
+                "note": note,
+            }
+        )
 
     # Write summary
     csv_path = results_root / "results.csv"
     json_path = results_root / "results.json"
     with csv_path.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["benchmark", "compile", "run", "failure_stage", "note"])
+        w = csv.DictWriter(
+            f, fieldnames=["benchmark", "compile", "run", "failure_stage", "note"]
+        )
         w.writeheader()
         for row in summary_rows:
             w.writerow(row)
     json_path.write_text(json.dumps(summary_rows, indent=2))
 
     total = len(summary_rows)
-    passed_both = sum(1 for r in summary_rows if r["compile"] == "PASS" and r["run"] == "PASS")
+    passed_both = sum(
+        1 for r in summary_rows if r["compile"] == "PASS" and r["run"] == "PASS"
+    )
     failed_compile = sum(1 for r in summary_rows if r["compile"] == "FAIL")
-    failed_run = sum(1 for r in summary_rows if r["compile"] == "PASS" and r["run"] == "FAIL")
+    failed_run = sum(
+        1 for r in summary_rows if r["compile"] == "PASS" and r["run"] == "FAIL"
+    )
     skipped_run = sum(1 for r in summary_rows if r["run"] == "SKIP")
 
     elapsed = time.time() - start_time
@@ -245,11 +316,14 @@ def main():
     log(f"Logs & results in: {csv_path.parent}")
     log(f"Elapsed: {int(elapsed)}s")
 
+
 if __name__ == "__main__":
     orig_stdout = sys.stdout
-    log_file = open('log.txt', 'w')
+    log_file = open("log.txt", "w")
+
     def log(text):
-        log_file.write(text+"\n")
+        log_file.write(text + "\n")
+
     try:
         main()
     except KeyboardInterrupt:
