@@ -1,7 +1,7 @@
 #include <sycl/sycl.hpp>
 #include "logan.hpp"
 
-#include "../sycl_timer.hpp"
+#include "../../sycl_timer.hpp"
 using namespace std;
 
 #define BATCH_SIZE 30000

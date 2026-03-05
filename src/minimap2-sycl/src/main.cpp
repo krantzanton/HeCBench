@@ -7,7 +7,7 @@
 #include "device_kernel_wrapper.h"
 #include "memory_scheduler.h"
 
-#include "../sycl_timer.hpp"
+#include "../../sycl_timer.hpp"
 #define READ_BATCH_SIZE 0x7FFFFFFF
 
 int main(int argc, char *argv[]) {

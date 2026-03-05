@@ -10,7 +10,7 @@
 
 #include "cuhd_gpu_decoder.h"
 
-#include "../sycl_timer.hpp"
+#include "../../sycl_timer.hpp"
 inline void decode_subsequence(
     std::uint32_t subsequence_size, std::uint32_t current_subsequence,
     std::uint32_t subsequences_processed, UNIT_TYPE mask, std::uint32_t shift,

@@ -17,7 +17,7 @@
 #include "multians.h"
 
 // encoder configuration //
-#include "../sycl_timer.hpp"
+#include "../../sycl_timer.hpp"
 #define NUM_SYMBOLS 256
 #define NUM_STATES 1024
 
