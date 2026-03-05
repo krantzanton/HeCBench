@@ -4,7 +4,7 @@
 #include <sycl/sycl.hpp>
 #include <iostream>
 
-#include "../../sycl_timer.hpp"
+#include "../sycl_timer.hpp"
 void 
 kernel_gpu_wrapper(
     params_common common,
