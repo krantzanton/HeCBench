@@ -33,6 +33,7 @@
  *
  */
 
+#include "../sycl_timer.hpp"
 #define _GPU_COMPILER_
 
 #include "support/common.h"
@@ -120,7 +121,7 @@ void call_Padding_kernel(sycl::queue &q, int blocks, int threads, int n, int m,
   sycl::range<1> gws (threads * blocks);
   sycl::range<1> lws (threads);
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
 #ifdef DYNAMIC_PARTITION
       sycl::local_accessor<int, 1> sm (sycl::range<1>(l_mem_size), cgh);
 #endif
@@ -133,5 +134,5 @@ void call_Padding_kernel(sycl::queue &q, int blocks, int threads, int n, int m,
 #endif
         , item);
     });
-  });
+  }));
 }

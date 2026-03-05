@@ -8,6 +8,7 @@
 #include "backprop.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 double get_time() {
   struct timeval t;
   gettimeofday(&t,NULL);
@@ -23,7 +24,8 @@ unsigned int num_blocks = 0;
 int main( int argc, char** argv) 
 {
   setup(argc, argv);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 int bpnn_train_kernel(BPNN *net, float *eo, float *eh)

@@ -26,6 +26,7 @@
 #include <omp.h>
 #include "StringSearch.h"
 
+#include "../sycl_timer.hpp"
 int verify(uint* resultCount, uint workGroupCount, 
     uint* result, uint searchLenPerWG, 
     std::vector<uint> &cpuResults) 
@@ -462,5 +463,6 @@ int main(int argc, char* argv[])
   free(text);
   free(result);
   free(resultCount);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

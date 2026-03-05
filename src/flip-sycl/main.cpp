@@ -9,6 +9,7 @@
 // Example
 // https://pytorch.org/docs/stable/generated/torch.flip.html
 
+#include "../sycl_timer.hpp"
 template <typename scalar_t>
 void flip_kernel(
     sycl::nd_item<1> &item,
@@ -135,7 +136,7 @@ void flip (const int64_t num_dims, const int64_t num_flip_dims,
   sycl::range<1> lws (threadsPerBlock);
 
   // warmup and verify
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       flip_kernel<scalar_t>(
         item,
@@ -149,7 +150,7 @@ void flip (const int64_t num_dims, const int64_t num_flip_dims,
         d_shape,
         num_dims);
     });
-  });
+  }));
 
   flip_kernel_cpu<scalar_t>(
     input, output_ref, n, flip.data(), num_flip_dims,
@@ -170,7 +171,7 @@ void flip (const int64_t num_dims, const int64_t num_flip_dims,
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         flip_kernel<scalar_t>(
           item,
@@ -184,7 +185,7 @@ void flip (const int64_t num_dims, const int64_t num_flip_dims,
           d_shape,
           num_dims);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -226,5 +227,6 @@ int main(int argc, char* argv[])
   printf("=========== Data type is FP64 ==========\n");
   flip<double>(num_dims, num_flip_dims, dim_size, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

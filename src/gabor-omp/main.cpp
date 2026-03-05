@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 double* generateGaborKernelDevice(
   const int repeat,
   const unsigned int height,
@@ -79,4 +80,6 @@ int main(int argc, char* argv[]) {
   printf("%s\n", ok ? "PASS" : "FAIL");
   free(h_filter);
   free(d_filter);
+
+  SYCL_TIMER_DUMP();
 }

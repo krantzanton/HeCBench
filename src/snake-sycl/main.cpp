@@ -37,6 +37,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace std::chrono;
 
 #define warp_size 32
@@ -181,13 +182,13 @@ int main(int argc, const char * const argv[])
     auto t1 = high_resolution_clock::now();
 
     for (int n = 0; n < repeat; n++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class filter>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           sneaky_snake (item, d_ReadSeq, d_RefSeq, d_Results,
                         NumReads, F_ErrorThreshold);
        });
-      });
+      }));
     }
 
     q.wait();
@@ -217,5 +218,6 @@ int main(int argc, const char * const argv[])
   sycl::free(d_ReadSeq, q);
   sycl::free(d_RefSeq, q);
   sycl::free(d_Results, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

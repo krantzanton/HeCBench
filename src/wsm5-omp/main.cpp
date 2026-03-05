@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   if (argc != 2) {
@@ -119,5 +120,6 @@ int main(int argc, char* argv[])
 
   printf("Average kernel execution time: %lf (ms)\n", (time * 1e-6) / repeat);
   printf("Checksum: rain = %f snow = %f\n", rain_sum, snow_sum);
-  return(0) ;
+  SYCL_TIMER_DUMP();
+return(0) ;
 }

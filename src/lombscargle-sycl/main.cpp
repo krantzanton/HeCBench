@@ -40,6 +40,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void lombscargle_cpu( const int x_shape,
     const int freqs_shape,
     const float *__restrict__ x,
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class lombscargle>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         const int tx = item.get_global_id(0);
@@ -173,7 +174,7 @@ int main(int argc, char* argv[]) {
                   ( c_tau2 * ss - cs_tau * cs + s_tau2 * cc ) ) ) ) * y_dot;
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -206,5 +207,6 @@ int main(int argc, char* argv[]) {
   free(f);
   free(p);
   free(p2);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

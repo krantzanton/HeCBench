@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <chrono>
 
+#include "../sycl_timer.hpp"
 using namespace std::chrono;
 
 #define warp_size 32
@@ -217,5 +218,6 @@ int main(int argc, const char * const argv[])
   free(RefSeq);
   free(DFinal_Results);
   free(HFinal_Results);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

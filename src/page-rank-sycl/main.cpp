@@ -33,6 +33,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -201,7 +202,7 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     //map <<< dim3(num_blocks), dim3(block_size) >>> ( d_pages, d_page_ranks, d_maps, d_noutlinks, n);
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class map>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
@@ -211,10 +212,10 @@ int main(int argc, char *argv[]) {
             d_maps[(size_t)i*n+j] = ldg(&d_pages[(size_t)i*n+j])*outbound_rank;
         }
       });
-    });
+    }));
 
     //reduce<<< dim3(num_blocks), dim3(block_size) >>>(d_page_ranks, d_maps, n, d_diffs);
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class reduce>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int j = item.get_global_id(0);
@@ -229,7 +230,7 @@ int main(int argc, char *argv[]) {
           d_page_ranks[j] = new_rank;
         }
       });
-    });
+    }));
 
     q.wait();
     auto end = std::chrono::high_resolution_clock::now();
@@ -263,5 +264,6 @@ int main(int argc, char *argv[]) {
   free(page_ranks);
   free(noutlinks);
   free(diffs);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

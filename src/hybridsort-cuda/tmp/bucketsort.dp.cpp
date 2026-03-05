@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Forward declarations
 ////////////////////////////////////////////////////////////////////////////////
+#include "../sycl_timer.hpp"
 void calcPivotPoints(float *histogram, int histosize, int listsize,
     int divisions, float min, float max, float *pivotPoints,
     float histo_width);
@@ -62,7 +63,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
 
   q_ct1.memcpy(d_offsets_buff, h_offsets, sizeof(unsigned int) * DIVISIONS);
                
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q_ct1.submit([&](sycl::handler &cgh) {
     sycl::accessor<unsigned int, 1, sycl::access::mode::read_write,
                    sycl::access::target::local>
         s_Hist_acc_ct1(sycl::range<1>(3072 /*HISTOGRAM_BLOCK_MEMORY*/), cgh);
@@ -76,7 +77,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
           histogram1024(d_offsets_buff, d_input_buff, listsize, minimum,
                         maximum, item_ct1, s_Hist_acc_ct1.get_pointer());
         });
-  });
+  }));
   q_ct1.memcpy(h_offsets, d_offsets_buff, sizeof(unsigned int) * histosize)
       .wait();
 
@@ -118,7 +119,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
   d_prefixoffsets_buff = (unsigned int *)sycl::malloc_device(
       sizeof(unsigned int) * blocks * BUCKET_BLOCK_MEMORY, q_ct1);
 
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q_ct1.submit([&](sycl::handler &cgh) {
     sycl::accessor<unsigned int, 1, sycl::access::mode::read_write,
                    sycl::access::target::local>
         s_offset_acc_ct1(sycl::range<1>(1024 /*BUCKET_BLOCK_MEMORY*/), cgh);
@@ -132,7 +133,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
                       d_pivotPoints_buff, listsize, item_ct1,
                       s_offset_acc_ct1.get_pointer());
         });
-  });
+  }));
 
 #ifdef DEBUG
   printf("d_indice\n");
@@ -154,7 +155,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
 #endif
   size_t globalpre = DIVISIONS;
 
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q_ct1.submit([&](sycl::handler &cgh) {
     cgh.parallel_for(
         sycl::nd_range<3>(sycl::range<3>(1, 1, globalpre / localpre) *
                               sycl::range<3>(1, 1, localpre),
@@ -162,7 +163,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
         [=](sycl::nd_item<3> item_ct1) {
           bucketprefix(d_prefixoffsets_buff, d_offsets_buff, blocks, item_ct1);
         });
-  });
+  }));
 
   // copy the sizes from device to host
   q_ct1
@@ -212,7 +213,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
   size_t localfinal = BUCKET_THREAD_N;
   size_t globalfinal = blocks*BUCKET_THREAD_N;
 
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q_ct1.submit([&](sycl::handler &cgh) {
     sycl::accessor<unsigned int, 1, sycl::access::mode::read_write,
                    sycl::access::target::local>
         s_offset_acc_ct1(sycl::range<1>(1024 /*BUCKET_BLOCK_MEMORY*/), cgh);
@@ -226,7 +227,7 @@ void bucketSort(float *d_input, float *d_output, int listsize,
                      d_prefixoffsets_buff, d_offsets_buff, listsize, item_ct1,
                      s_offset_acc_ct1.get_pointer());
         });
-  });
+  }));
 
   q_ct1
       .memcpy(d_output, d_bucketOutput,

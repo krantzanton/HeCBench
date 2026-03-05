@@ -11,6 +11,7 @@
 #include <omp.h>
 #include <sys/time.h>
 
+#include "../sycl_timer.hpp"
 #define INSTANCES 224   /* # of instances */
 #define ATTRIBUTES 4096 /* # of attributes */
 #define THREADS 128    /* # of threads per block */
@@ -222,5 +223,6 @@ int main(int argc, char **argv) {
   free(gpu_distance);
   free(data_char);
   free(data);
-  return status;
+  SYCL_TIMER_DUMP();
+return status;
 }

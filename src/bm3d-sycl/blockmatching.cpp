@@ -4,6 +4,7 @@
 
 
 // Nearest lower power of 2
+#include "../sycl_timer.hpp"
 inline uint flp2 (uint x)
 {
   return (0x80000000u >> sycl::clz(x));
@@ -261,7 +262,7 @@ void run_block_matching(
     const uint shared_memory_size
     )
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<uint, 1> lmem (sycl::range<1>(shared_memory_size/sizeof(uint)), cgh);
     cgh.parallel_for<class bm>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -276,5 +277,5 @@ void run_block_matching(
                      start_point
                      );          
     });
-  });
+  }));
 }

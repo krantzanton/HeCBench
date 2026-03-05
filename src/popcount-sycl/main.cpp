@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define m1  0x5555555555555555
 #define m2  0x3333333333333333
 #define m4  0x0f0f0f0f0f0f0f0f
@@ -78,7 +79,7 @@ int main(int argc, char* argv[])
   q.wait();
   auto start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc1>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
@@ -91,7 +92,7 @@ int main(int argc, char* argv[])
         x += x >> 32;  //put count of each 64 bits into their lowest 8 bits
         d_r[i] = x & 0x7f;
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
 
   start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc2>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
@@ -114,7 +115,7 @@ int main(int argc, char* argv[])
         x = (x + (x >> 4)) & m4;        //put count of each 8 bits into those 8 bits
         d_r[i] = (x * h01) >> 56;  //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ...
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -127,7 +128,7 @@ int main(int argc, char* argv[])
 
   start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc3>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
@@ -136,7 +137,7 @@ int main(int argc, char* argv[])
         for (count=0; x; count++) x &= x - 1;
         d_r[i] = count;
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -149,7 +150,7 @@ int main(int argc, char* argv[])
 
   start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc4>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
@@ -162,7 +163,7 @@ int main(int argc, char* argv[])
         }
         d_r[i] = cnt;
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -176,7 +177,7 @@ int main(int argc, char* argv[])
 
   start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc5>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
@@ -193,7 +194,7 @@ int main(int argc, char* argv[])
         unsigned char i8 = lut[(x >> 56) & 0xFF];
         d_r[i] = (i1+i2)+(i3+i4)+(i5+i6)+(i7+i8);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -207,13 +208,13 @@ int main(int argc, char* argv[])
   // the kernel performance is slightly better than the kernel at line 95
   start = std::chrono::steady_clock::now();
   for (int n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &h) {
       h.parallel_for<class pc6>(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0);
         if (i >= length) return;
         d_r[i] = sycl::popcount(d_data[i]);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -227,5 +228,6 @@ int main(int argc, char* argv[])
   sycl::free(d_r, q);
   free(data);
   free(result);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -96,6 +96,7 @@
 #include "util.h"
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main ( int argc, char **argv )
 {
   if (argc != 2) {
@@ -173,12 +174,12 @@ int main ( int argc, char **argv )
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class solution>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         fk (item, ni, nj, seed, N, a, b, h, rth, d_n_inside, d_err);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -200,5 +201,6 @@ int main ( int argc, char **argv )
   printf ( "  Normal end of execution.\n" );
   printf ( "\n" );
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

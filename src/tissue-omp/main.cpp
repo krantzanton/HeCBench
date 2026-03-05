@@ -12,6 +12,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void reference(
     const   int *__restrict d_tisspoints,
     const float *__restrict d_gtt,
@@ -150,5 +151,6 @@ int main(int argc, char** argv) {
   free(h_ctprev);
   free(h_qt);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

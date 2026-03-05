@@ -2,6 +2,7 @@
 #include <chrono>
 #include <string.h>
 
+#include "../sycl_timer.hpp"
 #ifndef dataType
 #define dataType double
 #endif
@@ -264,5 +265,6 @@ int main(int argc, char **argv) {
   std::cout << "********** Total Time Taken **********= " << elapsedTimer << " secs"
             << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

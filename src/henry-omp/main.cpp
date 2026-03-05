@@ -8,6 +8,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NUMTHREADS 256  // number of threads per GPU block
 
 // data for atom of crystal structure
@@ -235,5 +236,6 @@ int main(int argc, char *argv[]) {
 
   free(structureAtoms);
   free(boltzmannFactors);
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

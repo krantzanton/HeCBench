@@ -5,6 +5,7 @@
 #include <random>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void zoom_in_kernel(
     sycl::nd_item<3> &item,
     float *__restrict staging_tile,
@@ -340,7 +341,7 @@ void zoom (sycl::queue &q, int repeat, int input_sizes[4], float zoom_factor[2])
     auto start = std::chrono::steady_clock::now();
 
     if (is_zoom_in) {
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sm (sycl::range<1>(smem_size), cgh);
 
         auto o_h = output_sizes[2];
@@ -355,10 +356,10 @@ void zoom (sycl::queue &q, int repeat, int input_sizes[4], float zoom_factor[2])
                          d_input_img, d_output_img, H, W,
                          o_h, o_w, pitch, o_h_start, o_h_end, o_w_start, o_w_end);
         });
-      });
+      }));
     }
     else if (is_zoom_out) {
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor<float, 1> sm (sycl::range<1>(smem_size), cgh);
 
         auto o_h = output_sizes[2];
@@ -373,13 +374,13 @@ void zoom (sycl::queue &q, int repeat, int input_sizes[4], float zoom_factor[2])
                           d_input_img, d_output_img, H, W,
                           o_h, o_w, pitch, o_h_start, o_h_end, o_w_start, o_w_end);
         });
-      });
+      }));
 
       sycl::range<3> grid2(C * N,
                            int((H - 1) / block[1] + 1),
                            int((W - 1) / block[2] + 1));
 
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
         auto np_h_start = pad_dims[0][0];
         auto np_w_start = pad_dims[1][0];
         auto np_h_end = pad_dims[0][0] + output_sizes[2];
@@ -390,7 +391,7 @@ void zoom (sycl::queue &q, int repeat, int input_sizes[4], float zoom_factor[2])
                             np_h_start, np_w_start,
                             np_h_end, np_w_end);
         });
-      });
+      }));
     }
 
     q.wait();
@@ -444,5 +445,6 @@ int main(int argc, char* argv[])
   zf[0] = 0.6f; zf[1] = 0.9f;
   zoom(q, repeat, input_sizes, zf);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

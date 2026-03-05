@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "../sycl_timer.hpp"
 #pragma once
 
 #define DI  inline 
@@ -107,13 +108,13 @@ long reverseImpl(data_t *out, const data_t *in, int nrows, int ncols,
 
   auto start = std::chrono::steady_clock::now();
 
-  stream.parallel_for(
+  SYCL_TIME_AGG("kernel 1", stream.parallel_for(
       sycl::nd_range<1>(sycl::range<1>(nblks) * sycl::range<1>(TPB),
                         sycl::range<1>(TPB)),
       [=](sycl::nd_item<1> item) {
         reverseKernel<data_t, veclen_>(out, in, nrows, ncols, rowMajor,
                                        alongRows, len, item);
-      }).wait();
+      }));
 
   auto end = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

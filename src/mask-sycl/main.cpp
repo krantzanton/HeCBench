@@ -4,6 +4,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_THREADS 256
 
 #define KERNEL_LOOP(index, range) \
@@ -242,12 +243,12 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sequence>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         sequenceMaskKernel(item, N, M, batch_dim, d_in, d_seq_len, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -262,13 +263,13 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class window>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         windowMaskKernel(item, N, M, batch_dim, d_in, d_window,
                          radius, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -283,12 +284,12 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class upper>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         upperMaskKernel(item, N, M, batch_dim, d_in, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -303,12 +304,12 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class lower>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         lowerMaskKernel(item, N, M, batch_dim, d_in, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -323,12 +324,12 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class upperDiag>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         upperDiagMaskKernel(item, N, M, batch_dim, d_in, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -343,12 +344,12 @@ void eval_mask (const int M, const int N, const int B, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class lowerDiag>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         lowerDiagMaskKernel(item, N, M, batch_dim, d_in, fill_val, d_out);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -383,5 +384,6 @@ int main(int argc, char* argv[])
 
   eval_mask<int>(M, N, B, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

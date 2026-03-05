@@ -21,6 +21,7 @@
 #include "hamiltonian.h"
 #include "model.h"
 #include "vector.h"
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256 // optimized
 
 #ifndef CPU_ONLY
@@ -230,7 +231,7 @@ void Hamiltonian::apply(Vector& input, Vector& output)
   const int size = n;
   const real emax = energy_max;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto potential_t = potential;
@@ -256,7 +257,7 @@ void Hamiltonian::apply(Vector& input, Vector& output)
         output_real_part,
         output_imag_part);
     });
-  });
+  }));
 #else
   cpu_apply_hamiltonian(
     n, max_neighbor, energy_max, neighbor_number, neighbor_list, potential, hopping_real,
@@ -342,7 +343,7 @@ void Hamiltonian::apply_commutator(Vector& input, Vector& output)
   sycl::range<1> gws (grid_size * BLOCK_SIZE);
   sycl::range<1> lws (BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto hopping_real_t = hopping_real;
@@ -368,7 +369,7 @@ void Hamiltonian::apply_commutator(Vector& input, Vector& output)
         output_real_part,
         output_imag_part);
     });
-  });
+  }));
 #else
   cpu_apply_commutator(
     n, max_neighbor, energy_max, neighbor_number, neighbor_list, hopping_real, hopping_imag, xx,
@@ -449,7 +450,7 @@ void Hamiltonian::apply_current(Vector& input, Vector& output)
   sycl::range<1> lws (BLOCK_SIZE);
   const int size = n;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto hopping_real_t = hopping_real;
@@ -474,7 +475,7 @@ void Hamiltonian::apply_current(Vector& input, Vector& output)
         output_real_part,
         output_imag_part);
     });
-  });
+  }));
 #else
   cpu_apply_current(
     n, max_neighbor, neighbor_number, neighbor_list, hopping_real, hopping_imag, xx,
@@ -537,7 +538,7 @@ void Hamiltonian::chebyshev_01(
   sycl::range<1> lws (BLOCK_SIZE);
   const int size = n;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     auto input0_real_part = state_0.real_part;
     auto input0_imag_part = state_0.imag_part;
     auto input1_real_part = state_1.real_part;
@@ -557,7 +558,7 @@ void Hamiltonian::chebyshev_01(
         output_imag_part,
         bessel_0, bessel_1, direction);
     });
-  });
+  }));
 #else
   cpu_chebyshev_01(
     n, state_0.real_part, state_0.imag_part, state_1.real_part, state_1.imag_part, state.real_part,
@@ -717,7 +718,7 @@ void Hamiltonian::chebyshev_2(
   const int size = n;
   const real emax = energy_max;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto potential_t = potential;
@@ -752,7 +753,7 @@ void Hamiltonian::chebyshev_2(
         state_imag_part,
         bessel_m, label);
     });
-  });
+  }));
 #else
   cpu_chebyshev_2(
     n, max_neighbor, energy_max, neighbor_number, neighbor_list, potential, hopping_real,
@@ -809,7 +810,7 @@ void Hamiltonian::chebyshev_1x(Vector& input, Vector& output, real bessel_1)
   sycl::range<1> lws (BLOCK_SIZE);
   const int size = n;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     auto input_real_part = input.real_part;
     auto input_imag_part = input.imag_part;
     auto output_real_part = output.real_part;
@@ -825,7 +826,7 @@ void Hamiltonian::chebyshev_1x(Vector& input, Vector& output, real bessel_1)
         output_imag_part,
         bessel_1);
     });
-  });
+  }));
 #else
   cpu_chebyshev_1x(n, input.real_part, input.imag_part, output.real_part, output.imag_part, bessel_1);
 #endif
@@ -1047,7 +1048,7 @@ void Hamiltonian::chebyshev_2x(
   const int size = n;
   const real emax = energy_max;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto potential_t = potential;
@@ -1097,7 +1098,7 @@ void Hamiltonian::chebyshev_2x(
         state_imag_part,
         bessel_m, label);
     });
-  });
+  }));
 
 #else
   cpu_chebyshev_2x(
@@ -1209,7 +1210,7 @@ void Hamiltonian::kernel_polynomial(Vector& state_0, Vector& state_1, Vector& st
   const int size = n;
   const real emax = energy_max;
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
     auto neighbor_number_t = neighbor_number;
     auto neighbor_list_t = neighbor_list;
     auto potential_t = potential;
@@ -1239,7 +1240,7 @@ void Hamiltonian::kernel_polynomial(Vector& state_0, Vector& state_1, Vector& st
         state2_real_part,
         state2_imag_part);
     });
-  });
+  }));
 #else
   cpu_kernel_polynomial(
     n, max_neighbor, energy_max, neighbor_number, neighbor_list, potential, hopping_real,

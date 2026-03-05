@@ -1,4 +1,5 @@
 #include <sycl/sycl.hpp>
+#include "../sycl_timer.hpp"
 #define THREADS_PER_SITE 36
 
 class k_mat_nn;
@@ -45,7 +46,7 @@ double su3_mat_nn(const std::vector<site> &a, const std::vector<su3_matrix> &b, 
     }
 
     // create a command_group to issue commands
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       // Lambda function defines the kernel scope
       cgh.parallel_for<class k_mat_nn>(
         sycl::nd_range<1> {total_wi, wgsize}, [=](sycl::nd_item<1> item) {
@@ -66,7 +67,7 @@ double su3_mat_nn(const std::vector<site> &a, const std::vector<su3_matrix> &b, 
           d_c[i].link[j].e[k][l] = cc;
         }
       }); // end of the kernel lambda function
-    });   // end of command group
+    }));   // end of command group
   } // end of iteration loop
   q.wait();
 

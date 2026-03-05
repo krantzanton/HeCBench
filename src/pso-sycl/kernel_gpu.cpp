@@ -2,6 +2,7 @@
 #include <sycl/sycl.hpp>
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 float fitness_function(float x[])
 {
   float res = 0.f;
@@ -110,18 +111,18 @@ extern "C" void gpu_pso(int p, int r,
   {
     float rp=getRandomClamped(iter);
     float rg=getRandomClamped(r-iter);
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k1>(sycl::nd_range<1>(gws1, lws), [=] (sycl::nd_item<1> item) {
         kernelUpdateParticle(item, devPos,devVel,devPBest,devGBest,
                              p,rp,rg);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k2>(sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
         kernelUpdatePBest(item, devPos,devPBest,devGBest,p);
       });
-    });
+    }));
   }
 
   q.wait();

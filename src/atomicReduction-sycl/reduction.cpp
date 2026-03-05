@@ -27,6 +27,7 @@
 #include <sycl/sycl.hpp>
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv)
 {
 #ifdef USE_GPU
@@ -73,11 +74,11 @@ int main(int argc, char** argv)
   // warmup
   for(int i=0;i<N;i++) {
     q.memset(out, 0, sizeof(int)).wait();
-    q.parallel_for(sycl::nd_range<1>(sycl::range<1>(2048*256),
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(sycl::range<1>(2048*256),
                                      sycl::range<1>(256)),
       [=](sycl::nd_item<1> item) {
       atomic_reduction(in, out, arrayLength, item);
-    });
+    }));
   }
   q.wait();
 
@@ -89,13 +90,13 @@ int main(int argc, char** argv)
   t1 = std::chrono::high_resolution_clock::now();                              \
   for (int i = 0; i < N; i++) {                                                \
     q.memset(out, 0, sizeof(int));                                             \
-    q.submit([&](sycl::handler &cgh) {                                         \
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {                                         \
       cgh.parallel_for(sycl::nd_range<1>(                                      \
         sycl::range<1>(block_size * grid_size),                                \
         sycl::range<1>(block_size)), [=](sycl::nd_item<1> item) {              \
         kernel_name(in, out, arrayLength, item);                               \
       });                                                                      \
-    });                                                                        \
+    }));                                                                        \
   }                                                                            \
   q.wait();                                                                    \
   t2 = std::chrono::high_resolution_clock::now();                              \
@@ -123,5 +124,6 @@ int main(int argc, char** argv)
   sycl::free(in, q);
   sycl::free(out, q);
   free(array);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

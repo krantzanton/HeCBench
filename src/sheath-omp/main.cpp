@@ -2,6 +2,7 @@
 // https://www.particleincell.com/wp-content/uploads/2016/02/sheath-gpu.cu
 
 
+#include "../sycl_timer.hpp"
 /* 1D sheath PIC simulation with OpenMP offloading */
 
 #include <stdio.h>
@@ -245,7 +246,8 @@ int main(int argc, char* argv[])
 
   } /* openmp */
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 /***** HELPER FUNCTIONS *********************************************************/

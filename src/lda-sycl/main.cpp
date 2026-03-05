@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -112,7 +113,7 @@ int main(int argc, char* argv[]) {
 
   for (i = 0; i < repeat; i++) {
     init_gamma = (i == 0) ? true : false;
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> shared (sycl::range<1>(4 * num_topics), cgh);
       sycl::local_accessor<float, 1> reduce (sycl::range<1>(32), cgh);
       cgh.parallel_for<class train_step>(
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]) {
           d_vali_losses,
           d_locks);
        });
-     });
+     }));
   }
 
   q.wait();
@@ -150,7 +151,7 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
 
   for (i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> shared (sycl::range<1>(4 * num_topics), cgh);
       sycl::local_accessor<float, 1> reduce (sycl::range<1>(32), cgh);
       cgh.parallel_for<class vali_step>(
@@ -173,7 +174,7 @@ int main(int argc, char* argv[]) {
           d_vali_losses,
           d_locks);
        });
-     });
+     }));
   }
 
   q.wait();
@@ -201,5 +202,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_train_losses, q);
   sycl::free(d_vali_losses, q);
   sycl::free(d_locks, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

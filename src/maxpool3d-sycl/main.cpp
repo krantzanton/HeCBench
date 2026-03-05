@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef float DTYPE;
 
 void maxpool3d(
@@ -107,14 +108,14 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class maxpool3>(
       sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         maxpool3d(d_image, d_result, Hstride, Vstride,
                   pool_width, pool_height, i_img_count, i_img_width, i_img_height,
                   o_img_width, o_img_height, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -153,5 +154,6 @@ int main(int argc, char** argv)
   free(d_output);
   sycl::free(d_image, q);
   sycl::free(d_result, q);
-  return status;
+  SYCL_TIMER_DUMP();
+return status;
 }

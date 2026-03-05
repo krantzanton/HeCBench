@@ -28,6 +28,7 @@
 
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main()
 {
   // a set of variables defined in constants.h
@@ -133,5 +134,6 @@ int main()
   }
 
   delete [] Results;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

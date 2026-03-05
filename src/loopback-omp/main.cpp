@@ -11,6 +11,7 @@
 #include "loopback.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 3) {
     printf("Usage: %s <dump> <repeat>\n", argv[0]);
@@ -102,5 +103,6 @@ int main(int argc, char* argv[]) {
   free(lookbackSimulationResultsVariance);
   free(tauswortheSeeds);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

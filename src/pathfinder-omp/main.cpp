@@ -19,6 +19,7 @@
 #include <string.h>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // halo width along one direction when advancing to the next iteration
@@ -59,7 +60,8 @@ int main(int argc, char** argv)
   }
   else
   {
-    printf("Usage: %s <column length> <row length> <pyramid_height>\n", argv[0]);
+    printf("Usage: %s <column length> <row length> <pyramid_height>\n", argv[0]);
+
     exit(0);
   }
 
@@ -268,5 +270,6 @@ int main(int argc, char** argv)
   free(gpuSrc);
   free(gpuResult);
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void zero_point (
     const float* x_min,
     const float* x_max,
@@ -153,5 +154,6 @@ int main(int argc, char* argv[])
   free(min);
   free(max);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

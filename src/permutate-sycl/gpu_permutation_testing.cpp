@@ -39,6 +39,7 @@
  * @param uint32_t $num_thread: The number of threads per block
  * @return bool $iid_check_result
  */
+#include "../sycl_timer.hpp"
 bool gpu_permutation_testing(double *gpu_runtime, uint32_t *counts, double *results,
                              double mean, double median, uint8_t *data, uint32_t size,
                              uint32_t len, uint32_t N, uint32_t num_block, uint32_t num_thread)
@@ -91,18 +92,18 @@ bool gpu_permutation_testing(double *gpu_runtime, uint32_t *counts, double *resu
    */
   for (i = 0; i < loop; i++) {
     if (size == 1) {
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         binary_shuffling_kernel(dev_Ndata, dev_bNdata,
                                 dev_data, len,
                                 blen, N, item);
-      });
+      }));
 
-      q.parallel_for(sycl::nd_range<1>(gws2, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(gws2, lws), [=](sycl::nd_item<1> item) {
         binary_statistical_tests_kernel(
           dev_cnt, dev_results, mean, median, dev_Ndata,
           dev_bNdata, size, len, blen, N, num_block,
           item);
-      });
+      }));
 
       /* copy data from the GPU to the CPU. */
       q.memcpy(counts, dev_cnt, 54 * sizeof(uint32_t)).wait();
@@ -115,14 +116,14 @@ bool gpu_permutation_testing(double *gpu_runtime, uint32_t *counts, double *resu
         break;
     }
     else {
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 3", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         shuffling_kernel(dev_Ndata, dev_data, len, N, item);
-      });
+      }));
 
-      q.parallel_for(sycl::nd_range<1>(gws3, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 4", q.parallel_for(sycl::nd_range<1>(gws3, lws), [=](sycl::nd_item<1> item) {
         statistical_tests_kernel(dev_cnt, dev_results, mean, median, dev_Ndata,
                                  size, len, N, num_block, item);
-      });
+      }));
 
       /* copy data from the GPU to the CPU. */
       q.memcpy(counts, dev_cnt, 54 * sizeof(uint32_t)).wait();

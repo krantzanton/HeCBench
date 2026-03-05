@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define LOCAL_SIZE_LIMIT 512U
 
 #include "bitonicSort_kernels.cpp"
@@ -58,7 +59,7 @@ void bitonicSort(
         sycl::range<1> bs_gws (globalWorkSize);
         sycl::range<1> bs_lws (localWorkSize);
 
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           sycl::local_accessor<unsigned int, 1>  l_key(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
           sycl::local_accessor<unsigned int, 1>  l_val(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
           cgh.parallel_for<class BitonicSortLocal>(sycl::nd_range<1>(bs_gws, bs_lws), [=] (sycl::nd_item<1> item) {
@@ -72,7 +73,7 @@ void bitonicSort(
                              arrayLength,
                              dir);
           });
-        });
+        }));
     }
     else
     {
@@ -81,7 +82,7 @@ void bitonicSort(
         globalWorkSize = batch * arrayLength / 2;
         sycl::range<1> bs1_gws (globalWorkSize);
         sycl::range<1> bs1_lws (localWorkSize);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
           sycl::local_accessor<unsigned int, 1>  l_key(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
           sycl::local_accessor<unsigned int, 1>  l_val(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
           cgh.parallel_for<class BitonicSortLocal1>(sycl::nd_range<1>(bs1_gws, bs1_lws), [=] (sycl::nd_item<1> item) {
@@ -93,7 +94,7 @@ void bitonicSort(
                               l_key.get_multi_ptr<sycl::access::decorated::no>().get(),
                               l_val.get_multi_ptr<sycl::access::decorated::no>().get());
           });
-        });
+        }));
 
         for(unsigned int size = 2 * LOCAL_SIZE_LIMIT; size <= arrayLength; size <<= 1)
         {
@@ -107,7 +108,7 @@ void bitonicSort(
                     sycl::range<1> bmg_gws (globalWorkSize);
                     sycl::range<1> bmg_lws (localWorkSize);
 
-                    q.submit([&] (sycl::handler &cgh) {
+                    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
                       cgh.parallel_for<class BitonicMergeGlobal>(
                         sycl::nd_range<1>(bmg_gws, bmg_lws), [=] (sycl::nd_item<1> item) {
                         bitonicMergeGlobal(item,
@@ -120,7 +121,7 @@ void bitonicSort(
                                            stride,
                                            dir);
                       });
-                    });
+                    }));
                 }
                 else
                 {
@@ -131,7 +132,7 @@ void bitonicSort(
                     sycl::range<1> bml_gws (globalWorkSize);
                     sycl::range<1> bml_lws (localWorkSize);
 
-                    q.submit([&] (sycl::handler &cgh) {
+                    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
                       sycl::local_accessor<unsigned int, 1>  l_key(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
                       sycl::local_accessor<unsigned int, 1>  l_val(sycl::range<1>(LOCAL_SIZE_LIMIT), cgh);
                       cgh.parallel_for<class BitonicMergeLocal>(
@@ -148,7 +149,7 @@ void bitonicSort(
                                           stride,
                                           dir);
                       });
-                    });
+                    }));
                     break;
                 }
             }

@@ -42,6 +42,7 @@
 #include <sycl/sycl.hpp>
 #include "bitcracker.h"
 
+#include "../sycl_timer.hpp"
 uint32_t max_num_pswd_per_read = 0;
 
 unsigned char * salt;
@@ -183,5 +184,6 @@ cleanup:
   if (d_w_words_uint32 != NULL) {
     sycl::free(d_w_words_uint32, q);
   }
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

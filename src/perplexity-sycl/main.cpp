@@ -25,6 +25,7 @@
 #include "reference.cpp"
 
 // forward declaration
+#include "../sycl_timer.hpp"
 template <typename value_idx, typename value_t>
 class search;
 
@@ -106,13 +107,13 @@ void perplexity_search(sycl::queue &q,
 
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class search<value_idx, value_t>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         sigmas_kernel(distances, P, perplexity, desired_entropy, epochs,
                       tol, n, dim, item);
     });
-  });
+  }));
 
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -175,6 +176,7 @@ int main(int argc, char* argv[]) {
 
   sycl::free(d_distance, q);
   sycl::free(d_data, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

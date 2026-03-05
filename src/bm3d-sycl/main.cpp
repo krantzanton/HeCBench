@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "bm3d.hpp"
+#include "../sycl_timer.hpp"
 #define cimg_display 0
 #include "CImg.h"
 
@@ -383,5 +384,6 @@ int main(int argc, char** argv)
     sycl::free(it, q);
   d_denominator.clear();
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

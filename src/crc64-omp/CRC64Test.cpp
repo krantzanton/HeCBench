@@ -37,6 +37,7 @@
 // 
 // *****************************************************************************
 
+#include "../sycl_timer.hpp"
 #define _XOPEN_SOURCE 600
 
 #include <ctime>
@@ -114,5 +115,6 @@ int main(int argc, char *argv[]) {
 
   cout << (tot_bytes/(1024*1024))/tot_time << " MB/s" << endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -9,6 +9,7 @@
 #include <math.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define VECTOR_SIZE (8*1024*1024)
 #define granularity (8)
 #define fusion_degree (4)
@@ -67,24 +68,24 @@ void mixbenchGPU(long size, int repeat) {
   sycl::range<1> lws (block_dim);
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class mixbench_warmup>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         benchmark_func(item, d_cd, i);
       });
-    });
+    }));
   }
   q.wait();
 
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &h) {
       h.parallel_for<class mixbench_timing>(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         benchmark_func(item, d_cd, i);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -125,5 +126,6 @@ int main(int argc, char* argv[]) {
 
   mixbenchGPU(VECTOR_SIZE, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

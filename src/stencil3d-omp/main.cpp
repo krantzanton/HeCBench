@@ -5,6 +5,7 @@
 #include <omp.h>
 
 // 2D block size
+#include "../sycl_timer.hpp"
 #define BSIZE 16
 // Tile size in the x direction
 #define XTILE 20
@@ -204,5 +205,6 @@ int main(int argc, char* argv[])
   free(h_Vm);
   free(h_dVm);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

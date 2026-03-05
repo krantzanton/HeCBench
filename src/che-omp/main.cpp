@@ -7,6 +7,7 @@
 #include <omp.h>
 
 //define the data set size for a cubic volume
+#include "../sycl_timer.hpp"
 #define DATAXSIZE 256
 #define DATAYSIZE 256
 #define DATAZSIZE 256
@@ -316,5 +317,6 @@ int main(int argc, char *argv[])
   free(cold);
   free(muold);
   free(fold);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

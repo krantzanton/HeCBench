@@ -45,6 +45,7 @@
 #include "cuda_rys_sp.cpp"
 #include "cuda_rys_dp.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
     // use spherical harmonic d function?
@@ -672,5 +673,6 @@ int main(int argc, char* argv[])
 
     //====== the end of program ========
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

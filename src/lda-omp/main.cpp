@@ -8,6 +8,7 @@
 #include <omp.h>
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -152,5 +153,6 @@ int main(int argc, char* argv[]) {
   free(d_vali);
   free(d_gamma);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 template <typename FP, int dim>
 FP host_cost (FP *A, FP *B, FP *scale_A, FP *scale_B, int m, int n) {
   double sum = 0;
@@ -100,5 +101,6 @@ int main(int argc, char* argv[]) {
   printf("Test double precision\n");
   test<double>(size, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

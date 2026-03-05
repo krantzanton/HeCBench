@@ -18,6 +18,7 @@
 #include "multians.h"
 
 // encoder configuration //
+#include "../sycl_timer.hpp"
 #define NUM_SYMBOLS 256
 #define NUM_STATES 1024
 
@@ -169,6 +170,7 @@ int main(int argc, char **argv) {
   // run the test
   run(size);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

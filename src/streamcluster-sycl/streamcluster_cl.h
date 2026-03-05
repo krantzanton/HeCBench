@@ -12,6 +12,7 @@
   on 15/03/2010
  ***********************************************/
 
+#include "../sycl_timer.hpp"
 #define THREADS_PER_BLOCK 256
 #define MAXBLOCKS 65536
 
@@ -152,7 +153,7 @@ float pgain( long x, Points *points, float z, long int *numcenters,
     if(work_items%work_group_size != 0)
       work_items = work_items + (work_group_size-(work_items%work_group_size));
 
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       auto work_mem_d_acc = work_mem_d;
       auto coord_d_acc = coord_d;
       auto center_table_d_acc = center_table_d;
@@ -164,7 +165,7 @@ float pgain( long x, Points *points, float z, long int *numcenters,
                           sycl::range<1>(work_group_size)), [=] (sycl::nd_item<1> item) {
           #include "kernel.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
 #ifdef PROFILE_TMP
     q.wait();

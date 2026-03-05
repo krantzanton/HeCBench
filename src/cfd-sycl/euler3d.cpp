@@ -22,6 +22,7 @@
  * Options 
  * 
  */ 
+#include "../sycl_timer.hpp"
 #define GAMMA 1.4f
 #define iterations 2000
 #ifndef block_length
@@ -145,14 +146,14 @@ void initialize_variables(sycl::queue &q, const int nelr, float *variables_acc, 
   int work_items = nelr;
   int work_group_size = BLOCK_SIZE_1;
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class init_vars>(
       sycl::nd_range<1>(sycl::range<1>(work_items),
                         sycl::range<1>(work_group_size)),
       [=] (sycl::nd_item<1> item) {
       #include "kernel_initialize_variables.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 }
 
 void compute_step_factor(sycl::queue &q,
@@ -164,14 +165,14 @@ void compute_step_factor(sycl::queue &q,
   int work_items = nelr;
   int work_group_size = BLOCK_SIZE_2;
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class compute_step_factor>(
       sycl::nd_range<1>(sycl::range<1>(work_items),
                         sycl::range<1>(work_group_size)),
       [=] (sycl::nd_item<1> item) {
       #include "kernel_compute_step_factor.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 }
 
 void compute_flux(sycl::queue &q,
@@ -189,14 +190,14 @@ void compute_flux(sycl::queue &q,
   int work_items = nelr;
   int work_group_size = BLOCK_SIZE_3;
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k3 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class compute_flux>(
       sycl::nd_range<1>(sycl::range<1>(work_items),
                         sycl::range<1>(work_group_size)),
       [=] (sycl::nd_item<1> item) {
       #include "kernel_compute_flux.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
 }
 
 void time_step(sycl::queue &q,
@@ -210,14 +211,14 @@ void time_step(sycl::queue &q,
   int work_items = nelr;
   int work_group_size = BLOCK_SIZE_4;
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k4 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class compute_time_step>(
       sycl::nd_range<1>(sycl::range<1>(work_items),
                         sycl::range<1>(work_group_size)),
       [=] (sycl::nd_item<1> item) {
       #include "kernel_time_step.sycl"
     });
-  });
+  }); SYCL_TIME_AGG("kernel 4", __sycl_evt_k4);
 }
 
 /*
@@ -425,5 +426,6 @@ int main(int argc, char** argv){
   delete[] h_variables;
   std::cout << "Done..." << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

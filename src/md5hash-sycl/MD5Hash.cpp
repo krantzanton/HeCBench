@@ -10,6 +10,7 @@
 #include <sycl/sycl.hpp>
 
 // leftrotate function definition
+#include "../sycl_timer.hpp"
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
 #define F(x,y,z) ((x & y) | ((~x) & z))
@@ -384,7 +385,7 @@ void FindKeyWithDigest_GPU(const unsigned int searchDigest[4],
   unsigned int searchDigest2 = searchDigest[2];
   unsigned int searchDigest3 = searchDigest[3];
 
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class md5hash>(
       sycl::nd_range<1>(sycl::range<1>(globalsize), sycl::range<1>(nthreads)),
       [=] (sycl::nd_item<1> index) {
@@ -419,7 +420,7 @@ void FindKeyWithDigest_GPU(const unsigned int searchDigest[4],
         ++key[0];
       }
     });
-  });
+  }));
 
   q.memcpy(foundKey, d_foundKey, sizeof(unsigned char) * 8);
   q.memcpy(foundIndex, d_foundIndex, sizeof(int));
@@ -596,5 +597,6 @@ int main(int argc, char** argv)
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

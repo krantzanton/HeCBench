@@ -13,11 +13,13 @@
 #include "KeccakTreeGPU.h"
 #include "Test.h"
 
+#include "../sycl_timer.hpp"
 int main()
 {
 	Print_Param();
 	TestCPU(1);
 	TestGPU();
 	Verify_results();
-	return 0;
+	SYCL_TIMER_DUMP();
+return 0;
 }

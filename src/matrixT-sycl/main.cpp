@@ -16,6 +16,7 @@
 // using TILE_DIM x BLOCK_ROWS threads, so that each thread transposes
 // TILE_DIM/BLOCK_ROWS elements.  TILE_DIM must be an integral multiple of BLOCK_ROWS
 
+#include "../sycl_timer.hpp"
 #define TILE_DIM    16
 #define BLOCK_ROWS  16
 
@@ -431,12 +432,12 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
             cgh.parallel_for<class simple_copy>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
               copy(item, d_odata, d_idata, size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -451,7 +452,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*TILE_DIM), cgh);
             cgh.parallel_for<class shared_mem_copy>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -462,7 +463,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -477,7 +478,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
             cgh.parallel_for<class naive>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
               transposeNaive(
                 item,
@@ -485,7 +486,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -500,7 +501,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*TILE_DIM), cgh);
             cgh.parallel_for<class coalesced>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -511,7 +512,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -526,7 +527,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*(TILE_DIM+1)), cgh);
             cgh.parallel_for<class optimized>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -537,7 +538,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -552,7 +553,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*(TILE_DIM+1)), cgh);
             cgh.parallel_for<class coarse_grained>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -563,7 +564,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -578,7 +579,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*(TILE_DIM+1)), cgh);
             cgh.parallel_for<class fine_grained>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -589,7 +590,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -604,7 +605,7 @@ int main(int argc, char **argv)
         auto start = std::chrono::steady_clock::now();
 
         for (int i = 0; i < repeat; i++) {
-          q.submit([&] (sycl::handler &cgh) {
+          SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
             sycl::local_accessor<float, 1> sm (sycl::range<1>(TILE_DIM*(TILE_DIM+1)), cgh);
             cgh.parallel_for<class diagonal>(
               sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -615,7 +616,7 @@ int main(int argc, char **argv)
                 d_idata,
                 size_x, size_y);
             });
-          });
+          }));
         }
 
         q.wait();
@@ -665,5 +666,6 @@ int main(int argc, char **argv)
   sycl::free(d_idata, q);
   sycl::free(d_odata, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

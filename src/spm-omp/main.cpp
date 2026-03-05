@@ -7,6 +7,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NUM_THREADS 128
 #define NUM_BLOCKS 256
 #define REPEAT 100
@@ -277,5 +278,6 @@ int main(int argc, char* argv[])
   free(g_h);
   free(f_h);
   free(data_threshold_h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

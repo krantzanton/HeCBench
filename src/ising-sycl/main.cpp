@@ -27,6 +27,7 @@
 #include <string>
 #include <cstring>
 
+#include "../sycl_timer.hpp"
 #ifdef MKLRAND
 #include <mkl_rng_sycl.hpp>
 #endif
@@ -112,27 +113,27 @@ void update(sycl::queue &q,
 #ifdef MKLRAND
   mkl::rng::generate(distr, rng, nx * ny / 2, d_randvals);
 #endif
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class update_black>(
       sycl::nd_range<1>(sycl::range<1>(blocks), sycl::range<1>(THREADS)),
       [=](sycl::nd_item<1> item) {
       update_lattice<true>(d_lattice_b, d_lattice_w, d_randvals,
                            inv_temp, nx, ny / 2, item);
     });
-  });
+  }));
 
   // Update white
 #ifdef MKLRAND
   mkl::rng::generate(distr, rng, nx * ny / 2, d_randvals);
 #endif
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class update_white>(
       sycl::nd_range<1>(sycl::range<1>(blocks), sycl::range<1>(THREADS)),
       [=](sycl::nd_item<1> item) {
       update_lattice<false>(d_lattice_w, d_lattice_b, d_randvals,
                             inv_temp, nx, ny / 2, item);
     });
-  });
+  }));
 }
 
 static void usage(const char *pname) {
@@ -264,22 +265,22 @@ int main(int argc, char **argv) {
   mkl::rng::generate(distr, rng, nx * ny / 2, d_randvals);
 #endif
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class init_lattice_black>(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       init_spins(d_lattice_b, d_randvals, nx, ny / 2, item);
     });
-  });
+  }));
 
 #ifdef MKLRAND
   mkl::rng::generate(distr, rng, nx * ny / 2, d_randvals);
 #endif
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
     cgh.parallel_for<class init_lattice_white>(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       init_spins(d_lattice_w, d_randvals, nx, ny / 2, item);
     });
-  });
+  }));
 
   // Warmup iterations
   printf("Starting warmup...\n");
@@ -354,5 +355,6 @@ int main(int argc, char **argv) {
   sycl::free(d_lattice_w, q);
   sycl::free(d_randvals, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -4,6 +4,7 @@
 #include "mv.h"
 
 // sparse matrix vector multiply using the CSR format
+#include "../sycl_timer.hpp"
 void mv_csr(sycl::nd_item<1> &item,
             const size_t num_rows,
             const size_t *row_indices,
@@ -111,12 +112,12 @@ long mv_dense_parallel(const int repeat,
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class dmvm>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         mv_dense(item, num_rows, d_matrix, d_x, d_y);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -166,12 +167,12 @@ long mv_csr_parallel(const int repeat,
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class spmv>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         mv_csr(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -250,53 +251,53 @@ long vector_mv_csr_parallel(const int repeat,
 
   for (int i = 0; i < repeat; i++) {
     if (threads_per_row <= 2)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<2>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
     else if (threads_per_row <= 4)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<4>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
     else if (threads_per_row <= 8)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<8>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
     else if (threads_per_row <= 16)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<16>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
     else if (threads_per_row <= 32)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<32>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
     else
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item)
         //   [[sycl::reqd_sub_group_size(warpSize)]]
         {
            vector_mv_csr<64>(item, num_rows, d_row_indices, d_col_indices, d_values, d_x, d_y);
         });
-      });
+      }));
   }
 
   q.wait();

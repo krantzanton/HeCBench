@@ -5,6 +5,7 @@
 #include <random>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_THREADS 256
 
 template <typename T>
@@ -103,5 +104,6 @@ int main(int argc, char* argv[])
 
   eval_swish<float>(N, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

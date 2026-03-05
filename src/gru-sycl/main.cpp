@@ -5,6 +5,7 @@
 #include <random>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define H2F(input) static_cast<accscalar_t>(input)
 #define F2H(input) static_cast<scalar_t>(input)
 
@@ -169,14 +170,14 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class gru>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         gru_cell_forward<sycl::half, float, int> (
           item, d_input, d_hidden, d_input_bias, d_hidden_bias,
           d_hx, d_hy, d_store, hsz, vsz);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -208,5 +209,6 @@ int main(int argc, char* argv[])
   free(h_hx);
   free(h_hy);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

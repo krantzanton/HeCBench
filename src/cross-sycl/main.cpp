@@ -8,6 +8,7 @@
 // Reference
 // https://pytorch.org/docs/stable/generated/torch.linalg.cross.html#torch.linalg.cross
 
+#include "../sycl_timer.hpp"
 template <typename T>
 class cross1;
 
@@ -162,11 +163,11 @@ void eval(const int nrows, const int repeat) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class cross1<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cross_kernel(item, nrows, d_o, d_a, d_b, 1, 1, 1);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -179,11 +180,11 @@ void eval(const int nrows, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class cross2<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cross2_kernel(item, nrows, d_o, d_a, d_b, 1, 1, 1);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -196,11 +197,11 @@ void eval(const int nrows, const int repeat) {
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class cross3<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         cross3_kernel(item, nrows, d_o, d_a, d_b);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -245,5 +246,6 @@ int main(int argc, char* argv[])
   printf("=========== Data type is FP64 ==========\n");
   eval<double>(nrows, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

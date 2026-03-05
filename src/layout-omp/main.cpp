@@ -21,6 +21,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define TREE_NUM 4096
 #define TREE_SIZE 4096
 #define GROUP_SIZE 256
@@ -178,6 +179,7 @@ int main(int argc, char * argv[])
   free(output);
   free(reference);
   free(data);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

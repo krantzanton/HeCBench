@@ -8,6 +8,7 @@
 
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 #define MAX_THREADS_PER_BLOCK 256
 
 //Structure to hold a node information
@@ -225,5 +226,6 @@ int main(int argc, char * argv[])
   free(h_cost);
   free(h_cost_ref);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

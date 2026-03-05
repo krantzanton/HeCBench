@@ -13,6 +13,7 @@
 #include <omp.h>
 #include "shrUtils.h"
 
+#include "../sycl_timer.hpp"
 typedef struct __attribute__((__aligned__(4)))
 {
   unsigned char x;
@@ -119,7 +120,8 @@ int main(int argc, char** argv)
   else
     printf("FAIL\n");
 
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }
 
 // Copies input data from host buf to the device, runs kernel,

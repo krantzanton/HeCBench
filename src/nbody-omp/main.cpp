@@ -8,6 +8,7 @@
 #include "GSimulation.hpp"
 #include "GSimulationReference.hpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv) {
   int n;      // number of particles
   int nstep;  // number ot integration steps
@@ -26,5 +27,6 @@ int main(int argc, char** argv) {
   sim.Start();
   sim.Verify();
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

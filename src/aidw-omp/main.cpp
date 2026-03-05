@@ -27,6 +27,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
 // Calculate the power parameter, and then weighted interpolating
@@ -257,5 +258,6 @@ int main(int argc, char *argv[])
     printf("Average execution time of AIDW_Kernel_Tiled %f (s)\n", (time * 1e-9f) / iterations);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

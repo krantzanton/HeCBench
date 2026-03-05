@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -100,21 +101,21 @@ int main(int argc, char* argv[]) {
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class distanceAB>(
         sycl::nd_range<1>(gwsA, lws), [=] (sycl::nd_item<1> item) {
         computeDistance(item, d_Apoints, d_Bpoints, d_distance,
                         num_Apoints, num_Bpoints);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class distanceBA>(
         sycl::nd_range<1>(gwsB, lws), [=] (sycl::nd_item<1> item) {
         computeDistance(item, d_Bpoints, d_Apoints, d_distance + 1,
                         num_Bpoints, num_Apoints);
       });
-    });
+    }));
 
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -136,5 +137,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_distance, q);
   sycl::free(d_Apoints, q);
   sycl::free(d_Bpoints, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_NUM_THREADS 256
 
 template <typename scalar_t, typename accscalar_t>
@@ -199,7 +200,7 @@ int main(int argc, char* argv[])
   sycl::range<1> lws (requiredThreads);
 
   // warmup and verify
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> smem (sycl::range<1>(requiredThreads), cgh);
     sycl::local_accessor<bool, 0> found (cgh);
     sycl::local_accessor<int, 0> foundPos (cgh);
@@ -208,7 +209,7 @@ int main(int argc, char* argv[])
         item, smem.get_multi_ptr<sycl::access::decorated::no>().get(), found, foundPos,
         d_result, numDist, numCategories, d_sample, d_distr, numCategories, 1);
     });
-  });
+  }));
 
   sampleMultinomialOnce_cpu<float, float> (
       result_ref, numDist, numCategories, sample, distr, numCategories, 1);
@@ -229,7 +230,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> smem (sycl::range<1>(requiredThreads), cgh);
       sycl::local_accessor<bool, 0> found (cgh);
       sycl::local_accessor<int, 0> foundPos (cgh);
@@ -238,7 +239,7 @@ int main(int argc, char* argv[])
           item, smem.get_multi_ptr<sycl::access::decorated::no>().get(), found, foundPos,
           d_result, numDist, numCategories, d_sample, d_distr, numCategories, 1);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -255,5 +256,6 @@ int main(int argc, char* argv[])
   free(sample);
   free(distr);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

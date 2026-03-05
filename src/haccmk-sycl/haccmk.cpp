@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 template <typename T> 
 class HACCmk;
 
@@ -59,7 +60,7 @@ void haccmk (
 
     auto start = std::chrono::steady_clock::now();
     
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class HACCmk<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 
@@ -106,7 +107,7 @@ void haccmk (
         d_vy2[i] = d_vy2[i] + yi * fcoeff;
         d_vz2[i] = d_vz2[i] + zi * fcoeff;
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -278,7 +279,8 @@ int main( int argc, char *argv[] )
 
   printf("%s\n", error ? "FAIL" : "PASS");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

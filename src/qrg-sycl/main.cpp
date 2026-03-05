@@ -23,6 +23,7 @@
 #include "qrg.h"
 
 // forward declarations
+#include "../sycl_timer.hpp"
 void initQuasirandomGenerator(unsigned int *table);
 double getQuasirandomValue63(INT64 i, int dim);
 double MoroInvCNDcpu(unsigned int x);
@@ -155,7 +156,7 @@ int main(int argc, const char **argv)
 
   for (int i = 0; i < repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class qrng>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         unsigned int globalID_x   = item.get_global_id(1);
@@ -170,7 +171,7 @@ int main(int argc, const char **argv)
           d_Output[sycl::mul24(localID_y,N) + pos] = (float)(result + 1) * INT_SCALE;
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -217,7 +218,7 @@ int main(int argc, const char **argv)
 
   for (int i = 0; i < repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class icnd>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
         const unsigned int globalID   = item.get_global_id(0);
@@ -228,7 +229,7 @@ int main(int argc, const char **argv)
           d_Output[pos] = MoroInvCNDgpu(d);
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -262,5 +263,6 @@ int main(int argc, const char **argv)
   free(h_OutputGPU);
   sycl::free(d_Output, q);
   sycl::free(d_Table, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

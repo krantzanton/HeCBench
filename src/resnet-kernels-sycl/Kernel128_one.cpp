@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 const char inputName128one[] = "data/input_one_14_1024.bin";
 const char weightName128one[] = "data/weight_one_1024.bin";
 const char bnBias_myKernel_Name128one[] = "data/bnBias_myKernel_one_1024.bin";
@@ -121,14 +122,14 @@ void kernel_128_1_in(sycl::queue &q, double &time, double &ktime) {
   q.wait();
   auto kstart = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1>
       sm (sycl::range<1>(4*512 + 64*128 + 4*128 + 2*128), cgh);
     cgh.parallel_for<class k512_128>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       kernel_512_one_128 (item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), input_,
                           weight_, bnBias_, bnScale_, output_);
     });
-  }).wait();
+  }));
 
   auto kend = std::chrono::steady_clock::now();
   ktime = std::chrono::duration_cast<std::chrono::nanoseconds>(kend - kstart).count();
@@ -189,14 +190,14 @@ void kernel_128_1_out(sycl::queue &q, double &time, double &ktime) {
   q.wait();
   auto kstart = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1>
       sm (sycl::range<1>(4*128 + 64*128 + 4*128 + 2*128), cgh);
     cgh.parallel_for<class k128_512>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       kernel_128_one_512 (item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), input_,
                           weight_, bnBias_, bnScale_, output_);
     });
-  });
+  }));
 
   q.wait();
   auto kend = std::chrono::steady_clock::now();

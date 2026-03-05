@@ -20,6 +20,7 @@
 
 
 //Preprocessed input option data
+#include "../sycl_timer.hpp"
 typedef struct
 {
   real S;
@@ -108,7 +109,7 @@ extern "C" void binomialOptionsGPU(
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < numIterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k1 = q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<real, 1> call_exchange(sycl::range<1>(THREADBLOCK_SIZE + 1), cgh);
       cgh.parallel_for<class kernel>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -151,7 +152,7 @@ extern "C" void binomialOptionsGPU(
           d_callValue[bid] = call[0];
         }
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
   }
 
   q.wait();

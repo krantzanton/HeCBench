@@ -7,6 +7,7 @@
 #include <time.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_DIFF_SETTINGS 37
 
 //needed for optionInputStruct
@@ -250,7 +251,7 @@ void runBlackScholesAnalyticEngine(const int repeat)
     gettimeofday(&kstart, NULL);
 
     for (int i = 0; i < repeat; i++) {
-      q.submit([&](sycl::handler& cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
         cgh.parallel_for<class blackScholesKernel>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           int optionNum = item.get_global_id(0);
@@ -307,7 +308,7 @@ void runBlackScholesAnalyticEngine(const int repeat)
             outputValsGpu[optionNum] = resultVal;
           }
         });
-      });
+      }));
     }
     q.wait();
 
@@ -381,5 +382,6 @@ int main( int argc, char** argv)
 
   const int repeat = atoi(argv[1]);
   runBlackScholesAnalyticEngine(repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

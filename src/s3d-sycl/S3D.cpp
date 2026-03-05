@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "S3D.h"
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 // Forward declaration
@@ -195,182 +196,182 @@ void RunTest(string testName, sycl::queue &q, OptionParser &op)
   for (unsigned int i = 0; i < passes; i++)
   {
     //  ratt_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k1 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     //rdsmh_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k2 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdsmh<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdsmh.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
     // gr_base <<< dim3(blks2), dim3(thrds2), 0, s2 >>> ( gpu_p, gpu_t, gpu_y, gpu_c, tconv, pconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k3 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class gr_base<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "gr_base.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
 
     //  ratt2_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k4 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt2<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt2.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 4", __sycl_evt_k4);
 
 
     //ratt3_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k5 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt3<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt3.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 5", __sycl_evt_k5);
 
     //ratt4_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k6 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt4<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt4.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 6", __sycl_evt_k6);
 
     //ratt5_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k7 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt5<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt5.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 7", __sycl_evt_k7);
 
     //  ratt6_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k8 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt6<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt6.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 8", __sycl_evt_k8);
     //  ratt7_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k9 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt7<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt7.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 9", __sycl_evt_k9);
     //ratt8_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k10 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt8<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt8.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 10", __sycl_evt_k10);
     //ratt9_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rf, gpu_rb, gpu_eg, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k11 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt9<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt9.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 11", __sycl_evt_k11);
     //ratt10_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_t, gpu_rklow, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k12 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratt10<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratt10.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 12", __sycl_evt_k12);
 
     //ratx_kernel <<< dim3(blks), dim3(thrds), 0, s1 >>> ( gpu_t, gpu_c, gpu_rf, gpu_rb, gpu_rklow, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k13 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratx<real>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 #include "ratx.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 13", __sycl_evt_k13);
     //ratxb_kernel <<< dim3(blks), dim3(thrds), 0, s1 >>> ( gpu_t, gpu_c, gpu_rf, gpu_rb, gpu_rklow, tconv);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k14 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratxb<real>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 #include "ratxb.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 14", __sycl_evt_k14);
 
     //ratx2_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_c, gpu_rf, gpu_rb);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k15 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratx2<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratx2.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 15", __sycl_evt_k15);
     //ratx4_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_c, gpu_rf, gpu_rb);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k16 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class ratx4<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "ratx4.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 16", __sycl_evt_k16);
 
     //qssa_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_a);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k17 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class qssa<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "qssa.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 17", __sycl_evt_k17);
 
     //qssab_kernel <<< dim3(blks), dim3(thrds), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_a);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k18 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class qssab<real>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 #include "qssab.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 18", __sycl_evt_k18);
     //qssa2_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_a);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k19 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class qssa2<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "qssa2.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 19", __sycl_evt_k19);
 
     //  rdwdot_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k20 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 20", __sycl_evt_k20);
 
     //  rdwdot2_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k21 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot2<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot2.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 21", __sycl_evt_k21);
     //rdwdot3_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k22 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot3<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot3.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 22", __sycl_evt_k22);
 
     //rdwdot6_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k23 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot6<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot6.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 23", __sycl_evt_k23);
     //  rdwdot7_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k24 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot7<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot7.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 24", __sycl_evt_k24);
     //rdwdot8_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k25 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot8<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot8.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 25", __sycl_evt_k25);
     //  rdwdot9_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k26 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot9<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot9.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 26", __sycl_evt_k26);
     // rdwdot10_kernel <<< dim3(blks2), dim3(thrds2), 0, s1 >>> ( gpu_rf, gpu_rb, gpu_wdot, rateconv, gpu_molwt);
-    q.submit([&] (sycl::handler &cgh) {
+    auto __sycl_evt_k27 = q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rdwdot10<real>>(sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
 #include "rdwdot10.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 27", __sycl_evt_k27);
 
     // Approximately 10k flops per grid point (estimated by Ramanan)
   }

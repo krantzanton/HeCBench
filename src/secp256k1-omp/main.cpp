@@ -5,6 +5,7 @@
 #include <omp.h>
 
 
+#include "../sycl_timer.hpp"
 typedef struct {
   unsigned int n[10];
 } secp256k1_fe;
@@ -1237,5 +1238,6 @@ int main(int argc, char **argv) {
     printf("PASS\n");
   else
     printf("FAIL\n");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -38,6 +38,7 @@
 #include "sobol_gold.h"
 #include "sobol_gpu.h"
 
+#include "../sycl_timer.hpp"
 #define L1ERROR_TOLERANCE (1e-6)
 
 void printHelp(int argc, char *argv[])
@@ -187,5 +188,6 @@ int main(int argc, char *argv[])
     else
       std::cout << "FAIL" << std::endl;
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

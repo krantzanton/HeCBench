@@ -11,6 +11,7 @@
 
 // Create random keys/values in the range [0, kEmpty)
 // kEmpty is used to indicate an empty slot
+#include "../sycl_timer.hpp"
 std::vector<KeyValue> generate_random_keyvalues(std::mt19937& rnd, uint32_t numkvs)
 {
   std::uniform_int_distribution<uint32_t> dis(0, kEmpty - 1);
@@ -181,5 +182,6 @@ int main(int argc, char* argv[])
   free(iter_kvs);
 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

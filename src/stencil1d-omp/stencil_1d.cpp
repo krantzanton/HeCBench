@@ -10,6 +10,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define RADIUS 7
 #define BLOCK_SIZE 256
 
@@ -89,5 +90,6 @@ int main(int argc, char* argv[]) {
   // Cleanup
   free(a);
   free(b); 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

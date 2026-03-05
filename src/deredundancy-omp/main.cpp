@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv) {
   Option option;
   checkOption(argc, argv, option);
@@ -240,5 +241,6 @@ int main(int argc, char **argv) {
   free(h_cluster);
   free(h_table);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

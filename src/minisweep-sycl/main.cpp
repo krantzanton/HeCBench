@@ -8,6 +8,7 @@
 #include "utils.cpp"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 /*===========================================================================*/
 /*---Main---*/
 
@@ -298,13 +299,13 @@ int main( int argc, char** argv )
 
         q.memset(d_vo, 0, v_size);
 
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class set_facexy>(
             sycl::nd_range<3>(xy_gws, xy_lws), [=] (sycl::nd_item<3> item) {
             init_facexy(ix_base, iy_base, dims_b_ne, dims_b_na, dims_b_ncell_x, 
                         dims_b_ncell_y, dims_b_ncell_z, dims_ncell_z, d_facexy, item);
           });
-        });
+        }));
 
 #ifdef DEBUG
         q.memcpy(facexy, d_facexy, facexy_size * sizeof(P)).wait();
@@ -313,7 +314,7 @@ int main( int argc, char** argv )
 #endif
       }
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class set_facexz>(sycl::nd_range<3>(xz_gws, xz_lws), [=] (sycl::nd_item<3> item) {
           init_facexz(ix_base, iy_base, dims_b_ne, dims_b_na, 
                       dims_b_ncell_x, dims_b_ncell_y, dims_ncell_z, 
@@ -321,14 +322,14 @@ int main( int argc, char** argv )
                       1, //proc_x_max, 
                       stepinfoall, d_facexz, item);
         });
-      });
+      }));
 #ifdef DEBUG
       q.memcpy(facexz, d_facexz, facexz_size * sizeof(P)).wait();
       for (int i = 0; i < facexz_size; i++)
         printf("facexz: %d %f\n", i, facexz[i]);
 #endif
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class set_faceyz>(
           sycl::nd_range<3>(yz_gws, yz_lws), [=] (sycl::nd_item<3> item) {
           init_faceyz(ix_base, iy_base, dims_b_ne, dims_b_na, 
@@ -337,7 +338,7 @@ int main( int argc, char** argv )
                       1, //proc_y_max, 
                       stepinfoall, d_faceyz, item);
         });
-      });
+      }));
 
 #ifdef DEBUG
       q.memcpy(faceyz, d_faceyz, faceyz_size * sizeof(P)).wait();
@@ -345,7 +346,7 @@ int main( int argc, char** argv )
         printf("faceyz: %d %f\n", i, faceyz[i]);
 #endif
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class wavefront_processing>(
           sycl::nd_range<2>(wave_grid, wave_block), [=] (sycl::nd_item<2> item) {
           wavefronts(num_wavefronts,  
@@ -364,7 +365,7 @@ int main( int argc, char** argv )
                      d_vslocal,
                      item);
         });
-      });
+      }));
 
       if (is_last_step) { 
 
@@ -433,6 +434,7 @@ int main( int argc, char** argv )
   free(faceyz);
   free(vslocal);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 } /*---main---*/
 

@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 #include "3D_helper.h"
 
+#include "../sycl_timer.hpp"
 #define TOL      (0.001)
 #define STR_SIZE (256)
 #define MAX_PD   (3.0e6)
@@ -116,12 +117,12 @@ int main(int argc, char** argv)
 
   for(int j = 0; j < iterations; j++)
   {
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class hotspot>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           #include "kernel_hotspot.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     float* temp = d_tIn;
     d_tIn = d_tOut;
@@ -157,5 +158,6 @@ int main(int argc, char** argv)
   free(pIn);
   free(tCopy);
   free(tOut);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

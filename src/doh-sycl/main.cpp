@@ -5,6 +5,7 @@
 #include <random>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef float IMAGE_T;
 typedef int INT_T;
 
@@ -218,12 +219,12 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         hessian_matrix_det(d_input_img, h, w, sigma, d_output_img, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -245,5 +246,6 @@ int main(int argc, char* argv[])
 
   printf("Average kernel execution time : %f (us)\n", time * 1e-3 / repeat);
   printf("Kernel checksum: %lf\n", checksum);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

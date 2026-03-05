@@ -13,6 +13,7 @@
 #include <omp.h>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 void gate(double* __restrict m_gate, const long nCells, const double* __restrict Vm) 
 {
   #pragma omp target teams distribute parallel for thread_limit(256)
@@ -103,5 +104,6 @@ int main(int argc, char* argv[])
   if (m_gate != NULL) free(m_gate);
   if (m_gate_h != NULL) free(m_gate_h);
   if (Vm != NULL) free(Vm);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

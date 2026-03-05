@@ -22,6 +22,7 @@
 // For summing x_i, i = 1 to n:
 // @param max The maximum seen floating point value abs(x_i)
 // @param n The number of elements for the sum, or an upper bound estimate
+#include "../sycl_timer.hpp"
 #pragma omp declare target
 inline float
 createRoundingFactor(float max, int n) {
@@ -174,5 +175,6 @@ int main(int argc, char* argv[]) {
   free(factor);
   free(result_ref);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

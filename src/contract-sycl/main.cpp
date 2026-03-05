@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 const int nContractions = 18;  // the device kernel contains 18 cases
 
 template <typename T>
@@ -387,13 +388,13 @@ void contract (sycl::queue &q, const int max_N, const int max_C, const int repea
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class tensor_aggregate<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         contraction<T>(item, d_tensor_value, d_adj_value, d_value,
                        output_size, max_N, max_C);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -436,5 +437,6 @@ int main(int argc, char* argv[]) {
   contract<float>(q, max_N, max_C, repeat);
   contract<double>(q, max_N, max_C, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

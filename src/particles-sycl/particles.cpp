@@ -15,6 +15,7 @@
 
 //Simulation parameters
 
+#include "../sycl_timer.hpp"
 static const size_t wgSize = 64;
 
 static size_t uSnap(size_t a, size_t b){
@@ -33,12 +34,12 @@ void integrateSystem(
     sycl::range<1> gws (globalWorkSize);
     sycl::range<1> lws (wgSize);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class Integrate>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         integrateSystemK(item, d_Pos, d_Vel, params, deltaTime, numParticles);
       });
-    });
+    }));
 }
 
 void calcHash(
@@ -53,12 +54,12 @@ void calcHash(
     sycl::range<1> gws (globalWorkSize);
     sycl::range<1> lws (wgSize);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class CalcHash>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         calcHashK(item, d_Hash, d_Index, d_Pos, params, numParticles);
       });
-    });
+    }));
 }
 
 void memSet(
@@ -72,12 +73,12 @@ void memSet(
     sycl::range<1> gws (globalWorkSize);
     sycl::range<1> lws (wgSize);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class Memset>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         memSetK(item, d_Data, val, N);
       });
-    });
+    }));
 }
 
 void findCellBoundsAndReorder(
@@ -99,7 +100,7 @@ void findCellBoundsAndReorder(
     sycl::range<1> gws (globalWorkSize);
     sycl::range<1> lws (wgSize);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<unsigned int, 1> localHash (sycl::range<1>(wgSize + 1), cgh);
       cgh.parallel_for<class FindCellBoundsAndReorder>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -115,7 +116,7 @@ void findCellBoundsAndReorder(
                                  localHash.get_multi_ptr<sycl::access::decorated::no>().get(),
                                  numParticles);
       });
-    });
+    }));
 }
 
 void collide(
@@ -135,12 +136,12 @@ void collide(
     sycl::range<1> gws (globalWorkSize);
     sycl::range<1> lws (wgSize);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class Collide>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         collideK(item, d_Vel, d_ReorderedPos, d_ReorderedVel, 
                 d_Index, d_CellStart, d_CellEnd, 
                 params, numParticles);
       });
-    });
+    }));
 }

@@ -24,6 +24,7 @@
 
 #include "reference.cpp"
 
+#include "../sycl_timer.hpp"
 template <typename value_idx, typename value_t>
 void perplexity_search(const value_t* __restrict distances,
                        value_t* __restrict P,
@@ -136,5 +137,6 @@ int main(int argc, char* argv[]) {
   }
   printf("%s\n", ok ? "PASS" : "FAIL");
   
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

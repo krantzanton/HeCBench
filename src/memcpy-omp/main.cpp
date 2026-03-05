@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NUM_SIZE 16
 
 void setup(size_t *size) {
@@ -78,5 +79,6 @@ int main(int argc, char* argv[]) {
     free(A);
     std::cout << std::endl << std::endl;
   }
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

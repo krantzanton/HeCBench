@@ -47,6 +47,7 @@ June 2018.
 #include <sycl/sycl.hpp>
 #include "graph.h"
 
+#include "../sycl_timer.hpp"
 static const int ThreadsPerBlock = 256;
 
 inline int atomicCAS(int &val, int expected, int desired) 
@@ -350,46 +351,46 @@ static void computeCC(const int repeat,
   auto start = std::chrono::high_resolution_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class initialize>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         init(item, nodes, nidx_d, nlist_d, nstat_d, 
              topL_d, posL_d, topH_d, posH_d);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_low>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute1(item, nodes, nidx_d, nlist_d, 
                  nstat_d, wl_d, topL_d, topH_d);
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class compute_med>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item)
       {
         compute2(item, nodes, nidx_d, nlist_d,
                  nstat_d, wl_d, topL_d, posL_d);
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 0> vB (cgh);
       cgh.parallel_for<class compute_high>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         compute3(item, nodes, nidx_d, nlist_d,
                  nstat_d, wl_d, topH_d, posH_d, vB);
       });
-    });
+    }));
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class link>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         flatten(item, nodes, nidx_d, nlist_d, nstat_d);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -511,5 +512,6 @@ int main(int argc, char* argv[])
   free(nodestatus);
   freeECLgraph(g);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

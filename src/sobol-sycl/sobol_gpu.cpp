@@ -35,6 +35,7 @@
 #include "sobol.h"
 #include "sobol_gpu.h"
 
+#include "../sycl_timer.hpp"
 #define k_2powneg32 2.3283064E-10F
 
 inline
@@ -189,7 +190,7 @@ double sobolGPU(sycl::queue &q, int repeat, int n_vectors, int n_dimensions,
 
     // Execute GPU kernel
     for (int i = 0; i < repeat; i++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<unsigned int, 1> v(sycl::range<1>(n_directions), cgh);
         cgh.parallel_for<class sobol>(
           sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -198,7 +199,7 @@ double sobolGPU(sycl::queue &q, int repeat, int n_vectors, int n_dimensions,
                           v.get_multi_ptr<sycl::access::decorated::no>().get(),
                           n_vectors, n_dimensions);
         });
-      });
+      }));
     }
 
     q.wait();

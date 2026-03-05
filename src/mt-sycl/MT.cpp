@@ -21,6 +21,7 @@
 #include "MT.h"
 
 // comment the below line if not doing Box-Muller transformation
+#include "../sycl_timer.hpp"
 #define DO_BOXMULLER
 
 // Reference CPU MT and Box-Muller transformation
@@ -116,7 +117,7 @@ int main(int argc, const char **argv)
 
   for (int i = 0; i < numIterations; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class mt>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int globalID = item.get_global_id(0);
@@ -163,10 +164,10 @@ int main(int argc, const char **argv)
           d_Rand[globalID + iOut * MT_RNG_COUNT] = ((float)x + 1.0f) / 4294967296.0f;
         }
       });
-    });
+    }));
 
     #ifdef DO_BOXMULLER
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class boxmuller>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int globalID = item.get_global_id(0);
@@ -175,7 +176,7 @@ int main(int argc, const char **argv)
                           &d_Rand[globalID + (iOut + 1) * MT_RNG_COUNT]);
         }
       });
-    });
+    }));
     #endif
   }
 
@@ -220,5 +221,6 @@ int main(int argc, const char **argv)
   // finish
   printf("%s\n", (L1norm < 1e-6) ? "PASS" : "FAIL");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

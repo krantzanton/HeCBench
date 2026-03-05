@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "grid.h"
 
+#include "../sycl_timer.hpp"
 #define R 4
 #define NDIM 8
 
@@ -216,7 +217,7 @@ void target(sycl::queue &q,
       sycl::range<3> n_block_front((grid.nx + NDIM - 1) / NDIM,
                                    (grid.ny + NDIM - 1) / NDIM,
                                    (grid.z2 - grid.z1 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
 
@@ -234,12 +235,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_top((grid.nx + NDIM - 1) / NDIM,
                                  (grid.y2 - grid.y1 + NDIM - 1) / NDIM,
                                  (grid.z4 - grid.z3 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -255,12 +256,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_left((grid.x2 - grid.x1 + NDIM - 1) / NDIM,
                                   (grid.y4 - grid.y3 + NDIM - 1) / NDIM,
                                   (grid.z4 - grid.z3 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -276,12 +277,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_center((grid.x4 - grid.x3 + NDIM - 1) / NDIM,
                                     (grid.y4 - grid.y3 + NDIM - 1) / NDIM,
                                     (grid.z4 - grid.z3 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -298,12 +299,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_right((grid.x6 - grid.x5 + NDIM - 1) / NDIM,
                                    (grid.y4 - grid.y3 + NDIM - 1) / NDIM,
                                    (grid.z4 - grid.z3 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -320,12 +321,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_bottom((grid.nx + NDIM - 1) / NDIM,
                                     (grid.y6 - grid.y5 + NDIM - 1) / NDIM,
                                     (grid.z4 - grid.z3 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -342,12 +343,12 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
       sycl::range<3> n_block_back((grid.nx + NDIM - 1) / NDIM,
                                   (grid.ny + NDIM - 1) / NDIM,
                                   (grid.z6 - grid.z5 + NDIM - 1) / NDIM);
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 7", q.submit([&](sycl::handler &cgh) {
          sycl::local_accessor<float, 3> s_u_acc(
              sycl::range<3>(NDIM+2*R, NDIM+2*R, NDIM+2*R), cgh);
          cgh.parallel_for(
@@ -363,15 +364,15 @@ void target(sycl::queue &q,
                     coefz1, coefz2, coefz3, coefz4,
                     d_u, d_v, d_vp, d_phi, d_eta, item, s_u_acc);
              });
-      });
+      }));
 
-      q.submit([&](sycl::handler &h) {
+      SYCL_TIME_AGG("kernel 8", q.submit([&](sycl::handler &h) {
         float source_istep_ct2 = source[istep];
         h.single_task<class add_source>([=]() {
           kernel_add_source_kernel(d_v, IDX3_grid(sx, sy, sz, grid),
                                    source_istep_ct2);
         });
-      });
+      }));
 
       float *t = d_u;
       d_u = d_v;

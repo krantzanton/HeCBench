@@ -6,6 +6,7 @@
 
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <class T, int BINS, int BLOCK_SIZE>
 void findTopK(int*__restrict indices_,
               int*__restrict count_,
@@ -268,7 +269,7 @@ int main(int argc, char* argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int, 1> bins (sycl::range<1>(2048), cgh);
       cgh.parallel_for(sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item)
        // [[intel::reqd_sub_group_size(SUB_GROUP_SIZE)]] 
@@ -277,7 +278,7 @@ int main(int argc, char* argv[])
           d_indices, d_count, d_scores, threshold, classwise_topK, num_classes, num_priors,
           item, bins.get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
   }
 
   q.wait();
@@ -315,5 +316,6 @@ int main(int argc, char* argv[])
   free(count_ref);
   free(scores);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

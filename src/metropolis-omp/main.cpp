@@ -28,6 +28,7 @@
 #include "kernel_metropolis.h"
 #include "kernel_reduction.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv){
 
   int L         = 32;
@@ -313,5 +314,6 @@ int main(int argc, char **argv){
   free(atrs);
   free(aT);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

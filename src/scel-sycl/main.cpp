@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define GPU_NUM_THREADS 256
 
 float k_sigmoid_xent_forward(float lgt, float tgt) {
@@ -117,7 +118,7 @@ int main(int argc, char* argv[])
       auto start = std::chrono::steady_clock::now();
 
       for (int i = 0; i < repeat; i++) {
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             SigmoidCrossEntropyWithLogitsKernel(
               item,
@@ -128,7 +129,7 @@ int main(int argc, char* argv[])
               d_targets,
               d_out);
           });
-        });
+        }));
       }
 
       q.wait();
@@ -160,5 +161,6 @@ int main(int argc, char* argv[])
   free(h_out);
   free(r_out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -79,5 +80,6 @@ int main(int argc, char* argv[]) {
   printf("Total kernel execution time: %f (s)\n", time * 1e-9f);
   printf("%s\n", error ? "FAIL" : "PASS");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

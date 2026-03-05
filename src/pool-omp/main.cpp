@@ -6,6 +6,7 @@
 #include <omp.h>
 
 // thread block size
+#include "../sycl_timer.hpp"
 #define BSIZE 256
 
 template <class T>
@@ -208,5 +209,6 @@ int main(int argc, char* argv[])
   delete[] input_grad;
   delete[] input_grad_ref;
   delete[] output_grad;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

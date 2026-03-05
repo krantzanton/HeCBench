@@ -21,6 +21,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #pragma omp declare target
 
 //! Thread-local Matrix-Vector multiplication.
@@ -407,5 +408,6 @@ int main(int argc, char* argv[]) {
   free(P);
   free(T);
   free(RQR);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

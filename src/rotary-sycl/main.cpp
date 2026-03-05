@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define C10_WARP_SIZE 32
 
 #include "Array.h"
@@ -216,7 +217,7 @@ void unrolled_elementwise_kernel_for_multi_outputs(int N, func_t f, array_t data
 template <int num_outputs, typename func_t, typename array_t, typename inp_calc_t, typename out_calc_t>
 static inline void launch_unrolled_kernel_for_multi_outputs(sycl::queue &q, int64_t N, const func_t& f, array_t data, inp_calc_t ic, out_calc_t oc) {
   int64_t grid = (N + block_work_size() - 1) / block_work_size();
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<3>(sycl::range<3>(1, 1, grid) *
                         sycl::range<3>(1, 1, num_threads()),
                         sycl::range<3>(1, 1, num_threads())),
@@ -224,7 +225,7 @@ static inline void launch_unrolled_kernel_for_multi_outputs(sycl::queue &q, int6
         unrolled_elementwise_kernel_for_multi_outputs<num_outputs, func_t,
                                                       array_t>(N, f, data, ic,
                                                                oc, item);
-      });
+      }));
 }
 
 template <int NARGS, typename index_t = uint32_t>
@@ -360,4 +361,6 @@ int main(int argc, char* argv[])
                 scalar_t out2 = float(x1) * float(sin) + float(x2) * float(cos);
                 return {out1, out2};
       });
+
+  SYCL_TIMER_DUMP();
 }

@@ -1,6 +1,7 @@
 // This header is the one-stop shop for all your multi-tensor apply needs.
 
 // TODO:  Kernel arg size limit may be <4KB for some other cards (ie Jetson)
+#include "../sycl_timer.hpp"
 constexpr int depth_to_max_tensors[6] = {110, 64, 48, 36, 30, 24};
 constexpr int depth_to_max_blocks[6] = {320, 320, 320, 320, 320, 320};
 
@@ -57,13 +58,13 @@ void multi_tensor_apply(sycl::queue &q, int64_t block_size, int64_t chunk_size, 
       bool last_chunk = (t == ntensors - 1 && chunk == chunks_this_tensor - 1);
       if (tensors_full || blocks_full || last_chunk) {
         // using accscalar_t = acc_type<scalar_t, true>;
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 1", q.parallel_for(
             sycl::nd_range<3>(sycl::range<3>(1, 1, loc_block_info * block_size),
                               sycl::range<3>(1, 1, block_size)),
             [=](sycl::nd_item<3> item_ct1) {
               multi_tensor_apply_kernel(chunk_size, noop_flag.data_ptr, tl,
                                         callable, args..., item_ct1);
-            });
+            }));
 
         // Reset.
         loc_block_info = 0;

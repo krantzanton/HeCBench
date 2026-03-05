@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void sum (
     const int teams,
     const int blocks,
@@ -142,5 +143,6 @@ int main(int argc, char** argv) {
   free(h_result);
 
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

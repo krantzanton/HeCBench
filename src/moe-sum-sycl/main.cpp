@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 template <typename scalar_t>
 int64_t moe_sum(sycl::queue &q,
                 const scalar_t* input,   // [num_tokens, topk, hidden_size]
@@ -21,10 +22,10 @@ int64_t moe_sum(sycl::queue &q,
 
   // warmup
   for (int i = 0; i < 30; i++) {
-    q.parallel_for(
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         moe_sum_kernel<scalar_t, 2>(output, input, hidden_size, item);
-    });
+    }));
   }
   q.wait();
 
@@ -33,26 +34,26 @@ int64_t moe_sum(sycl::queue &q,
   switch (topk) {
     case 2:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 2", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel<scalar_t, 2>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     case 3:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 3", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel<scalar_t, 3>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     case 4:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 4", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel<scalar_t, 4>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     default:
@@ -82,10 +83,10 @@ int64_t moe_sum_vec4(sycl::queue &q,
 
   // warmup
   for (int i = 0; i < 30; i++) {
-    q.parallel_for(
+    SYCL_TIME_AGG("kernel 5", q.parallel_for(
       sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         moe_sum_kernel_vec4<2>(output, input, hidden_size, item);
-    });
+    }));
   }
   q.wait();
 
@@ -94,26 +95,26 @@ int64_t moe_sum_vec4(sycl::queue &q,
   switch (topk) {
     case 2:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 6", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel_vec4<2>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     case 3:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 7", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel_vec4<3>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     case 4:
       for (int i = 0; i < repeat; i++)
-        q.parallel_for(
+        SYCL_TIME_AGG("kernel 8", q.parallel_for(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             moe_sum_kernel_vec4<4>(output, input, hidden_size, item);
-        });
+        }));
       break;
 
     default:
@@ -195,5 +196,6 @@ int main(int argc, char* argv[])
   sycl::free(d_output, q);
   free(output);
   free(output_vec4);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

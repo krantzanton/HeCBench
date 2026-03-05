@@ -31,6 +31,7 @@
 #include <sycl/sycl.hpp>
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 void generateVoxels(sycl::queue &q, const float *points, size_t points_size,
                     const int repeat)
 {
@@ -231,5 +232,6 @@ int main(int argc, const char **argv)
   }
 
   sycl::free(d_points, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

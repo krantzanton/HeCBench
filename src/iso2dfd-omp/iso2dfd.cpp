@@ -21,6 +21,7 @@
 #include <omp.h>
 #include "iso2dfd.h"
 
+#include "../sycl_timer.hpp"
 #define MIN(a, b) (a) < (b) ? (a) : (b)
 
 /*
@@ -279,5 +280,6 @@ int main(int argc, char* argv[]) {
   delete[] next_base;
   delete[] vel_base;
 
-  return error ? 1 : 0;
+  SYCL_TIMER_DUMP();
+return error ? 1 : 0;
 }

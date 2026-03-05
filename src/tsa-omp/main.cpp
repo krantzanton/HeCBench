@@ -7,6 +7,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <typename T>
 static void init_p(T *p_real, T *p_imag, int width, int height) {
   double s = 64.0;
@@ -133,5 +134,6 @@ int main(int argc, char** argv) {
 
   printf("TSA in float64\n");
   tsa<double>(width, height, repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

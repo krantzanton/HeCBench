@@ -14,6 +14,7 @@
 #include <math.h>
 #include "WKFUtils.h"
 
+#include "../sycl_timer.hpp"
 #define MAXATOMS 4000
 
 #define UNROLLX       8
@@ -267,5 +268,6 @@ int main(int argc, char** argv) {
   free(atoms);
   free(atominfo);
   free(energy);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

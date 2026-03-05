@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "constants.h"
 
+#include "../sycl_timer.hpp"
 namespace mean_shift::gpu {
   void mean_shift(sycl::nd_item<1> &item, const float *data, float *data_next) {
     size_t tid = item.get_global_id(0);
@@ -133,12 +134,12 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (size_t i = 0; i < mean_shift::gpu::NUM_ITER; ++i) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class base>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         mean_shift::gpu::mean_shift(item, d_data, d_data_next);
       });
-    }).wait();
+    }));
     mean_shift::gpu::utils::swap(d_data, d_data_next);
   }
 
@@ -161,7 +162,7 @@ int main(int argc, char* argv[]) {
 
   start = std::chrono::steady_clock::now();
   for (size_t i = 0; i < mean_shift::gpu::NUM_ITER; ++i) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> local_data (sycl::range<1>(TILE_WIDTH * D), cgh);
       sycl::local_accessor<float, 1> valid_data (sycl::range<1>(TILE_WIDTH), cgh);
       cgh.parallel_for<class opt>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -169,7 +170,7 @@ int main(int argc, char* argv[]) {
                                            valid_data.get_multi_ptr<sycl::access::decorated::no>().get(),
                                            d_data, d_data_next);
       });
-    }).wait();
+    }));
     mean_shift::gpu::utils::swap(d_data, d_data_next);
   }
   end = std::chrono::steady_clock::now();
@@ -188,5 +189,6 @@ int main(int argc, char* argv[]) {
 
   sycl::free(d_data, q);
   sycl::free(d_data_next, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

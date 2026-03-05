@@ -11,6 +11,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef __NVPTX__
   #include <sycl/ext/oneapi/experimental/cuda/builtins.hpp>
   using namespace sycl::ext::oneapi::experimental::cuda;
@@ -182,12 +183,12 @@ void conv1D(sycl::queue &q, const int input_width, const int mask_width, const i
   // conv1D basic
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k1<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         conv1d(item, mask, d_a, d_b, input_width, mask_width);
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -200,14 +201,14 @@ void conv1D(sycl::queue &q, const int input_width, const int mask_width, const i
   // conv1D tiling
   start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<T, 1> tile (sycl::range<1>(TILE_SIZE + MAX_MASK_WIDTH - 1), cgh);
       cgh.parallel_for<class k2<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         conv1d_tiled(item,
                      tile.template get_multi_ptr<sycl::access::decorated::no>().get(),
                      mask, d_a, d_b, input_width, mask_width);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -220,14 +221,14 @@ void conv1D(sycl::queue &q, const int input_width, const int mask_width, const i
   // conv1D tiling and caching
   start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<T, 1> tile (sycl::range<1>(TILE_SIZE), cgh);
       cgh.parallel_for<class k3<T>>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         conv1d_tiled_caching(item,
                              tile.template get_multi_ptr<sycl::access::decorated::no>().get(),
                              mask, d_a, d_b, input_width, mask_width);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -276,5 +277,6 @@ int main(int argc, char* argv[]) {
     conv1D<int16_t>(q, input_width, mask_width, repeat);
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -29,6 +29,7 @@
 
 // Calculate the power parameter, and then weighted interpolating
 // Without using shared memory 
+#include "../sycl_timer.hpp"
 void AIDW_Kernel(
     const float *__restrict dx, 
     const float *__restrict dy,
@@ -236,7 +237,7 @@ int main(int argc, char *argv[])
   sycl::range<1> lws (BLOCK_SIZE);
 
   // Weighted Interpolate using AIDW
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class aidw>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       AIDW_Kernel(d_dx, 
@@ -251,7 +252,7 @@ int main(int argc, char *argv[])
                   d_avg_dist,
                   item);
     });
-  });
+  }));
   
   q.memcpy(iz.data(), d_iz, inum_bytes).wait();
 
@@ -260,7 +261,7 @@ int main(int argc, char *argv[])
     printf("%s\n", ok ? "PASS" : "FAIL");
   }
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> sdx(sycl::range<1>(BLOCK_SIZE), cgh);
     sycl::local_accessor<float, 1> sdy(sycl::range<1>(BLOCK_SIZE), cgh);
     sycl::local_accessor<float, 1> sdz(sycl::range<1>(BLOCK_SIZE), cgh);
@@ -281,7 +282,7 @@ int main(int argc, char *argv[])
                         sdz.get_multi_ptr<sycl::access::decorated::no>().get(),
                         item);
     });
-  });
+  }));
   
   q.memcpy(iz.data(), d_iz, inum_bytes).wait();
   if (check) {
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         AIDW_Kernel(d_dx, 
@@ -307,7 +308,7 @@ int main(int argc, char *argv[])
                     d_avg_dist,
                     item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -318,7 +319,7 @@ int main(int argc, char *argv[])
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iterations; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> sdx(sycl::range<1>(BLOCK_SIZE), cgh);
       sycl::local_accessor<float, 1> sdy(sycl::range<1>(BLOCK_SIZE), cgh);
       sycl::local_accessor<float, 1> sdz(sycl::range<1>(BLOCK_SIZE), cgh);
@@ -339,7 +340,7 @@ int main(int argc, char *argv[])
                           sdz.get_multi_ptr<sycl::access::decorated::no>().get(),
                           item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -355,5 +356,6 @@ int main(int argc, char *argv[])
   sycl::free(d_iz, q);
   sycl::free(d_avg_dist, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

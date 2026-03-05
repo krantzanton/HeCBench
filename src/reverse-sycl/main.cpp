@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     for (int j = 0; j < count; j++) {
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor <int, 1> s (lws, cgh);
         cgh.parallel_for<class blockReverse>(
           sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
           item.barrier(sycl::access::fence_space::local_space);
           d_test[t] = s[len-t-1];
         });
-      });
+      }));
     }
 
     q.wait();
@@ -87,5 +88,6 @@ int main(int argc, char* argv[]) {
 
   free(d_test, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

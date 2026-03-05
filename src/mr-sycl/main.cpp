@@ -7,6 +7,7 @@
 #include "benchmark.h"
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 void run_benchmark(sycl::queue &q, const int repeat)
 {
   int i, j, cnt, val_ref, val_eff;
@@ -61,12 +62,12 @@ void run_benchmark(sycl::queue &q, const int repeat)
       q.memset(d_val, 0, sizeof(int)).wait();
       auto start = std::chrono::steady_clock::now();
       // the efficient version is faster than the simple version on a device
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class simple>(
          sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
          mr32_sf(item, d_bases32, d_n32, d_val, BENCHMARK_ITERATIONS);
         });
-      }).wait();
+      }));
       auto end = std::chrono::steady_clock::now();
       time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
@@ -84,12 +85,12 @@ void run_benchmark(sycl::queue &q, const int repeat)
     for (int n = 0; n < repeat; n++) { 
       q.memset(d_val, 0, sizeof(int)).wait();
       auto start = std::chrono::steady_clock::now();
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class efficient>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           mr32_eff(item, d_bases32, d_n32, d_val, BENCHMARK_ITERATIONS);
         });
-      }).wait();
+      }));
       auto end = std::chrono::steady_clock::now();
       time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
@@ -144,5 +145,6 @@ int main(int argc, char *argv[])
   set_nintegers();
   run_benchmark(q, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

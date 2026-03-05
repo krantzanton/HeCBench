@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Defines
 ////////////////////////////////////////////////////////////////////////////////
+#include "../sycl_timer.hpp"
 #define BLOCKSIZE  256
 #define ROW_LENGTH  BLOCKSIZE * 4
 #define ROWS    4096
@@ -146,7 +147,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
   d_constStartAddr = sycl::malloc_device<int>((divisions + 1), q_ct1);
   q_ct1.memcpy(d_constStartAddr, startaddr, sizeof(int) * (divisions + 1));
 
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q_ct1.submit([&](sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) *
                                            sycl::range<3>(1, 1, THREADS),
                                        sycl::range<3>(1, 1, THREADS)),
@@ -154,7 +155,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
                        sortElement(d_resultList_buff, d_origList_buff,
                                    listsize / 4, item_ct1);
                      });
-  });
+  }));
 
   //double mergePassTime = 0;
   int nrElems = 2;
@@ -184,7 +185,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
     d_origList_buff = d_resultList_buff;
     d_resultList_buff = tempList;
 
-    q_ct1.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q_ct1.submit([&](sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, grid[0]) *
                                              sycl::range<3>(1, 1, local[0]),
                                          sycl::range<3>(1, 1, local[0])),
@@ -193,7 +194,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
                                        d_constStartAddr, threadsPerDiv, nrElems,
                                        item_ct1);
                        });
-    });
+    }));
 
     nrElems *= 2;
     floatsperthread = (nrElems*4);
@@ -224,7 +225,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
   sycl::range<3> grids(grid[0], grid[1], 1);
   sycl::range<3> threads(local[0], local[1], 1);
 
-  q_ct1.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q_ct1.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = grids * threads;
 
     cgh.parallel_for(
@@ -237,7 +238,7 @@ sycl::float4 *runMergeSort(int listsize, int divisions,
                     d_constStartAddr, d_finalStartAddr, d_nullElements,
                     item_ct1);
         });
-  });
+  }));
 
   q_ct1.memcpy(d_origList, d_origList_buff, sizeof(sycl::float4) * listsize / 4)
       .wait();

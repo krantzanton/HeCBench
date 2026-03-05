@@ -50,6 +50,7 @@ Purpose Processing Using GPUs (10 pages). February 2015.
 // no point in using precise FP math or double precision as we are rounding
 // the results to the nearest integer anyhow
 
+#include "../sycl_timer.hpp"
 /******************************************************************************/
 /*** 2-opt with random restarts ***********************************************/
 /******************************************************************************/
@@ -218,7 +219,7 @@ int main(int argc, char *argv[])
     q.wait();
     auto kstart = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> px_s(sycl::range<1>(tilesize), cgh);
       sycl::local_accessor<float, 1> py_s(sycl::range<1>(tilesize), cgh);
       sycl::local_accessor<int, 1> bf_s(sycl::range<1>(tilesize), cgh);
@@ -370,7 +371,7 @@ int main(int argc, char *argv[])
           atomicMin(best_d[0], term);
         }
       });
-    });
+    }));
 
     q.wait();
     auto kend = std::chrono::steady_clock::now();
@@ -400,5 +401,6 @@ int main(int argc, char *argv[])
   sycl::free(posx_d, q);
   free(posx);
   free(posy);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

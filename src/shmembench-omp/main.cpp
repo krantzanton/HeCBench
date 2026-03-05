@@ -3,6 +3,7 @@
 #include <string.h>
 #include "shmem_kernels.h"
 
+#include "../sycl_timer.hpp"
 #define VECTOR_SIZE (1024*1024)
 
 int main(int argc, char* argv[]) {
@@ -26,6 +27,7 @@ int main(int argc, char* argv[]) {
 
   free(c);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

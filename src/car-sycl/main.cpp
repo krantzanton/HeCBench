@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void car (
   sycl::nd_item<1> &item,
   const float *__restrict img,
@@ -139,7 +140,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class downsampling>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         car(item,
@@ -153,7 +154,7 @@ int main(int argc, char* argv[]) {
             padding,
             output_size);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -181,6 +182,7 @@ int main(int argc, char* argv[]) {
   free(kernel);
   free(output);
   free(output_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

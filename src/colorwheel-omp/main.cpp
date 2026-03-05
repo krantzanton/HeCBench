@@ -11,6 +11,7 @@
 //
 // Daniel Scharstein, 4/2007
 
+#include "../sycl_timer.hpp"
 #define RY  15
 #define YG  6
 #define GC  4
@@ -138,5 +139,6 @@ int main(int argc, char **argv)
   free(d_pix);
   free(pix);
   free(res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

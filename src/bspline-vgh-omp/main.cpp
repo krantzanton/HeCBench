@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define max(a,b) ((a<b)?b:a)
 #define min(a,b) ((a<b)?a:b)
 
@@ -299,5 +300,6 @@ int main(int argc, char ** argv) {
   free(walkers_z);
   free(spline_coefs);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

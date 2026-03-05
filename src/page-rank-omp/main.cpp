@@ -33,6 +33,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define D_FACTOR (0.85f)
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 256
@@ -216,5 +217,6 @@ int main(int argc, char *argv[]) {
   free(page_ranks);
   free(noutlinks);
   free(diffs);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

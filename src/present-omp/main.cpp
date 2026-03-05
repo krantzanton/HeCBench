@@ -38,6 +38,7 @@
 #include <array>        // std::array
 #include <random>       // std::default_random_engine
 
+#include "../sycl_timer.hpp"
 typedef unsigned char uint8_t;
 
 static const uint8_t sbox[16] = {
@@ -546,5 +547,7 @@ int main(int argc, char** argv) {
   free(h_key);
   free(h_cipher);
   free(ciphers);
+
+  SYCL_TIMER_DUMP();
 }
 

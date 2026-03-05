@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 #define BLOCK_SIZE 16
@@ -87,7 +88,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < repeat; i++) {
-      q.submit([&](sycl::handler &h) {
+      auto __sycl_evt_k1 = q.submit([&](sycl::handler &h) {
         h.parallel_for<class minkowski>(
           sycl::nd_range<2>(gws, lws), [=](sycl::nd_item<2> index) {
           int row = index.get_global_id(0);
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
             c[row * K + col] = sycl::powr(sum, one_over_p);
           }
         });
-      });
+      }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
     }
 
     q.wait();
@@ -123,5 +124,6 @@ int main(int argc, char* argv[]) {
   delete[] b_host;
   delete[] c_host;
   delete[] c_back;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

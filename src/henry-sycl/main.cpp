@@ -7,6 +7,7 @@
 #include <sstream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUMTHREADS 256  // number of threads per GPU block
 
 // data for atom of crystal structure
@@ -231,12 +232,12 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     //  Perform Monte Carlo insertions in parallel on the GPU
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class insertations>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         insertions(item, d_boltzmannFactors, d_structureAtoms, natoms, L);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -262,5 +263,6 @@ int main(int argc, char *argv[]) {
   sycl::free(d_boltzmannFactors, q);
   free(structureAtoms);
   free(boltzmannFactors);
-  return EXIT_SUCCESS;
+  SYCL_TIMER_DUMP();
+return EXIT_SUCCESS;
 }

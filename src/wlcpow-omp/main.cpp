@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 #define n_type 32
 
 void bond_wlcpowallvisc(
@@ -298,5 +299,6 @@ int main(int argc, char* argv[]) {
   free(gamt);
   free(sigc);
   free(sigt);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -12,6 +12,7 @@
 #include <float.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_BLOCKS 1024
 #define BLOCK_SIZE 256
 
@@ -88,12 +89,12 @@ void testMin (sycl::queue &q, T *h_ptr, T *d_ptr, const int repeat, const char* 
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k_atomic_min<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         atomicMinDerived<T>(item, d_ptr);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -115,12 +116,12 @@ void testMax (sycl::queue &q, T *h_ptr, T *d_ptr, const int repeat, const char* 
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k_atomic_max<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         atomicMaxDerived<T>(item, d_ptr);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -142,12 +143,12 @@ void testAdd (sycl::queue &q, T *h_ptr, T *d_ptr, const int repeat, const char* 
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k_atomic_add<T>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         atomicAddDerived<T>(item, d_ptr);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -218,5 +219,6 @@ int main(int argc, char** argv) {
   sycl::free(d_res_s64, q);
   sycl::free(d_res_f64, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

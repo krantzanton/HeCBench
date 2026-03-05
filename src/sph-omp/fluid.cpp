@@ -8,6 +8,7 @@
 // B spline smoothing kernel
 ////////////////////////////////////////////////////////////////////////////
 
+#include "../sycl_timer.hpp"
 double W(double3 p_pos, double3 q_pos, double h)
 {
     double r = sqrt((p_pos.x-q_pos.x)*(p_pos.x-q_pos.x)
@@ -461,5 +462,6 @@ int main(int argc, char *argv[])
   writeFile(fluid_particles, &params);
 
   finalizeParticles(fluid_particles, boundary_particles);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

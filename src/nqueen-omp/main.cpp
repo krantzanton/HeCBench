@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define _QUEENS_BLOCK_SIZE_   128
 #define _EMPTY_      -1
 
@@ -238,5 +239,6 @@ int main(int argc, char *argv[])
   free(root_prefixes_h);
   free(vector_of_tree_size_h);
   free(solutions_h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }  

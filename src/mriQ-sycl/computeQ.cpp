@@ -6,6 +6,7 @@
  *
  ***************************************************************************/
 
+#include "../sycl_timer.hpp"
 #define PI   3.1415926535897932384626433832795029f
 #define PIx2 6.2831853071795864769252867665590058f
 
@@ -104,7 +105,7 @@ void computePhiMag_GPU(
   sycl::range<1> lws (KERNEL_PHI_MAG_THREADS_PER_BLOCK);
   sycl::range<1> gws (KERNEL_PHI_MAG_THREADS_PER_BLOCK * phiMagBlocks);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class compute_phi_mag>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       ComputePhiMag_GPU (
@@ -114,7 +115,7 @@ void computePhiMag_GPU(
         phiI_d,
         phiMag_d);
     });
-  });
+  }));
 }
 
 void computeQ_GPU(
@@ -148,7 +149,7 @@ void computeQ_GPU(
 
     q.memcpy(ck, kValsTile, numElems * sizeof(kValues));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class compute_q>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         ComputeQ_GPU (
@@ -162,7 +163,7 @@ void computeQ_GPU(
           Qr_d,
           Qi_d);
       });
-    });
+    }));
   }
   q.wait();
   sycl::free(ck, q);

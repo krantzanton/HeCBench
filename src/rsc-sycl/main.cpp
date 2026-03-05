@@ -45,6 +45,7 @@
 #include "support/verify.h"
 
 // Params ---------------------------------------------------------------------
+#include "../sycl_timer.hpp"
 struct Params {
 
     int         device;
@@ -281,5 +282,6 @@ int main(int argc, char **argv) {
     sycl::free(d_g_out_id, q);
     sycl::free(d_flow_vector_array, q);
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

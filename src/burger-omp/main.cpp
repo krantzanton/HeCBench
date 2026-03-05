@@ -5,6 +5,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define idx(i,j)   (i)*x_points+(j)
 
 int main(int argc, char* argv[])
@@ -201,5 +202,6 @@ int main(int argc, char* argv[])
   free(u_new);
   free(v_new);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

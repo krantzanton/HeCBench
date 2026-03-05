@@ -22,6 +22,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 #define MAX_KERNEL_THREADS 256
@@ -92,7 +93,7 @@ void jaccard_row_sum(
   sycl::range<3> sum_gws (1, (n+y-1)/y*y, 64/y);
   sycl::range<3> sum_lws (1, y, 64/y);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class row_sum<weighted,T>>(
       sycl::nd_range<3>(sum_gws, sum_lws), [=] (sycl::nd_item<3> item)
          [[sycl::reqd_sub_group_size(32)]] {
@@ -110,7 +111,7 @@ void jaccard_row_sum(
         }
       }
     });
-  });
+  }));
 }
 
 // Volume of intersections (*weight_i) and cumulated volume of neighboors (*weight_s)
@@ -131,7 +132,7 @@ void jaccard_is(
   sycl::range<3> is_gws ((n+7)/8*8, y, 32/y);
   sycl::range<3> is_lws(8, y, 32/y);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class intersection<weighted,T>>(
       sycl::nd_range<3>(is_gws, is_lws), [=] (sycl::nd_item<3> item) {
 
@@ -184,7 +185,7 @@ void jaccard_is(
         }
       }
     });
-  });
+  }));
 }
 
 // Reference https://github.com/SPEAR-UIC/CodeGreen/tree/main/lassi_solutions
@@ -204,7 +205,7 @@ void jaccard_is_opt(
   sycl::range<3> is_gws ((n+7)/8*8, y, 32/y);
   sycl::range<3> is_lws(8, y, 32/y);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class intersection<weighted,T>>(
       sycl::nd_range<3>(is_gws, is_lws), [=] (sycl::nd_item<3> item) {
 
@@ -254,7 +255,7 @@ void jaccard_is_opt(
         }
       }
     });
-  });
+  }));
 }
 
 template<bool weighted, typename T>
@@ -272,7 +273,7 @@ void jaccard_jw(
   sycl::range<1> jw_gws ((e+threads-1)/threads*threads);
   sycl::range<1> jw_lws (threads);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class jw<weighted,T>>(
       sycl::nd_range<1>(jw_gws, jw_lws), [=] (sycl::nd_item<1> item) {
       for (int j = item.get_global_id(0); j < e;
@@ -282,7 +283,7 @@ void jaccard_jw(
         d_weight_j[j] = (gamma*d_csrVal[j])* (Wi/(Ws-Wi));
       }
     });
-  });
+  }));
 }
 
 template <bool weighted, typename T>
@@ -290,13 +291,13 @@ void fill_weights(sycl::queue &q, const int e, T *d_w, const T value)
 {
   sycl::range<1> fill_gws((e+MAX_KERNEL_THREADS-1)/MAX_KERNEL_THREADS*MAX_KERNEL_THREADS);
   sycl::range<1> fill_lws(MAX_KERNEL_THREADS);
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class fill_elements<weighted, T>>(
       sycl::nd_range<1>(fill_gws, fill_lws), [=] (sycl::nd_item<1> item) {
       for (int j = item.get_global_id(0); j<e; j+=item.get_group_range(0)*item.get_local_range(0))
         d_w[j] = weighted ? (T)(j+1)/e : value;
     });
-  });
+  }));
 }
 
 template <bool weighted, typename T>
@@ -500,5 +501,6 @@ int main(int argc, char** argv)
   jaccard_weight<true, vtype>(q, iteration, row, nnz, csr_ptr.data(), csr_ind.data(), csr_val.data());
   jaccard_weight<false, vtype>(q, iteration, row, nnz, csr_ptr.data(), csr_ind.data(), csr_val.data());
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

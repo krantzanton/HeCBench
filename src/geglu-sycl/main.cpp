@@ -7,6 +7,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template<typename opmath_t>
 opmath_t gelu(opmath_t x) {
     constexpr opmath_t kAlpha = M_SQRT1_2;
@@ -76,10 +77,10 @@ void geglu_gpu(sycl::queue &q, scalar_t *out, const scalar_t *x_and_gate, int64_
     sycl::range<1> lws (BLOCK_DIM_X);
     DISPATCH_FOR_LOOP(for_loop, FOR_LOOP, [&] {
         DISPATCH_DIM_LAST(dim_last, DIM_LAST, [&] {
-            q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+            SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
                geglu_kernel<scalar_t, opmath_t, BLOCK_DIM_X, DIM_LAST, VEC_ELEMS,
                    FOR_LOOP>(out, x_and_gate, item);
-            });
+            }));
         });
     });
 }
@@ -180,5 +181,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

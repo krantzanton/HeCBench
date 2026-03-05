@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#include "../sycl_timer.hpp"
 template <
     int         ACTIVE_CHANNELS,
     int         NUM_BINS,
@@ -51,7 +52,7 @@ double run_smem_atomics(
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler& cgh) {
+    auto __sycl_evt_k1 = q.submit([&] (sycl::handler& cgh) {
       sycl::local_accessor <unsigned int, 1>
         smem (sycl::range<1>(ACTIVE_CHANNELS * NUM_BINS + 3), cgh);
 
@@ -103,7 +104,7 @@ double run_smem_atomics(
                 d_part_hist[g*NUM_PARTS + i + NUM_BINS * CHANNEL] = smem[i + NUM_BINS * CHANNEL + CHANNEL];
         }
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
     q.submit([&] (sycl::handler& cgh) {
       cgh.parallel_for<class hist_smem_accum<ACTIVE_CHANNELS, NUM_BINS, PixelType>>(

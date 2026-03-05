@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 16
 
 #ifdef DOUBLE_PRECISION
@@ -95,7 +96,7 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class hellinger>(
         sycl::nd_range<2>(gws, lws), [=](sycl::nd_item<2> index) {
         int row = index.get_global_id(0);
@@ -110,7 +111,7 @@ int main(int argc, char** argv)
           d_c[row * P + col] = sycl::sqrt(gate * value);
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -131,5 +132,6 @@ int main(int argc, char** argv)
   sycl::free(d_a, q);
   sycl::free(d_b, q);
   sycl::free(d_c, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

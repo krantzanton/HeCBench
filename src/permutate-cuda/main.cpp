@@ -1,5 +1,6 @@
 #include "header.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   bool iidchk = 0;
@@ -37,7 +38,8 @@ int main(int argc, char* argv[])
 
   free(data);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 

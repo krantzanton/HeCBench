@@ -9,6 +9,7 @@
 #include "reference.h"
 
 // transpose
+#include "../sycl_timer.hpp"
 double* t(const double *idata, const int width, const int height)
 {
   double *odata = (double*) malloc (sizeof(double) * width * height); 
@@ -136,5 +137,6 @@ int main(int argc, char* argv[]) {
   free(rands);
   free(probs);
   free(probs_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

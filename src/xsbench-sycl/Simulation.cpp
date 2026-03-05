@@ -11,6 +11,7 @@
 // default, XSBench will only run the baseline implementation. Optimized variants
 // are not yet implemented in this CUDA port.
 ////////////////////////////////////////////////////////////////////////////////////
+#include "../sycl_timer.hpp"
 void lookup (
     const int *__restrict__ num_nucs,
     const double *__restrict__ concs,
@@ -300,13 +301,13 @@ run_event_based_simulation(Inputs in, SimulationData SD,
   double kstart = get_time();
 
   for (int i = 0; i < in.kernel_repeat; i++) {
-    q.parallel_for<class kernel>(sycl::nd_range<1>(gws, lws),
+    SYCL_TIME_AGG("kernel 1", q.parallel_for<class kernel>(sycl::nd_range<1>(gws, lws),
       [=](sycl::nd_item<1> item) {
         lookup(num_nucs_d, concs_d, mats_d, nuclide_grid_d, verification_d,
                unionized_energy_array_d, index_grid_d, in.lookups,
                in.n_isotopes, in.n_gridpoints, in.grid_type, in.hash_bins,
                SD.max_num_nucs, item);
-    });
+    }));
   }
 
   q.wait();

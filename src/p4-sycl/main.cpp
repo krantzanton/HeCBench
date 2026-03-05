@@ -23,6 +23,7 @@
 #include "params.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void postprocess (
   sycl::nd_item<1> &item,
   const float *__restrict cls_input,
@@ -205,7 +206,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class p4>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         postprocess(item,
@@ -229,7 +230,7 @@ int main(int argc, char* argv[])
                     score_thresh,
                     dir_offset);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -279,5 +280,6 @@ int main(int argc, char* argv[])
   free(h_score_output);
   free(h_bndbox_output);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

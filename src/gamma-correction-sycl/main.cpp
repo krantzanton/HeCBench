@@ -10,6 +10,7 @@
 #include <sycl/sycl.hpp>
 #include "utils.hpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 5) {
     printf("Usage: %s <image width> <image height> <block size> <repeat>\n", argv[0]);
@@ -75,7 +76,7 @@ int main(int argc, char* argv[]) {
 
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&](sycl::handler& cgh) { 
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) { 
       cgh.parallel_for<class gamma_correction>( 
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int i = item.get_global_id(0); 
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
         if (gamma_pixel > 255) gamma_pixel = 255;
         pixel[i].set(gamma_pixel, gamma_pixel, gamma_pixel, gamma_pixel);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -108,5 +109,6 @@ int main(int argc, char* argv[]) {
 #endif
   sycl::free(pixel, q); 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

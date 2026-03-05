@@ -3,6 +3,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NOW std::chrono::high_resolution_clock::now()
 
 #include "fastdiv.h"
@@ -123,5 +124,6 @@ int main(int argc, char* argv[])
   std::cout << elapsed_time_fast.count() << " seconds" << std::endl;
 
   std::cout << "Speedup = " << elapsed_time_slow.count() / elapsed_time_fast.count() << std::endl;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

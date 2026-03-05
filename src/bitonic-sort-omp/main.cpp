@@ -41,6 +41,7 @@
 #include <limits>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void ParallelBitonicSort(int input[], int n) {
 
   // n: the exponent used to set the array size. Array size = power(2, n)
@@ -216,5 +217,6 @@ int main(int argc, char *argv[]) {
   free(data_cpu);
   free(data_gpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

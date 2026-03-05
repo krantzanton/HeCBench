@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void reference (
     int numNeurons, int neurons_per_item, float dt,
     float*__restrict encode_result,
@@ -173,7 +174,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for(int step = 0; step < num_steps; step++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class k>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         lif(item,
@@ -189,7 +190,7 @@ int main(int argc, char* argv[]) {
             d_gain,
             d_spikes);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -243,5 +244,6 @@ int main(int argc, char* argv[]) {
   free(spikes_gold);
 
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

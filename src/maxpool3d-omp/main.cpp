@@ -5,6 +5,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef float DTYPE;
 
 int main(int argc, char** argv)
@@ -110,5 +111,6 @@ int main(int argc, char** argv)
   free(h_image);
   free(h_output);
   free(d_output);
-  return status;
+  SYCL_TIMER_DUMP();
+return status;
 }

@@ -20,6 +20,7 @@
 #include "matrix.h"
 #include "kernel.cpp"
 
+#include "../sycl_timer.hpp"
 float sigma ;
 int *info_bin ;
 
@@ -237,7 +238,7 @@ int main()
           // run check-node processing kernel
           // TODO: run a special kernel the first iteration?
           if(ii == 0) {
-            q.submit([&] (sycl::handler &cgh) {
+            SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
               cgh.parallel_for<class cnp_kernel>(
                 sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
                 ldpc_cnp_kernel_1st_iter (
@@ -248,9 +249,9 @@ int main()
                   d_h_compact1,
                   item);
               });
-            });
+            }));
           } else {
-            q.submit([&] (sycl::handler &cgh) {
+            SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
               sycl::local_accessor<float, 1> RCache (sycl::range<1>(sharedRCacheSize), cgh);
               cgh.parallel_for<class cnp_kernel2>(
                 sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -263,7 +264,7 @@ int main()
                   RCache.get_multi_ptr<sycl::access::decorated::no>().get(),
                   item);
               });
-            });
+            }));
           }
 
           // run variable-node processing kernel
@@ -272,7 +273,7 @@ int main()
           // decision instead of writing back the belief
           // for the value of each bit.
           if(ii < MAX_ITERATION - 1) {
-            q.submit([&] (sycl::handler &cgh) {
+            SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
               cgh.parallel_for<class vnp_kernel>(
                 sycl::nd_range<2>(gws2, lws2), [=] (sycl::nd_item<2> item) {
                 ldpc_vnp_kernel_normal(
@@ -282,9 +283,9 @@ int main()
                    d_h_compact2,
                    item);
               });
-            });
+            }));
           } else {
-            q.submit([&] (sycl::handler &cgh) {
+            SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
               cgh.parallel_for<class vnp_kernel2>(
                 sycl::nd_range<2>(gws2, lws2), [=] (sycl::nd_item<2> item) {
                 ldpc_vnp_kernel_last_iter(
@@ -295,7 +296,7 @@ int main()
                    d_h_compact2,
                    item);
               });
-            });
+            }));
           }
         }
 
@@ -341,5 +342,6 @@ int main()
   free(hard_decision_gpu);
   free(info_bin_gpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

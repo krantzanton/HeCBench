@@ -26,6 +26,7 @@
 #include <omp.h>
 
 
+#include "../sycl_timer.hpp"
 #define DO_NOT_OPTIMIZE_AWAY                                                       \
   unsigned i = omp_get_num_teams() * omp_get_num_threads() + omp_get_thread_num(); \
   if (out) *out = args.args[i];
@@ -107,5 +108,6 @@ int main(int argc, char* argv[])
   time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   printf("Average execution time of kernelWithLargeArgs: %f (us)\n", (time * 1e-3f) / repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

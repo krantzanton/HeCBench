@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_X 16
 #define BLOCK_Y 16
 #define PI 3.1415926535897932f
@@ -712,5 +713,6 @@ int main(int argc, char * argv[]) {
 
   free(seed);
   free(I);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -11,6 +11,7 @@
 // https://people.math.sc.edu/Burkardt/c_src/lebesgue/lebesgue_test.txt
 //
 
+#include "../sycl_timer.hpp"
 void test01 ( sycl::queue &q, int nfun  )
 {
   //char label[] = "Chebyshev1 points for N = 11";
@@ -531,5 +532,6 @@ int main (int argc, char* argv[] )
     timestamp ( );
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

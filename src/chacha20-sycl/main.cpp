@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "chacha20.h"
 
+#include "../sycl_timer.hpp"
 void hex_to_raw(sycl::nd_item<1> &item, const char* src, const int n /*src size*/,
                 uint8_t* dst, const uint8_t* char_to_uint)
 {
@@ -100,7 +101,7 @@ int main(int argc, char* argv[])
   for (int i = 0; i < repeat; i++) {
     q.memset(d_result, 0, result_len); 
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class keystreams>(
        sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
        test_keystreams(
@@ -115,7 +116,7 @@ int main(int argc, char* argv[])
           d_result,
           key_len, nonce_len, keystream_len);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -141,5 +142,6 @@ int main(int argc, char* argv[])
   sycl::free(d_result, q);
   sycl::free(d_char_to_uint, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

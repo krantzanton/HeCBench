@@ -23,6 +23,7 @@
 #include "snap.h"
 #include "utils.cpp"
 
+#include "../sycl_timer.hpp"
 #if REFDATA_TWOJ == 14
 #include "refdata_2J14_W.h"
 #elif REFDATA_TWOJ == 8
@@ -872,5 +873,6 @@ int main(int argc, char* argv[])
   free(dulist);
   free(f);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

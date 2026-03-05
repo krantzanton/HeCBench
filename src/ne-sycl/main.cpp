@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 using float3 = sycl::float3;
 using float4 = sycl::float4;
 
@@ -142,12 +143,12 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class normal_estimate>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         ne(item, d_points, d_normal_points, width, height, numPts);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -171,5 +172,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_points, q);
   free(normal_points);
   free(points);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

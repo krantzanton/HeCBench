@@ -5,6 +5,7 @@
 #include <cmath>
 #include "kernel.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   if (argc != 2) {
@@ -104,5 +105,6 @@ int main(int argc, char* argv[]) {
     std::cout << "RMSE : " << sqrtf(s) << std::endl;
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

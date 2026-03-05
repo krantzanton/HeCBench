@@ -9,6 +9,7 @@
 #include <omp.h>
 #include "common.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 16
 
 double gettime() {
@@ -331,4 +332,6 @@ int main ( int argc, char *argv[] )
   }
 
   free(m);
+
+  SYCL_TIMER_DUMP();
 }

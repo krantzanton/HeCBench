@@ -6,6 +6,7 @@
 #include <random>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template <typename T, typename G>
 inline void adam (
         T* __restrict p,
@@ -133,5 +134,6 @@ int main(int argc, char* argv[])
   free(v);
   free(g);
   free(r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

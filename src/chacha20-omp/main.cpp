@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "chacha20.h"
 
+#include "../sycl_timer.hpp"
 void hex_to_raw(const char* src, const int n /*src size*/, uint8_t* dst, const uint8_t* char_to_uint){
   for (int i = omp_get_thread_num(); i < n/2; i = i + omp_get_num_threads()) {
     uint8_t hi = char_to_uint[src[i*2 + 0]];
@@ -107,5 +108,6 @@ int main(int argc, char* argv[])
   free(raw_key);
   free(raw_nonce);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -9,6 +9,7 @@
 #include "lanczos.h"
 #include "cycle_timer.h"
 
+#include "../sycl_timer.hpp"
 #define THREADS_PER_BLOCK 256
 
 // Forward declarations
@@ -38,13 +39,13 @@ void multiply_inplace_kernel(sycl::queue &q, const int n, T *x, const T k) {
   sycl::range<1> gws (threads);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class k_multiply_inplace<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int index = item.get_global_id(0);
       if (index < n) x[index] *= k;
     });
-  });
+  }));
 }
 
 
@@ -63,13 +64,13 @@ void saxpy_inplace_kernel(sycl::queue &q, const int n, T *y, T *x, const T a) {
   sycl::range<1> gws (threads);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class k_saxpy<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int index = item.get_global_id(0);
       if (index < n) y[index] += a * x[index];
     });
-  });
+  }));
 }
 
 /**
@@ -94,7 +95,7 @@ void warp_multiply_kernel(sycl::queue &q, const int group_size, const int rows,
   sycl::range<1> gws (multiply_blocks*THREADS_PER_BLOCK);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<T, 1> result(sycl::range<1>(THREADS_PER_BLOCK), cgh);
     cgh.parallel_for<class k_multiply<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -119,7 +120,7 @@ void warp_multiply_kernel(sycl::queue &q, const int group_size, const int rows,
         if (lane == 0) y[r] = result[lid];
       }
     });
-  });
+  }));
 }
 
 template <typename T>
@@ -130,7 +131,7 @@ T device_dot_product(sycl::queue &q, const int n, T *x, T *y, T *z) {
   sycl::range<1> gws (threads);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<T, 1> result (sycl::range<1>(THREADS_PER_BLOCK), cgh);
     cgh.parallel_for<class k_dot_product<T>>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -154,7 +155,7 @@ T device_dot_product(sycl::queue &q, const int n, T *x, T *y, T *z) {
       }
       if (lid == 0) z[bid] = result[0];
     });
-  });
+  }));
 
   // Transfer result back from device to host
   T host_scratch[blocks];

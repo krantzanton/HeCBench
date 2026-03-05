@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void entropy(
       float *__restrict d_entropy,
   const char*__restrict d_val, 
@@ -160,5 +161,6 @@ int main(int argc, char* argv[]) {
   free(input);
   free(output);
   free(output_ref);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

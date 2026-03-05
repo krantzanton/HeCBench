@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[])
 {
   double t_start = 0;
@@ -86,5 +87,6 @@ int main(int argc, char *argv[])
   free(states2);
   free(parameters);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

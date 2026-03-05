@@ -7,6 +7,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   if (argc != 3) {
@@ -91,7 +92,7 @@ int main(int argc, char* argv[])
     const float correction2_sqrt = sqrtf(1.0f - powf(beta2, step));
     const float step_size = lr / correction1;
 
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<float, 0> absmax_exp_acc(cgh);
       sycl::local_accessor<float, 0> absmax_sq_acc(cgh);
       cgh.parallel_for(
@@ -103,7 +104,7 @@ int main(int argc, char* argv[])
                 correction2_sqrt, step_size, weight_decay_update, resid_beta1,
                 resid_beta2, item, absmax_exp_acc, absmax_sq_acc);
           });
-    });
+    }));
 
     reference<float, threadsPerBlock>(
               blocksPerGrid,
@@ -143,7 +144,7 @@ int main(int argc, char* argv[])
     const float correction1 = 1.0f - powf(beta1, step);
     const float correction2_sqrt = sqrtf(1.0f - powf(beta2, step));
     const float step_size = lr / correction1;
-    q.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
 
       sycl::local_accessor<float, 0> absmax_exp_acc(cgh);
       sycl::local_accessor<float, 0> absmax_sq_acc(cgh);
@@ -156,7 +157,7 @@ int main(int argc, char* argv[])
                 correction2_sqrt, step_size, weight_decay_update, resid_beta1,
                 resid_beta2, item, absmax_exp_acc, absmax_sq_acc);
           });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -177,5 +178,6 @@ int main(int argc, char* argv[])
   free(v);
   free(g);
   free(r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

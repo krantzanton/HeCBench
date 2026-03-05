@@ -11,6 +11,7 @@
 //
 // Daniel Scharstein, 4/2007
 
+#include "../sycl_timer.hpp"
 #define RY  15
 #define YG  6
 #define GC  4
@@ -126,12 +127,12 @@ int main(int argc, char **argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class cw>(sycl::nd_range<2>(gws, lws),
         [=] (sycl::nd_item<2> item) {
         color(item, d_pix, size, half_size, range, truerange);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -158,5 +159,6 @@ int main(int argc, char **argv)
   sycl::free(d_pix, q);
   free(pix);
   free(res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

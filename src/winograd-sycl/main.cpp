@@ -2,6 +2,7 @@
 #include <sycl/sycl.hpp>
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
 
   DATA_TYPE *A = (DATA_TYPE*)malloc(MAP_SIZE * MAP_SIZE * sizeof(DATA_TYPE));
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
     double co_start = rtclock();
 
     if (gpu_run) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class winograd_conv2d>(
           sycl::nd_range<2>(gpu_gws, lws), [=] (sycl::nd_item<2> item) {
 
@@ -149,7 +150,7 @@ int main(int argc, char* argv[]) {
             }
           }
         });
-      });
+      }));
 
     }
 
@@ -193,5 +194,6 @@ int main(int argc, char* argv[]) {
   printf("Ratio of co-execution time to total time: %.2lf%%\n",
          100.0 * co_time / (end - start));
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include "linearprobing.h"
 
+#include "../sycl_timer.hpp"
 inline uint32_t atomicCAS(uint32_t &val, uint32_t expected, uint32_t desired)
 {
   uint32_t expected_value = expected;
@@ -76,12 +77,12 @@ double insert_hashtable(sycl::queue &q, KeyValue* pHashTable, const KeyValue* kv
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class insert_table>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_hashtable_insert(item, pHashTable, kvs, (uint32_t)num_kvs);
       });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -132,12 +133,12 @@ double delete_hashtable(sycl::queue &q, KeyValue* pHashTable, const KeyValue* kv
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class delete_table>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_hashtable_delete(item, pHashTable, kvs, (uint32_t)num_kvs);
     });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -185,12 +186,12 @@ std::vector<KeyValue> iterate_hashtable(sycl::queue &q, KeyValue *pHashTable)
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class iterate_table>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k_iterate_hashtable(item, pHashTable, device_kvs, device_num_kvs);
       });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

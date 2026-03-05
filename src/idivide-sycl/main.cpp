@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NOW std::chrono::high_resolution_clock::now()
 
 #include "fastdiv.h"
@@ -33,12 +34,12 @@ int test(sycl::queue &q)
       int divisor = d * sign;
       q.memset(d_buf, 0, 4 * sizeof(int));
 
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class test>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           check(item, divisor, d_buf);
         });
-      });
+      }));
 
       q.memcpy(buf, d_buf, 4 * sizeof(int)).wait();
 
@@ -82,18 +83,18 @@ int main(int argc, char* argv[])
 
   // warmup may be needed for accurate performance measurement with chrono
   for (int i = 0; i < 100; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warm_thru>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         throughput_test<int>(item, 3, 5, 7, 0, 0);
       });
-    });
-    q.submit([&] (sycl::handler &cgh) {
+    }));
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warm_thru_fast>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         throughput_test<int_fastdiv>(item, 3, 5, 7, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -103,12 +104,12 @@ int main(int argc, char* argv[])
   auto start = NOW;
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bench_thru>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         throughput_test<int>(item, 3, 5, 7, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -120,12 +121,12 @@ int main(int argc, char* argv[])
   start = NOW;
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bench_thru_fast>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         throughput_test<int_fastdiv>(item, 3, 5, 7, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -137,18 +138,18 @@ int main(int argc, char* argv[])
 
   // warmup
   for (int i = 0; i < 100; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warm_lat>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         latency_test<int>(item, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0);
       });
-    });
-    q.submit([&] (sycl::handler &cgh) {
+    }));
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class warm_lat_fast>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         latency_test<int_fastdiv>(item, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -157,12 +158,12 @@ int main(int argc, char* argv[])
   start = NOW;
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bench_lat>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         latency_test<int>(item, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -174,12 +175,12 @@ int main(int argc, char* argv[])
   start = NOW;
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bench_lat_fast>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         latency_test<int_fastdiv>(item, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0);
       });
-    });
+    }));
   }
   q.wait();
 
@@ -188,5 +189,6 @@ int main(int argc, char* argv[])
   std::cout << elapsed_time_fast.count() << " seconds" << std::endl;
 
   std::cout << "Speedup = " << elapsed_time_slow.count() / elapsed_time_fast.count() << std::endl;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

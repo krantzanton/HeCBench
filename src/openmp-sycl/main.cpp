@@ -31,6 +31,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[]) {
 
   printf("%s Starting...\n\n", argv[0]);
@@ -85,14 +86,14 @@ int main(int argc, char *argv[]) {
         // pointer to memory on the device associated with this CPU thread
         int *d_a = sycl::malloc_device<int>(nwords_per_kernel, q);
         q.memcpy(d_a, sub_a, nbytes_per_kernel);
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class addConstant>(
             sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             int idx = item.get_global_id(0);
             for (int i = 0; i < repeat; i++)
               d_a[idx] += i % b;
           });
-        });
+        }));
         q.memcpy(sub_a, d_a, nbytes_per_kernel).wait();
         sycl::free(d_a, q);
       }
@@ -113,5 +114,6 @@ int main(int argc, char *argv[]) {
   printf("Runtime overhead of first run is %f seconds\n", overhead);
 
   free(a);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

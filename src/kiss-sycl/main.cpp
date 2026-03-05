@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 #include "kiss.h"
 
+#include "../sycl_timer.hpp"
 template <class T, class Rng>
 void kernel (T * const out, const std::uint64_t n, const std::uint32_t seed,
              const sycl::nd_item<3> &item)
@@ -33,12 +34,12 @@ void uniform_distribution(
     const std::uint32_t seed) noexcept
 {
   // execute kernel
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<3>(sycl::range<3>(1, 1, 4096 * 256),
                         sycl::range<3>(1, 1, 256)),
       [=](sycl::nd_item<3> item) {
         kernel<T, Rng>(out, n, seed, item);
-  });
+  }));
 }
 
 // This example shows the easy generation of gigabytes of uniform random values
@@ -96,5 +97,6 @@ int main(int argc, char* argv[])
 
     sycl::free(data_h, q);
     sycl::free(data_d, q);
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

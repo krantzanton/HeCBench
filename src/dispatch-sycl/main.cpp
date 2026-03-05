@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define NUM_GROUPS 1
 #define GROUP_SIZE 1
 #define WARMUP_RUN_COUNT 100
@@ -62,10 +63,10 @@ int main() {
   //------------------------------------------------------------------------------------
   for (auto i = 0; i < TOTAL_RUN_COUNT; ++i) {
     auto start = std::chrono::high_resolution_clock::now();
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       });
-    });
+    }));
     auto stop = std::chrono::high_resolution_clock::now();
     results[i] = std::chrono::duration<float, std::milli>(stop - start).count();
   }
@@ -76,10 +77,10 @@ int main() {
   //------------------------------------------------------------------------------------
   for (auto i = 0; i < TOTAL_RUN_COUNT; ++i) {
     auto start = std::chrono::high_resolution_clock::now();
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       });
-    }).wait();
+    }));
     auto stop = std::chrono::high_resolution_clock::now();
     results[i] = std::chrono::duration<float, std::milli>(stop - start).count();
   }
@@ -91,10 +92,10 @@ int main() {
   for (auto i = 0; i < TOTAL_RUN_COUNT; ++i) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int j = 0; j < BATCH_SIZE; j++) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         });
-      });
+      }));
     }
     q.wait();
     auto stop = std::chrono::high_resolution_clock::now();
@@ -102,5 +103,6 @@ int main() {
   }
   print_timing("Batch dispatch latency", results, BATCH_SIZE);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

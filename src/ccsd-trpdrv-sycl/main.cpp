@@ -5,6 +5,7 @@
 #include "reference.h"
 
 
+#include "../sycl_timer.hpp"
 /* Do not allow the test to allocate more than MAX_MEM gigabytes. */
 #ifndef MAX_MEM
 #define MAX_MEM 4
@@ -242,5 +243,6 @@ maxed_out:
   free(t1v1  );
   free(t1v2  );
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

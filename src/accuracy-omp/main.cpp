@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define NUM_THREADS 256
 
 int main(int argc, char* argv[])
@@ -87,5 +88,6 @@ int main(int argc, char* argv[])
   free(label);
   free(data);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

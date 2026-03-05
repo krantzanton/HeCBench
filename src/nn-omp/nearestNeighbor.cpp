@@ -2,6 +2,7 @@
 #include <omp.h>
 #include "nearestNeighbor.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char *argv[]) {
   std::vector<Record> records;
   float *recordDistances;
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]) {
       printf("%s --> Distance=%f\n",records[i].recString,records[i].distance);
     }
   free(recordDistances);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 void FindNearestNeighbors(

@@ -95,6 +95,7 @@
 #include <omp.h>
 #include "util.h"
 
+#include "../sycl_timer.hpp"
 int main ( int argc, char **argv )
 {
   if (argc != 2) {
@@ -263,5 +264,6 @@ int main ( int argc, char **argv )
   printf ( "  Normal end of execution.\n" );
   printf ( "\n" );
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

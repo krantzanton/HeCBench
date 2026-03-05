@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "distance.h"
 
+#include "../sycl_timer.hpp"
 void distance_device(const double4* loc, double* dist, const int N, const int iteration);
 
 void verify(int size, const double *output, const double *expected_output) {
@@ -91,6 +92,7 @@ int main(int argc, char* argv[]) {
   free(input);
   free(output);
   free(expected_output);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

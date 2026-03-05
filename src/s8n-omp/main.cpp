@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void k_cube_select(int b, int n, int radius, const int* in, int* out) {
   #pragma omp target teams distribute num_teams(b) 
   for (int batch_idx = 0; batch_idx < b; batch_idx++) {
@@ -222,5 +223,6 @@ int main(int argc, char* argv[])
   free(r_out);
   free(r_out2);
   free(r_out4);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

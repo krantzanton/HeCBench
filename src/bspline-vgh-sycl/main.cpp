@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define max(a,b) ((a<b)?b:a)
 #define min(a,b) ((a<b)?a:b)
 
@@ -264,7 +265,7 @@ int main(int argc, char ** argv) {
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class vgh_spline>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         const int n = item.get_global_id(0);
@@ -288,7 +289,7 @@ int main(int argc, char ** argv) {
             spline_y_grid_delta_inv,
             spline_z_grid_delta_inv );
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -353,5 +354,6 @@ int main(int argc, char ** argv) {
   sycl::free(d_d2a, q);
   sycl::free(d_d2b, q);
   sycl::free(d_d2c, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

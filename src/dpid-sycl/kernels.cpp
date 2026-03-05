@@ -7,6 +7,7 @@
 #include <chrono>
 #include "shared.h"
 
+#include "../sycl_timer.hpp"
 #define THREADS 128
 #define WSIZE 32
 #define TSIZE (THREADS / WSIZE)
@@ -247,19 +248,19 @@ void run(const Params& p, const uchar3* hInput, uchar3* hOutput) {
   auto start = std::chrono::steady_clock::now();
 
   for (uint32_t i = 0; i < p.repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class guidance>(sycl::nd_range<2>(gws, lws),
         [=] (sycl::nd_item<2> item) [[intel::reqd_sub_group_size(32)]] {
         kernelGuidance (item, dInput, dGuidance, p);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class downsample>(sycl::nd_range<2>(gws, lws),
         [=] (sycl::nd_item<2> item) [[intel::reqd_sub_group_size(32)]] {
         kernelDownsampling (item, dInput, dGuidance, p, dOutput);
       });
-    });
+    }));
   }
 
   q.wait();

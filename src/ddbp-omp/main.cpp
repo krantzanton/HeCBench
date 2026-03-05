@@ -41,6 +41,7 @@ Original author: Rodrigo de Barros Vimieiro
 #include <omp.h>
 
 // thread block size
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 // integration direction
@@ -672,5 +673,6 @@ int main()
   free(h_pTubeAngle);
   free(h_pDetAngle);
   free(h_pProj);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

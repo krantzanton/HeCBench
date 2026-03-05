@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 
 //define the data set size (cubic volume)
+#include "../sycl_timer.hpp"
 #define DATAXSIZE 400
 #define DATAYSIZE 400
 #define DATAZSIZE 400
@@ -385,7 +386,7 @@ int main(int argc, char *argv[])
 
   while (t <= num_steps) {
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class calc_force>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         calculateForce(d_phiold,
@@ -395,9 +396,9 @@ int main(int argc, char *argv[])
                        dx,dy,dz,epsilon,W0,tau0,
                        item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class allen_cahn>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         allenCahn(d_phinew,
@@ -410,16 +411,16 @@ int main(int argc, char *argv[])
                   dt,dx,dy,dz,
                   item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bc_phi>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         boundaryConditionsPhi(d_phinew, item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class thermal_equation>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         thermalEquation(d_unew,
@@ -429,28 +430,28 @@ int main(int argc, char *argv[])
                         D,dt,dx,dy,dz,
                         item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class bc_u>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         boundaryConditionsU(d_unew, delta, item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class swap_phi>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         swapGrid(d_phinew, d_phiold, item);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class swap_u>(
         sycl::nd_range<3>(gws, lws), [=] (sycl::nd_item<3> item) {
         swapGrid(d_unew, d_uold, item);
       });
-    });
+    }));
 
     t++;
   }
@@ -496,5 +497,6 @@ int main(int argc, char *argv[])
   free(phi_host);
   free(u_host);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

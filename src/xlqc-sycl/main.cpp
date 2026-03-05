@@ -44,6 +44,7 @@ of this software, even if advised of the possibility of such damage.
 #include "cuda_rys_sp.cpp"
 #include "cuda_rys_dp.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   // use spherical harmonic d function?
@@ -437,7 +438,7 @@ int main(int argc, char* argv[])
 
     // use 1T1PI for J and K matrices
     if (use_dp) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<double, 1> smem (sycl::range<1>(BLOCKSIZE * BLOCKSIZE), cgh);
         cgh.parallel_for<class matJ_dp>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           cuda_mat_J_PI_dp(item, smem.get_pointer(),
@@ -448,9 +449,9 @@ int main(int argc, char* argv[])
                         d_mat_J_PI,
                         d_mat_Q);
         });
-      });
+      }));
     } else {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<double, 1> smem (sycl::range<1>(BLOCKSIZE * BLOCKSIZE), cgh);
         cgh.parallel_for<class matJ>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           cuda_mat_J_PI(item, smem.get_pointer(),
@@ -461,7 +462,7 @@ int main(int argc, char* argv[])
                         d_mat_J_PI,
                         d_mat_Q);
         });
-      });
+      }));
     }
 
     q.wait();
@@ -475,7 +476,7 @@ int main(int argc, char* argv[])
     kstart = std::chrono::steady_clock::now();
 
     if (use_dp) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<double, 1> smem (sycl::range<1>(BLOCKSIZE * BLOCKSIZE), cgh);
         cgh.parallel_for<class matK_dp>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           cuda_mat_K_PI_dp(item, smem.get_pointer(),
@@ -486,9 +487,9 @@ int main(int argc, char* argv[])
                         d_mat_K_PI,
                         d_mat_Q);
         });
-      });
+      }));
     } else {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<double, 1> smem (sycl::range<1>(BLOCKSIZE * BLOCKSIZE), cgh);
         cgh.parallel_for<class matK>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           cuda_mat_K_PI(item, smem.get_pointer(),
@@ -499,7 +500,7 @@ int main(int argc, char* argv[])
                         d_mat_K_PI,
                         d_mat_Q);
         });
-      });
+      }));
     }
 
     q.wait();
@@ -742,5 +743,6 @@ int main(int argc, char* argv[])
 
   //====== the end of program ========
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

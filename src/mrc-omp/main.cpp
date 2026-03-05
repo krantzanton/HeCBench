@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void MRCGradient (
     const int N, const int* Y, const float* X1, const float* X2, const float* dOutput,
     const float margin, float*__restrict dX1, float*__restrict dX2) {
@@ -115,5 +116,6 @@ int main(int argc, char* argv[])
   free(h_dX1);
   free(h_dX2);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

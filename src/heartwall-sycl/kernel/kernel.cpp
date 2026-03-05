@@ -4,6 +4,7 @@
 #include <sycl/sycl.hpp>
 #include <iostream>
 
+#include "../sycl_timer.hpp"
 void 
 kernel_gpu_wrapper(
     params_common common,
@@ -354,13 +355,13 @@ kernel_gpu_wrapper(
     //==================================================50
     //  launch kernel
     //==================================================50
-    q.submit ([&](sycl::handler &cgh) {
+    auto __sycl_evt_k1 = q.submit ([&](sycl::handler &cgh) {
       cgh.parallel_for<class heartwall>(
         sycl::nd_range<1>(sycl::range<1>(gws), sycl::range<1>(lws)),
         [=] (sycl::nd_item<1> item) {
         #include "kernel.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
 #ifdef DEBUG
     try {

@@ -15,6 +15,7 @@
 #include <sycl/sycl.hpp>
 #include "conv.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv)
 {
   if (argc != 4) {
@@ -129,5 +130,6 @@ int main(int argc, char **argv)
   sycl::free(d_Kernel, q);
 
   printf("%s\n", L2norm < 1e-6 ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

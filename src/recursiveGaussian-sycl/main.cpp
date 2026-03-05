@@ -1,4 +1,5 @@
 
+#include "../sycl_timer.hpp"
 #define CLAMP_TO_EDGE
 #define MAC
 
@@ -264,14 +265,14 @@ double GPUGaussianFilterRGBA(sycl::queue &q,
   sycl::range<2> t1_gws (szTransposeGlobalWork[1], szTransposeGlobalWork[0]);
   sycl::range<2> t1_lws (szTransposeLocalWork[1], szTransposeLocalWork[0]);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<unsigned int, 1>
       uiLocalBuff (sycl::range<1>(iTransposeBlockDim * (iTransposeBlockDim + 1)), cgh);
     cgh.parallel_for<class transpose1>(sycl::nd_range<2>(t1_gws, t1_lws), [=] (sycl::nd_item<2> item) {
       Transpose(item, d_BufTmp, d_BufOut, uiImageWidth, uiImageHeight,
                 uiLocalBuff.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   // Reset Gaussian global work dimensions and variable args, then process in 2nd dimension
   // note width and height parameters flipped due to transpose
@@ -302,14 +303,14 @@ double GPUGaussianFilterRGBA(sycl::queue &q,
   sycl::range<2> t2_gws (szTransposeGlobalWork[1], szTransposeGlobalWork[0]);
   //range<1> t2_lws (szTransposeLocalWork[1], szTransposeLobalWork[0]);
   // Launch transpose kernel in 2nd direction
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<unsigned int, 1>
       uiLocalBuff (sycl::range<1>(iTransposeBlockDim * (iTransposeBlockDim + 1)), cgh);
     cgh.parallel_for<class transpose2>(sycl::nd_range<2>(t2_gws, t1_lws), [=] (sycl::nd_item<2> item) {
       Transpose(item, d_BufTmp, d_BufOut, uiImageHeight, uiImageWidth,
                 uiLocalBuff.get_multi_ptr<sycl::access::decorated::no>().get());
     });
-  });
+  }));
 
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -404,5 +405,6 @@ int main(int argc, char** argv)
   sycl::free(d_BufIn, q);
   sycl::free(d_BufTmp, q);
   sycl::free(d_BufOut, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

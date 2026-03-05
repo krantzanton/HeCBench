@@ -21,6 +21,7 @@
 #include <sycl/sycl.hpp>
 #include "iso2dfd.h"
 
+#include "../sycl_timer.hpp"
 #define MIN(a, b) (a) < (b) ? (a) : (b)
 
 /*
@@ -255,7 +256,7 @@ int main(int argc, char* argv[]) {
 
     //    alternating the 'next' and 'prev' parameters which effectively
     //    swaps their content at every iteration.
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       // Create accessors
       h.parallel_for<class kernel_next>(
         sycl::nd_range<2>(gws, lws), [=](sycl::nd_item<2> item) {
@@ -263,7 +264,7 @@ int main(int argc, char* argv[]) {
                               k % 2 ? d_next : d_prev,
                               d_vel, dtDIVdxy, nRows, nCols);
       });
-    });
+    }));
   }  // end for
 
   q.wait();
@@ -321,5 +322,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_next, q);
   sycl::free(d_vel, q);
 
-  return error ? 1 : 0;
+  SYCL_TIMER_DUMP();
+return error ? 1 : 0;
 }

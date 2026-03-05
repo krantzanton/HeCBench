@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define TILE_SIZE 5900
 #define NTHREADS 256
 
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
   auto start = std::chrono::steady_clock::now();
 
   for (size_t i = 0; i < repeat; ++i) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<double, 1> tile(sycl::range<1>(TILE_SIZE), cgh);
       cgh.parallel_for<class transpose>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
           item.barrier(sycl::access::fence_space::local_space);
         }
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -147,5 +148,6 @@ int main(int argc, char **argv) {
   verify(input, output);
   delete [] input;
   delete [] output;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

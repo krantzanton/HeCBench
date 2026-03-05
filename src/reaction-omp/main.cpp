@@ -5,6 +5,7 @@
 #include "util.h"
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     printf("Usage: %s <timesteps>\n", argv[0]);
@@ -123,5 +124,6 @@ int main(int argc, char* argv[]) {
 
   delete [] a;
   delete [] b;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

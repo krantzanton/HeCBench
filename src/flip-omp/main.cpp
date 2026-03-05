@@ -9,6 +9,7 @@
 // Example
 // https://pytorch.org/docs/stable/generated/torch.flip.html
 
+#include "../sycl_timer.hpp"
 template <typename scalar_t>
 void flip_kernel(
     const scalar_t* in_tensor,
@@ -182,5 +183,6 @@ int main(int argc, char* argv[])
   printf("=========== Data type is FP64 ==========\n");
   flip<double>(num_dims, num_flip_dims, dim_size, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -10,6 +10,7 @@
 
 #include "cuhd_gpu_decoder.h"
 
+#include "../sycl_timer.hpp"
 inline void decode_subsequence(
     std::uint32_t subsequence_size, std::uint32_t current_subsequence,
     std::uint32_t subsequences_processed, UNIT_TYPE mask, std::uint32_t shift,
@@ -558,12 +559,12 @@ void cuhd::CUHDGPUDecoder::decode(
   // launch phase 1 (intra-sequence synchronisation)
   sycl::range<1> p1_gws(num_sequences * threads_per_block);
   sycl::range<1> p1_lws(threads_per_block);
-  q.parallel_for(sycl::nd_range<1>(p1_gws, p1_lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(p1_gws, p1_lws), [=](sycl::nd_item<1> item) {
     phase1_decode_subseq(preferred_subsequence_size, num_subseq,
                          max_codeword_length, d_input_buffer, d_table,
                          d_sync_info, bits_in_unit, number_of_states,
                          initial_state, initial_bit, item);
-  });
+  }));
 
   // launch phase 2 (inter-sequence synchronisation)
   bool blocks_synchronised = true;
@@ -571,12 +572,12 @@ void cuhd::CUHDGPUDecoder::decode(
   do {
     sycl::range<1> p2_gws(num_sequences * threads_per_block);
     sycl::range<1> p2_lws(threads_per_block);
-    q.parallel_for(sycl::nd_range<1>(p2_gws, p2_lws), [=](sycl::nd_item<1> item) {
+    SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(p2_gws, p2_lws), [=](sycl::nd_item<1> item) {
       phase2_synchronise_blocks(
           preferred_subsequence_size, num_subseq, max_codeword_length,
           num_sequences, d_input_buffer, d_table, d_sync_info,
           d_sequence_synced, bits_in_unit, number_of_states, initial_state, item);
-    });
+    }));
 
     q.memcpy(h_sequence_synced, d_sequence_synced,
                 num_sequences * sizeof(std::uint8_t)).wait();
@@ -604,10 +605,10 @@ void cuhd::CUHDGPUDecoder::decode(
 
   sycl::range<1> p3_gws(num_subseq * threads_per_block);
   sycl::range<1> p3_lws(threads_per_block);
-  q.parallel_for(sycl::nd_range<1>(p3_gws, p3_lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 3", q.parallel_for(sycl::nd_range<1>(p3_gws, p3_lws), [=](sycl::nd_item<1> item) {
     phase3_copy_num_symbols_from_sync_points_to_aux(num_subseq, d_sync_info,
                                                     d_output_sizes, item);
-  });
+  }));
 
   //thrust::device_ptr<std::uint32_t> thrust_sync_points(d_output_sizes);
   //thrust::exclusive_scan(thrust_sync_points,
@@ -625,19 +626,19 @@ void cuhd::CUHDGPUDecoder::decode(
               num_subseq * sizeof(std::uint32_t)).wait();
   free(h_output_sizes);
 
-  q.parallel_for(sycl::nd_range<1>(p3_gws, p3_lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 4", q.parallel_for(sycl::nd_range<1>(p3_gws, p3_lws), [=](sycl::nd_item<1> item) {
     phase3_copy_num_symbols_from_aux_to_sync_points(num_subseq, d_sync_info,
                                                     d_output_sizes, item);
-  });
+  }));
 
   // launch phase 4 (final decoding)
   sycl::range<1> p4_gws(num_sequences * threads_per_block);
   sycl::range<1> p4_lws(threads_per_block);
-  q.parallel_for(sycl::nd_range<1>(p4_gws, p4_lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 5", q.parallel_for(sycl::nd_range<1>(p4_gws, p4_lws), [=](sycl::nd_item<1> item) {
     phase4_decode_write_output(
         preferred_subsequence_size, num_subseq, max_codeword_length,
         d_input_buffer, d_output_buffer, output_size, d_table, d_sync_info,
         bits_in_unit, number_of_states, initial_state, initial_bit, item);
-  });
+  }));
 }
 

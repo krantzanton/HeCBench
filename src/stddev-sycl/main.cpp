@@ -22,6 +22,7 @@
 #include "reference.h"
 
 // final step for the deviation of a sample
+#include "../sycl_timer.hpp"
 template <typename Type, typename IdxType>
 class sampleKernel;
 
@@ -62,7 +63,7 @@ void stddev(sycl::queue &q,
   // required for atomics
   q.memset(d_std, 0, sizeof(Type) * D); // required for atomics
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<Type, 1> sstd (sycl::range<1>(ColsPerBlk), cgh);
     cgh.parallel_for<class sopKernel<Type, IdxType, TPB, ColsPerBlk>>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -103,18 +104,18 @@ void stddev(sycl::queue &q,
         atomic_global.fetch_add(sstd[thisColId]);
       }
     });
-  });
+  }));
 
   sycl::range<1> gws2 ((D+TPB-1)/TPB*TPB);
   sycl::range<1> lws2 (TPB);
   IdxType sampleSize = sample ? N-1 : N;
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class sampleKernel<Type, IdxType>>(
       sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
       IdxType i = item.get_global_id(0);
       if (i < D) d_std[i] = sycl::sqrt(d_std[i] / sampleSize);
     });
-  });
+  }));
 }
 
 int main(int argc, char* argv[]) {
@@ -190,6 +191,7 @@ int main(int argc, char* argv[]) {
   free(data);
   sycl::free(d_std, q);
   sycl::free(d_data, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

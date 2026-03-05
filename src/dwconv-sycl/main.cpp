@@ -4,6 +4,7 @@
 #include <sycl/sycl.hpp>
 #include "tensorAccessor.h"
 
+#include "../sycl_timer.hpp"
 template <typename T, size_t N, template <typename U> class PtrTraits = DefaultPtrTraits>
 using PackedTensorAccessor32 = GenericPackedTensorAccessor<T, N, PtrTraits, int>;
 
@@ -189,7 +190,7 @@ void dwconv2d_forward (sycl::queue &q,
 
   for (int i = 0; i < repeat; i++) {
     if (kW == 3 && kH == 3) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class kSize3x3>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           conv_depthwise2d_forward_kernel<3, scalar_t, scalar_t, int>(
@@ -199,9 +200,9 @@ void dwconv2d_forward (sycl::queue &q,
             width, height, outputWidth, outputHeight,
             kW, kH, strideW, strideH, padW, padH, dilateW, dilateH);
         });
-      });
+      }));
     } else if (kW == 1 && kH == 1) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class kSize1x1>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           conv_depthwise2d_forward_kernel<1, scalar_t, scalar_t, int> (
@@ -211,9 +212,9 @@ void dwconv2d_forward (sycl::queue &q,
             width, height, outputWidth, outputHeight,
             kW, kH, strideW, strideH, padW, padH, dilateW, dilateH);
         });
-      });
+      }));
     } else {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class kSize0x0>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           conv_depthwise2d_forward_kernel<0, scalar_t, scalar_t, int> (
@@ -223,7 +224,7 @@ void dwconv2d_forward (sycl::queue &q,
             width, height, outputWidth, outputHeight,
             kW, kH, strideW, strideH, padW, padH, dilateW, dilateH);
         });
-      });
+      }));
     }
   }
 
@@ -282,5 +283,6 @@ int main(int argc, char* argv[])
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "../sycl_timer.hpp"
 #define NUM_DIFF_SETTINGS 37
 
 //needed for optionInputStruct
@@ -351,5 +352,6 @@ int main( int argc, char** argv)
 
   const int repeat = atoi(argv[1]);
   runBlackScholesAnalyticEngine(repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

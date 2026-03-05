@@ -42,6 +42,7 @@
 #include "support/partitioner.h"
 #include "support/verify.h"
 
+#include "../sycl_timer.hpp"
 const float c_gaus[9] = {0.0625f, 0.125f, 0.0625f, 
                          0.1250f, 0.250f, 0.1250f, 
                          0.0625f, 0.125f, 0.0625f};
@@ -215,17 +216,17 @@ int main(int argc, char **argv) {
       for(int task_id = gpu_first(&partitioner); gpu_more(&partitioner); task_id = gpu_next(&partitioner)) {
 
         // Copy next frame to device
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           auto in_acc = d_in_out.get_access<sycl::access::mode::discard_write>(cgh);
           cgh.copy(all_gray_frames[task_id], in_acc); 
-        });
+        }));
 
         int threads = p.n_gpu_threads;
         sycl::range<2> gws (rows-2, cols-2);
         sycl::range<2> lws (threads, threads);
 
         // call GAUSSIAN KERNEL
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
           auto data = d_in_out.get_access<sycl::access::mode::read>(cgh);
           auto out = d_interm_gpu_proxy.get_access<sycl::access::mode::discard_write>(cgh);
           auto gaus = d_gaus.get_access<sycl::access::mode::read, sycl::access::target::constant_buffer>(cgh);
@@ -282,10 +283,10 @@ int main(int argc, char **argv) {
 
             out[pos] = sycl::min(255, sycl::max(0, sum));
           });
-        });
+        }));
 
         // call SOBEL KERNEL
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
           auto data = d_interm_gpu_proxy.get_access<sycl::access::mode::read>(cgh);
           auto out = d_in_out.get_access<sycl::access::mode::discard_write>(cgh);
           auto theta = d_theta_gpu_proxy.get_access<sycl::access::mode::discard_write>(cgh);
@@ -385,10 +386,10 @@ int main(int argc, char **argv) {
             else
               theta[pos] = 0; // (angle <= 16*PI/8)
           });
-        });
+        }));
 
         // call NON-MAXIMUM SUPPRESSION KERNEL
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
           auto data = d_in_out.get_access<sycl::access::mode::read>(cgh);
           auto theta = d_theta_gpu_proxy.get_access<sycl::access::mode::read>(cgh);
           auto out = d_interm_gpu_proxy.get_access<sycl::access::mode::discard_write>(cgh);
@@ -505,10 +506,10 @@ int main(int argc, char **argv) {
               default: out[pos] = my_magnitude; break;
             }
           });
-        });
+        }));
 
         // call HYSTERESIS KERNEL
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
           auto data = d_interm_gpu_proxy.get_access<sycl::access::mode::read>(cgh);
           auto out = d_in_out.get_access<sycl::access::mode::discard_write>(cgh);
           sycl::local_accessor<int, 1> l_data(sycl::range<1>((threads+2)*(threads+2)), cgh);
@@ -543,13 +544,13 @@ int main(int argc, char **argv) {
                 out[pos] = 0;
             }
           });
-        });
+        }));
 
         // Copy from Device
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
           auto in_acc = d_in_out.get_access<sycl::access::mode::read>(cgh);
           cgh.copy(in_acc, all_out_frames[task_id]);
-        }).wait();
+        }));
       }
 
       for(int task_id = cpu_first(&partitioner); cpu_more(&partitioner); task_id = cpu_next(&partitioner)) {
@@ -606,5 +607,6 @@ int main(int argc, char **argv) {
   free(worklist);
 
   if (status == 0) printf("PASS\n");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

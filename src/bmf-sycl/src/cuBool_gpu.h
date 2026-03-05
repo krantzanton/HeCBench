@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 #ifndef cuBool_GPU_CUH
 #define cuBool_GPU_CUH
 
@@ -151,7 +152,7 @@ class cuBool
   private:
     void calculateDistance(const factor_handler &handler, const error_t weight = 1) {
       q.memset(handler.d_distance_, 0, sizeof(error_t));
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor<factor_t, 1> B_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
         sycl::local_accessor<bit_vector_t, 1> C_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
         sycl::local_accessor<error_t, 1> reductionArray_sm(sycl::range<1>(WARPSPERBLOCK), cgh);
@@ -172,7 +173,7 @@ class cuBool
             C_block_sm.get_pointer(),
             reductionArray_sm.get_pointer());
         });
-      });
+      }));
       q.memcpy(handler.distance_, handler.d_distance_, sizeof(error_t)).wait();
     }
 
@@ -232,24 +233,24 @@ class cuBool
 
         sycl::range<1> gws (SDIV(height_, WARPSPERBLOCK * 32 / lineSize_padded_) * WARPSPERBLOCK * 32);
         sycl::range<1> lws (WARPSPERBLOCK * 32);
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler &cgh) {
           auto height_t = height_;
           cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
             initFactor(handler.d_A, height_t, handler.factorDim_,
                        seed, threshold, item);
           });
-        });
+        }));
 
         seed += height_;
 
         sycl::range<1> gws2 (SDIV(width_, WARPSPERBLOCK * 32 / lineSize_padded_) * WARPSPERBLOCK * 32);
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 3", q.submit([&](sycl::handler &cgh) {
           auto width_t = width_;
           cgh.parallel_for(sycl::nd_range<1>(gws2, lws), [=](sycl::nd_item<1> item) {
             initFactor(handler.d_B, width_t, handler.factorDim_,
                        seed, threshold, item);
           });
-        });
+        }));
       });
     }
 
@@ -276,7 +277,7 @@ class cuBool
                   d_distance_proof);
        */
 
-      q.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&](sycl::handler &cgh) {
         sycl::local_accessor<factor_t, 1> B_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
         sycl::local_accessor<bit_matrix_t, 1> C_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
         sycl::local_accessor<error_t, 1> reductionArray_sm(sycl::range<1>(WARPSPERBLOCK), cgh);
@@ -297,7 +298,7 @@ class cuBool
             C_block_sm.get_pointer(),
             reductionArray_sm.get_pointer());
         });
-      });
+      }));
       q.memcpy(distance_proof, d_distance_proof, sizeof(error_t)).wait();
 
       bool equal = *handler.distance_ == *distance_proof;
@@ -462,7 +463,7 @@ class cuBool
         sycl::range<1> gws (SDIV(std::min(linesAtOnce, height_), WARPSPERBLOCK) * WARPSPERBLOCK * 32);
         sycl::range<1> lws (WARPSPERBLOCK * 32);
 
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 5", q.submit([&](sycl::handler &cgh) {
           sycl::local_accessor<factor_t, 1> B_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
           sycl::local_accessor<bit_vector_t, 1> C_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
 
@@ -481,7 +482,7 @@ class cuBool
               B_block_sm.get_pointer(),
               C_block_sm.get_pointer());
           });
-        });
+        }));
 
         // Change cols
         lineToBeChanged = (fast_kiss32(state) % width_) / WARPSPERBLOCK * WARPSPERBLOCK;
@@ -494,7 +495,7 @@ class cuBool
            //config.flipManyChance, config.flipManyDepth, weight);
 
         sycl::range<1> gws2 (SDIV(std::min(linesAtOnce, width_), WARPSPERBLOCK) * WARPSPERBLOCK * 32);
-        q.submit([&](sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 6", q.submit([&](sycl::handler &cgh) {
 
           sycl::local_accessor<factor_t, 1> A_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
           sycl::local_accessor<bit_vector_t, 1> C_block_sm(sycl::range<1>(32 * WARPSPERBLOCK), cgh);
@@ -514,7 +515,7 @@ class cuBool
              A_block_sm.get_pointer(),
              C_block_sm.get_pointer());
            });
-        });
+        }));
 
         if(iteration % syncStep == 0) {
           q.memcpy(handler.distance_, handler.d_distance_, sizeof(error_t)).wait();

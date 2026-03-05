@@ -7,6 +7,7 @@
 
 #include "multi_tensor_apply.hpp"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 512
 #define ILP 4
 
@@ -204,5 +205,6 @@ int main(int argc, char* argv[])
     }
   }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

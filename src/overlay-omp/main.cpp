@@ -27,6 +27,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 template<typename T>
 void DetectionOverlayBox(
   const T*__restrict input,
@@ -145,5 +146,6 @@ int main(int argc, char* argv[]) {
   free(output);
   free(ref_output);
   free(detections);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

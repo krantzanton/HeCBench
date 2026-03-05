@@ -11,6 +11,7 @@
 
 // Elementary(for vectors less than elementary size) in-shared memory
 // combined radix-2 + radix-4 Fast Walsh Transform
+#include "../sycl_timer.hpp"
 #define ELEMENTARY_LOG2SIZE 11
 
 void fwtBatch1Kernel(      float *__restrict d_Output, 
@@ -149,18 +150,18 @@ void fwtBatchGPU(sycl::queue &q, float *data, int M, int log2N)
 
     for (; log2N > ELEMENTARY_LOG2SIZE; log2N -= 2, N >>= 2, M <<= 2)
     {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class fwt2>(
           sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           fwtBatch2Kernel(data, data, N / 4, item);
         });
-      });
+      }));
     }
 
     sycl::range<1> gws2 (M * N / 4);
     sycl::range<1> lws2 (N/4);
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> lmem (sycl::range<1>(N), cgh);
       cgh.parallel_for<class fwt1>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
@@ -169,7 +170,7 @@ void fwtBatchGPU(sycl::queue &q, float *data, int M, int log2N)
                          lmem.get_multi_ptr<sycl::access::decorated::no>().get(),
                          log2N, item);
       });
-    });
+    }));
 }
 
 // Modulate two arrays
@@ -179,7 +180,7 @@ void modulateGPU(sycl::queue &q, float *a, const float *b, int N)
     sycl::range<1> lws (256);
     const float rcpN = 1.0f / (float)N;
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class modulate>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int        tid = item.get_global_id(0);
@@ -188,5 +189,5 @@ void modulateGPU(sycl::queue &q, float *a, const float *b, int N)
         for (int pos = tid; pos < N; pos += numThreads)
             a[pos] *= b[pos] * rcpN;
      });
-   });
+   }));
 }

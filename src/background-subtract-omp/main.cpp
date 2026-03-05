@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 void findMovingPixels(
@@ -180,5 +181,6 @@ int main(int argc, char* argv[]) {
   free(Bn_ref);
   free(Mp);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

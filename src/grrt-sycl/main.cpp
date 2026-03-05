@@ -27,6 +27,7 @@
 
 #include "kernels.cpp"
 
+#include "../sycl_timer.hpp"
 int main()
 {
   // a set of variables defined in constants.h
@@ -78,12 +79,12 @@ int main()
 
   for(int GridIdxY = 0; GridIdxY < ImaDimY; GridIdxY++){
     for(int GridIdxX = 0; GridIdxX < ImaDimX; GridIdxX++){                      
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class k1>(
           sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           task1(item, d_ResultsPixel, d_VariablesIn, GridIdxX, GridIdxY);
         });
-      });
+      }));
     }
   }
 
@@ -125,12 +126,12 @@ int main()
 
   for(int GridIdxY = 0; GridIdxY < ImaDimY; GridIdxY++){
     for(int GridIdxX = 0; GridIdxX < ImaDimX; GridIdxX++){                      
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class k2>(
           sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           task2(item, d_ResultsPixel, d_VariablesIn, d_K2_tab, GridIdxX, GridIdxY);
         });
-      });
+      }));
     }
   }
 
@@ -160,5 +161,6 @@ int main()
   }
 
   delete [] Results;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

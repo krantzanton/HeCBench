@@ -5,6 +5,7 @@
 
 #include "utils.hpp"
 
+#include "../sycl_timer.hpp"
 long benchmark(
     complex_t *sigma_in,
     complex_t *sigma_out,
@@ -1242,5 +1243,6 @@ int main(int argc, char* argv[])
   free(sigma_reference);
   free(sigma_reference_transformed);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -18,6 +18,7 @@
 #include "realtype.h"
 
 // Black-Scholes formula for binomial tree results validation
+#include "../sycl_timer.hpp"
 extern "C" void BlackScholesCall(
     real &callResult,
     TOptionData optionData
@@ -158,4 +159,6 @@ int main(int argc, char **argv)
 
   printf("Test passed\n");
   exit(EXIT_SUCCESS);
+
+  SYCL_TIMER_DUMP();
 }

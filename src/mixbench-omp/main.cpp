@@ -10,6 +10,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define VECTOR_SIZE (8*1024*1024)
 #define granularity (8)
 #define fusion_degree (4)
@@ -108,5 +109,6 @@ int main(int argc, char* argv[]) {
 
   mixbenchGPU(VECTOR_SIZE, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

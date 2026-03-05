@@ -1,6 +1,7 @@
 #include <math.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void lebesgue_kernel (
   sycl::nd_item<1> &item,
   double *__restrict__ lmax,
@@ -47,13 +48,13 @@ double lebesgue_function ( sycl::queue &q, int n, double x[], int nfun, double x
   sycl::range<1> gws ((nfun + 255)/256*256);
   sycl::range<1> lws (256);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class k>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       lebesgue_kernel (
         item, d_max, d_interp, d_xfun, d_x, n, nfun);
     });
-  });
+  }));
 
   q.memcpy(&lmax, d_max, sizeof ( double )).wait();
 

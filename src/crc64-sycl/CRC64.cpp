@@ -37,6 +37,7 @@
 // 
 // *****************************************************************************
 
+#include "../sycl_timer.hpp"
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
 #endif
@@ -566,7 +567,7 @@ uint64_t crc64_parallel(sycl::queue &q, const void *input, size_t nbytes) {
     sycl::range<1> local_size(64);
     sycl::range<1> global_size(nthreads);
 
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class crc64_block>(
         sycl::nd_range<1>(global_size, local_size), [=](sycl::nd_item<1> item) {
         int tid = item.get_global_id(0);
@@ -582,7 +583,7 @@ uint64_t crc64_parallel(sycl::queue &q, const void *input, size_t nbytes) {
           d_thread_sz[tid] = sz;
           d_thread_cs[tid] = crc64_device(start, sz, d_crc64_table, d_crc64_interleaved_table);
       });
-    });
+    }));
 
     q.memcpy(thread_sz, d_thread_sz, sizeof(size_t) * nthreads);
     q.memcpy(thread_cs, d_thread_cs, sizeof(uint64_t) * nthreads);

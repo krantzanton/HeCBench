@@ -19,6 +19,7 @@
 #include <sycl/sycl.hpp>
 #include "WKFUtils.h"
 
+#include "../sycl_timer.hpp"
 #define SEP printf("\n")
 
 void gendata(float *ax,float *ay,float *az,
@@ -120,7 +121,7 @@ void run_gpu_kernel(
 
   for(int n = 0; n < itmax; n++) {
     if (choice == 0)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float> shared(sycl::range<1>(5*wgsize), cgh);
         cgh.parallel_for<class mdh_v4>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           int igrid = item.get_global_id(0);
@@ -157,9 +158,9 @@ void run_gpu_kernel(
           }
           reinterpret_cast<sycl::float4*>(d_val)[ igrid ] = v;
         });
-      });
+      }));
     else if (choice == 1)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float> shared(sycl::range<1>(5*wgsize), cgh);
         cgh.parallel_for<class mdh2_v4>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           int igrid = item.get_global_id(0);
@@ -197,9 +198,9 @@ void run_gpu_kernel(
           }
           reinterpret_cast<sycl::float4*>(d_val)[ igrid ] = v;
         });
-      });
+      }));
     else
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         sycl::local_accessor<float> shared(sycl::range<1>(5*wgsize), cgh);
         cgh.parallel_for<class mdh3_v4>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           int igrid = item.get_global_id(0);
@@ -237,7 +238,7 @@ void run_gpu_kernel(
           }
           reinterpret_cast<sycl::float4*>(d_val)[ igrid ] = v;
         });
-      });
+      }));
   }
   q.wait();
 
@@ -397,5 +398,6 @@ int main(int argc, const char **argv) {
 
   wkf_timer_destroy(timer);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

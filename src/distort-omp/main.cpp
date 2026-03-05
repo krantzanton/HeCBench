@@ -4,6 +4,7 @@
 #include <iostream>
 #include "distort.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char **argv)
 {
   if (argc != 5) {
@@ -77,5 +78,6 @@ int main(int argc, char **argv)
   free(h_src);
   free(h_dst);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

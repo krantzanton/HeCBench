@@ -6,6 +6,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 bool check (const char *cs, int n)
 {
   bool ok = true;
@@ -40,19 +41,19 @@ int main(int argc, char* argv[]) {
   sycl::range<1> lws (256);
 
   // warmup
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       complex_float(item, d_cs, n);
     });
-  });
+  }));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       complex_double(item, d_cs, n);
     });
-  });
+  }));
 
   q.wait();
 
@@ -61,12 +62,12 @@ int main(int argc, char* argv[]) {
 
   // complex numbers in single precision
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         complex_float(item, d_cs, n);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -80,12 +81,12 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
   // complex numbers in single precision
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         ref_complex_float(item, d_cs, n);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -101,12 +102,12 @@ int main(int argc, char* argv[]) {
 
   // complex numbers in double precision
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         complex_double(item, d_cs, n);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -120,12 +121,12 @@ int main(int argc, char* argv[]) {
   start = std::chrono::steady_clock::now();
   // complex numbers in double precision
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         ref_complex_double(item, d_cs, n);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -140,5 +141,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_cs, q);
   free(cs);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

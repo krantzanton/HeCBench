@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define syncthreads() item.barrier(sycl::access::fence_space::local_space)
 #define threadfence() sycl::atomic_fence(sycl::memory_order::acq_rel,\
                                          sycl::memory_scope::device)
@@ -132,7 +133,7 @@ int main(int argc, char** argv) {
   for (int n = 0; n < repeat; n++) {
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 0> lsum (cgh);
       sycl::local_accessor<bool, 0> isLastBlockDone (cgh);
       cgh.parallel_for<class reduce>(
@@ -140,7 +141,7 @@ int main(int argc, char** argv) {
         sum (item, lsum, isLastBlockDone,
              d_array, N, d_count, d_result);
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -160,5 +161,6 @@ int main(int argc, char** argv) {
   sycl::free(d_count, q);
 
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

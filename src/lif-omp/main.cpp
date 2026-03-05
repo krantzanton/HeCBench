@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void reference (
     int numNeurons, int neurons_per_item, float dt, 
     float*__restrict encode_result,
@@ -209,6 +210,7 @@ int main(int argc, char* argv[]) {
   free(spikes_gold);
 
   printf("%s\n", ok ? "PASS" : "FAIL");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

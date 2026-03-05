@@ -1,5 +1,6 @@
 #include "morphology.h"
 
+#include "../sycl_timer.hpp"
 void display(unsigned char *img, const int height, const int width)
 {
   for (int i = 0; i < height; i++) {
@@ -62,5 +63,6 @@ int main(int argc, char* argv[])
   sycl::free(img_d, q);
   sycl::free(tmp_d, q);
   free(srcImg);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

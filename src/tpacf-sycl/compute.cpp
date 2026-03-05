@@ -22,6 +22,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE SOFTWARE.
  */
 
+#include "../sycl_timer.hpp"
 #ifndef _GPU_COMPUTE_H_
 #define _GPU_COMPUTE_H_
 
@@ -92,7 +93,7 @@ void tileComputeSymm(int type, int size, int njk, int *jkSizes, int nBins,
       stream.memcpy(d_idata1.z, &h_idata2.z[i * GRID_SIZE], GRID_SIZE * sizeof(double));
     }
 
-    stream.submit([&](sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", stream.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<double3, 1> sm (sycl::range<1>(128), cgh);
       auto d_idata1_p = d_idata1;
       auto d_odata1_p = d_odata1;
@@ -102,7 +103,7 @@ void tileComputeSymm(int type, int size, int njk, int *jkSizes, int nBins,
                       sm.get_multi_ptr<sycl::access::decorated::no>().get(),
                       d_binbs_p);
       });
-    });
+    }));
     index = 0;
     memset(subHistoTemp, 0, njk*nBins*sizeof(unsigned int));
     for(int k=0; k<njk; k++) {
@@ -127,7 +128,7 @@ void tileComputeSymm(int type, int size, int njk, int *jkSizes, int nBins,
         stream.memcpy(d_idata2.z, &h_idata2.z[j * GRID_SIZE], GRID_SIZE * sizeof(double));
       }
 
-      stream.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", stream.submit([&](sycl::handler &cgh) {
         auto d_idata1_p = d_idata1;
         auto d_idata2_p = d_idata2;
         auto d_odata1_p = d_odata1;
@@ -137,7 +138,7 @@ void tileComputeSymm(int type, int size, int njk, int *jkSizes, int nBins,
           ACFKernel(d_idata1_p, d_idata2_p, d_odata1_p,
                     item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), d_binbs_p);
         });
-      });
+      }));
       index = 0;
       memset(subHistoTemp, 0, njk*nBins*sizeof(unsigned int));
       for(int k=0; k<njk; k++) {
@@ -175,7 +176,7 @@ void tileCompute(int dataSize, int randomSize, int njk, int *jkSizes, int nBins,
       stream.memcpy(d_idata2.y, &h_idata2.y[j * GRID_SIZE], GRID_SIZE * sizeof(double));
       stream.memcpy(d_idata2.z, &h_idata2.z[j * GRID_SIZE], GRID_SIZE * sizeof(double));
 
-      stream.submit([&](sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", stream.submit([&](sycl::handler &cgh) {
         auto d_idata1_p = d_idata1;
         auto d_idata2_p = d_idata2;
         auto d_odata1_p = d_odata1;
@@ -185,7 +186,7 @@ void tileCompute(int dataSize, int randomSize, int njk, int *jkSizes, int nBins,
             ACFKernel(d_idata1_p, d_idata2_p, d_odata1_p,
                       item, sm.get_multi_ptr<sycl::access::decorated::no>().get(), d_binbs_p);
         });
-      });
+      }));
       index = 0;
       memset(subHistoTemp, 0, njk*nBins*sizeof(unsigned int));
       for(int k=0; k<njk; k++) {

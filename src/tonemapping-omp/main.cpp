@@ -1,10 +1,10 @@
 /**********************************************************************
-  Copyright ©2013 Advanced Micro Devices, Inc. All rights reserved.
+  Copyright 2013 Advanced Micro Devices, Inc. All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-  •   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-  •   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+     Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+     Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -22,6 +22,7 @@
 #include <omp.h>
 #include <math.h>
 
+#include "../sycl_timer.hpp"
 #pragma omp declare target
 inline float luminance(float r, float g, float b)
 {
@@ -391,5 +392,6 @@ int main(int argc, char *argv[])
   free(input);
   free(output);
   free(referenceOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

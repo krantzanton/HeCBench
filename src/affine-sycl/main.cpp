@@ -39,6 +39,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char** argv)
 {
   if (argc != 4)
@@ -91,7 +92,7 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < iterations; i++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class affine_transform> (
         sycl::nd_range<2>(globalSize, localSize), [=](sycl::nd_item<2> item) {
         int y = item.get_global_id(0); 
@@ -174,7 +175,7 @@ int main(int argc, char** argv)
 
         d_output_image[(y * X_SIZE)+x] = output_buffer;
       });
-    });
+    }));
   }
 
   q.wait();
@@ -209,5 +210,6 @@ int main(int argc, char** argv)
   printf("   Bytes written = %d\n\n", (int)(items_written * sizeof(output_image)));
   fclose(output_file);
 
-  return 0 ;
+  SYCL_TIMER_DUMP();
+return 0 ;
 }

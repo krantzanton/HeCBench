@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void rotate_matrix_serial(float *matrix, const int n) {
   for (int layer = 0; layer < n / 2; ++layer) {
     int first = layer;
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class matrix_rotate>(
         sycl::nd_range<1>(sycl::range<1>((n/2+255)/256*256), sycl::range<1>(256)),
         [=](sycl::nd_item<1> item) {
@@ -84,7 +85,7 @@ int main(int argc, char** argv) {
           }
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -109,5 +110,6 @@ int main(int argc, char** argv) {
   free(serial_res);
   free(matrix);
   sycl::free(d_matrix, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #ifdef _OPENMP
 #include <omp.h>
 #else
@@ -131,7 +132,8 @@ int main(int argc, char *argv[])
 
   printf("\nTotal Wall time = %f seconds. \n", del_wtime);
 
-  return  0;
+  SYCL_TIMER_DUMP();
+return  0;
 }
 
 void test_Matvec()
@@ -276,7 +278,7 @@ void test_Relax()
 #endif
 
   for (i = 0; i < testIter; ++i) {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class relax>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           int i = item.get_global_id(0);
@@ -297,7 +299,7 @@ void test_Relax()
             d_u_data[i] = res / d_A_diag_data[d_A_diag_i[i]];
           }
        });
-    });
+    }));
   } // for
 
   q.wait();

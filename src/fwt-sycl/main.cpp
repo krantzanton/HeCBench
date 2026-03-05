@@ -30,6 +30,7 @@
 #include <sycl/sycl.hpp>
 
 // Reference CPU FWT
+#include "../sycl_timer.hpp"
 extern"C" void fwtCPU(float *h_Output, float *h_Input, int log2N);
 extern"C" void slowWTcpu(float *h_Output, float *h_Input, int log2N);
 extern "C" void dyadicConvolutionCPU(
@@ -147,4 +148,6 @@ int main(int argc, char *argv[])
 
   printf("L2 norm: %E\n", L2norm);
   printf(L2norm < 1e-6 ? "PASS\n" : "FAIL\n");
+
+  SYCL_TIMER_DUMP();
 }

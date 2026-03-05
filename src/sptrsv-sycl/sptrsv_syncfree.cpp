@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 #ifndef _SPTRSV_SYNCFREE_
 #define _SPTRSV_SYNCFREE_
 
@@ -98,7 +99,7 @@ int sptrsv_syncfree (
     q.wait();
     auto start = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<VALUE_TYPE, 1> s_left_sum(lws, cgh);
       cgh.parallel_for<class sptrsv_mix>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -179,7 +180,7 @@ int sptrsv_syncfree (
           }
         }
       });
-    }).wait();
+    }));
 
     auto end = std::chrono::steady_clock::now();
     if (i > 0)

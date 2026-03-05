@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 
 /*
@@ -284,5 +285,6 @@ int main(int argc, char** argv) {
   free(initvals);
   free(out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

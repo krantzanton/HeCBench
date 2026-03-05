@@ -22,6 +22,7 @@
 #include "streamcluster.h"
 #include "streamcluster_cl.h"
 
+#include "../sycl_timer.hpp"
 using namespace std;
 
 #define MAXNAMESIZE 1024   // max filename length
@@ -987,5 +988,6 @@ int main(int argc, char **argv)
   __parsec_bench_end();
 #endif
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

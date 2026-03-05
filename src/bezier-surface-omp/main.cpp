@@ -41,6 +41,7 @@
 #include <iostream>
 
 
+#include "../sycl_timer.hpp"
 #if DOUBLE_PRECISION
 #define FLOAT double
 #else
@@ -289,5 +290,6 @@ int main(int argc, char **argv) {
   run(h_in, p.in_size_i, p.in_size_j, p.out_size_i, p.out_size_j, p);
 
   free(h_in);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

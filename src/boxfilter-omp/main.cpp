@@ -15,6 +15,7 @@
 #include <omp.h>
 #include "shrUtils.h"
 
+#include "../sycl_timer.hpp"
 typedef struct __attribute__((__aligned__(4)))
 {
   unsigned char x;
@@ -287,5 +288,6 @@ int main(int argc, char** argv)
   free(uiTmp);
   free(uiDevOutput);
   free(uiHostOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

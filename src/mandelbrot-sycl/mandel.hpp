@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT
 // =============================================================
 
+#include "../sycl_timer.hpp"
 #pragma once
 
 #include <exception>
@@ -184,7 +185,7 @@ public:
 
     common::MyTimer t_ker;
 
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class mandel_kernel>(
       sycl::nd_range<2>(sycl::range<2>(gws[0], gws[1]),
                         sycl::range<2>(lws[0], lws[1])), [=] (sycl::nd_item<2> item) {
@@ -193,7 +194,7 @@ public:
         if (i < rows && j < cols)
           data_buf[i * cols + j] = p.Point({p.ScaleRow(i), p.ScaleCol(j)});
       });
-    }).wait();
+    }));
 
     common::Duration kernel_time = t_ker.elapsed();
 

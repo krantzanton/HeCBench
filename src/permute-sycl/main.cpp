@@ -7,6 +7,7 @@
 #include "common.hpp"
 
 // CPU code reference
+#include "../sycl_timer.hpp"
 void permuate_cpu(float *inp, float *q, float *k, float *v, int B, int T, int C, int NH) {
   int i = 0;
   for (int b = 0; b < B; b++) {
@@ -68,12 +69,12 @@ void permute (sycl::queue &q, float* out, const float* inp,
   V = out + 2 * B * T * C;
   int total_threads = B * T * C;
   int num_blocks = ceil_div(total_threads, block_size);
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<1>(sycl::range<1>(num_blocks * block_size),
                         sycl::range<1>(block_size)),
       [=](sycl::nd_item<1> item) {
         permute_kernel(Q, K, V, inp, B, T, NH, HS, item);
-  }).wait();
+  }));
 }
 
 int main(int argc, char **argv) {
@@ -141,5 +142,6 @@ int main(int argc, char **argv) {
   sycl::free(d_inp, q);
   sycl::free(d_out, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

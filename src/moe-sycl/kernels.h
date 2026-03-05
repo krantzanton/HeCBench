@@ -1,6 +1,7 @@
 #include <float.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 template <int TPB>
 void moeSoftmax(
     sycl::queue &q,
@@ -61,7 +62,7 @@ void moeSoftmax(
     };
     cgh.parallel_for(sycl::nd_range<3>(gws, lws), kfn);
   };
-  q.submit(cgf);
+  SYCL_TIME_AGG("kernel 1", q.submit(cgf));
 }
 
 struct key_value_pair { // KeyValuePair
@@ -154,6 +155,6 @@ void moeTopK(
     };
     cgh.parallel_for(sycl::nd_range<3>(gws, lws), kfn);
   };
-  q.submit(cgf);
+  SYCL_TIME_AGG("kernel 2", q.submit(cgf));
 }
 

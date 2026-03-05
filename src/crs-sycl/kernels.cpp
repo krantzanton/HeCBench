@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 void gcrs_m_1_w_4_coding_dotprod(
   int k, int index, 
   const long *__restrict in, 
@@ -1210,7 +1211,7 @@ void m_1_w_4_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m1_w4_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_1_w_4_coding_dotprod(k, 
@@ -1222,7 +1223,7 @@ void m_1_w_4_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_1_w_5_coding(
@@ -1238,7 +1239,7 @@ void m_1_w_5_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m1_w5_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_1_w_5_coding_dotprod(k, 
@@ -1250,7 +1251,7 @@ void m_1_w_5_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_1_w_6_coding(
@@ -1266,7 +1267,7 @@ void m_1_w_6_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m1_w6_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_1_w_6_coding_dotprod(k, 
@@ -1278,7 +1279,7 @@ void m_1_w_6_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_1_w_7_coding(
@@ -1294,7 +1295,7 @@ void m_1_w_7_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m1_w7_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_1_w_7_coding_dotprod(k, 
@@ -1306,7 +1307,7 @@ void m_1_w_7_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_1_w_8_coding(
@@ -1322,7 +1323,7 @@ void m_1_w_8_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m1_w8_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_1_w_8_coding_dotprod(k, 
@@ -1334,7 +1335,7 @@ void m_1_w_8_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 
@@ -1351,7 +1352,7 @@ void m_2_w_4_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m2_w4_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_2_w_4_coding_dotprod(k, 
@@ -1363,7 +1364,7 @@ void m_2_w_4_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_2_w_5_coding(
@@ -1379,7 +1380,7 @@ void m_2_w_5_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 7", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m2_w5_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_2_w_5_coding_dotprod(k, 
@@ -1391,7 +1392,7 @@ void m_2_w_5_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_2_w_6_coding(
@@ -1407,7 +1408,7 @@ void m_2_w_6_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 8", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m2_w6_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_2_w_6_coding_dotprod(k, 
@@ -1419,7 +1420,7 @@ void m_2_w_6_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_2_w_7_coding(
@@ -1435,7 +1436,7 @@ void m_2_w_7_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 9", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m2_w7_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_2_w_7_coding_dotprod(k, 
@@ -1447,7 +1448,7 @@ void m_2_w_7_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 
@@ -1464,7 +1465,7 @@ void m_2_w_8_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 10", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m2_w8_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_2_w_8_coding_dotprod(k, 
@@ -1476,7 +1477,7 @@ void m_2_w_8_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_3_w_4_coding(
@@ -1492,7 +1493,7 @@ void m_3_w_4_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 11", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m3_w4_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_3_w_4_coding_dotprod(k, 
@@ -1504,7 +1505,7 @@ void m_3_w_4_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_3_w_5_coding(
@@ -1520,7 +1521,7 @@ void m_3_w_5_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 12", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m3_w5_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_3_w_5_coding_dotprod(k, 
@@ -1532,7 +1533,7 @@ void m_3_w_5_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_3_w_6_coding(
@@ -1548,7 +1549,7 @@ void m_3_w_6_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 13", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m3_w6_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_3_w_6_coding_dotprod(k, 
@@ -1560,7 +1561,7 @@ void m_3_w_6_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_3_w_7_coding(
@@ -1576,7 +1577,7 @@ void m_3_w_7_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 14", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m3_w7_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_3_w_7_coding_dotprod(k, 
@@ -1588,7 +1589,7 @@ void m_3_w_7_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_3_w_8_coding(
@@ -1604,7 +1605,7 @@ void m_3_w_8_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 15", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m3_w8_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_3_w_8_coding_dotprod(k, 
@@ -1616,7 +1617,7 @@ void m_3_w_8_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_4_w_4_coding(
@@ -1632,7 +1633,7 @@ void m_4_w_4_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 16", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m4_w4_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_4_w_4_coding_dotprod(k, 
@@ -1644,7 +1645,7 @@ void m_4_w_4_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_4_w_5_coding(
@@ -1660,7 +1661,7 @@ void m_4_w_5_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 17", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m4_w5_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_4_w_5_coding_dotprod(k, 
@@ -1672,7 +1673,7 @@ void m_4_w_5_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_4_w_6_coding(
@@ -1688,7 +1689,7 @@ void m_4_w_6_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 18", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m4_w6_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_4_w_6_coding_dotprod(k, 
@@ -1700,7 +1701,7 @@ void m_4_w_6_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_4_w_7_coding(
@@ -1716,7 +1717,7 @@ void m_4_w_7_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 19", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m4_w7_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_4_w_7_coding_dotprod(k, 
@@ -1728,7 +1729,7 @@ void m_4_w_7_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void m_4_w_8_coding(
@@ -1744,7 +1745,7 @@ void m_4_w_8_coding(
   sycl::range<1> gws (blockDimX * threadDimX);
   sycl::range<1> lws (threadDimX);
   
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 20", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<long, 1> sm (sycl::range<1>(threadDimX), cgh);
     cgh.parallel_for<class m4_w8_dp>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       gcrs_m_4_w_8_coding_dotprod(k, 
@@ -1756,7 +1757,7 @@ void m_4_w_8_coding(
                                   item,
                                   workSizePerGridInLong);
     });
-  });
+  }));
 }
 
 void (*coding_func_array[])(

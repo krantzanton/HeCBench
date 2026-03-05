@@ -44,6 +44,7 @@ T(r+3,c-1)-> P(r+3,c) -> T(r+3,c)->
 #include "rand_gen.cpp"
 #include "petri_kernel.cpp"
 
+#include "../sycl_timer.hpp"
 static int N, S, T, NSQUARE2;
 uint32 host_mt[MERS_N];
 
@@ -107,7 +108,8 @@ int main(int argc, char** argv)
   printf("mean_vars: %f    var_vars: %f\n", results[0], results[1]);
   printf("mean_maxs: %f    var_maxs: %f\n", results[2], results[3]);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 void compute_statistics() 

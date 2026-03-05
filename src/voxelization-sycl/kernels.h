@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 
+#include "../sycl_timer.hpp"
 const unsigned int MAX_POINTS_NUM = 300000;
 const int THREADS_FOR_VOXEL = 256;
 
@@ -204,13 +205,13 @@ void featureExtractionLaunch(sycl::queue &q,
   int threadNum = THREADS_FOR_VOXEL;
   sycl::range<1> blocks((*real_voxel_num + threadNum - 1) / threadNum);
   sycl::range<1> threads(threadNum);
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(
       sycl::nd_range<1>(blocks * threads, threads),
       [=](sycl::nd_item<1> item) {
         featureExtractionKernel(voxels_temp, num_points_per_voxel,
                                 max_points_per_voxel, feature_num,
                                 voxel_features, item);
-  });
+  }));
 }
 
 void
@@ -228,7 +229,7 @@ voxelizationLaunch(sycl::queue &q,
   int threadNum = THREADS_FOR_VOXEL;
   sycl::range<1> blocks((points_size + threadNum - 1) / threadNum);
   sycl::range<1> threads(threadNum);
-  q.parallel_for(sycl::nd_range<1>(blocks * threads, threads),
+  SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(blocks * threads, threads),
     [=](sycl::nd_item<1> item) {
       buildHashKernel(points, points_size, min_x_range,
                       max_x_range, min_y_range, max_y_range,
@@ -236,9 +237,9 @@ voxelizationLaunch(sycl::queue &q,
                       voxel_y_size, voxel_z_size, grid_z_size,
                       grid_y_size, grid_x_size, feature_num,
                       hash_table, real_voxel_num, item);
-  });
+  }));
 
-  q.parallel_for(sycl::nd_range<1>(blocks * threads, threads),
+  SYCL_TIME_AGG("kernel 3", q.parallel_for(sycl::nd_range<1>(blocks * threads, threads),
     [=](sycl::nd_item<1> item) {
       voxelizationKernel(
           points, points_size, min_x_range, max_x_range, min_y_range,
@@ -246,7 +247,7 @@ voxelizationLaunch(sycl::queue &q,
           voxel_z_size, grid_z_size, grid_y_size, grid_x_size, feature_num,
           max_voxels, max_points_per_voxel, hash_table, num_points_per_voxel,
           voxel_features, voxel_indices, item);
-  });
+  }));
 }
 
 class Params {

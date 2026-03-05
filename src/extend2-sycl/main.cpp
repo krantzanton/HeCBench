@@ -30,6 +30,7 @@
 #include <sycl/sycl.hpp>
 #include "read_data.h"
 
+#include "../sycl_timer.hpp"
 static void check(int a, int b, const char *s)
 {
   if (a != b) printf("Error: %s %d %d\n", s, a, b);
@@ -97,7 +98,7 @@ float extend2(sycl::queue &q, struct extend2_dat *d)
   char *d_qp = sycl::malloc_device<char>(qlen*m, q);
   q.memcpy(d_qp, qp, qlen*m);
 
-  q.submit([&](sycl::handler &h) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
     h.single_task<class ebwa>([=]() {
       int oe_del = o_del + e_del;
       int oe_ins = o_ins + e_ins; 
@@ -210,7 +211,7 @@ float extend2(sycl::queue &q, struct extend2_dat *d)
       d_max_off[0] = max_off;
       d_score[0] = max;
     });
-  });
+  }));
   
   q.memcpy(&qle, d_qle, 4);
   q.memcpy(&tle, d_tle, 4);
@@ -279,5 +280,6 @@ int main(int argc, char *argv[])
     time += extend2(q, &d);
   }
   printf("Average offload time %f (us)\n", (time * 1e-3f) / repeat);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

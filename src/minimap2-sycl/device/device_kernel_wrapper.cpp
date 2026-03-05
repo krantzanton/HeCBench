@@ -9,6 +9,7 @@
 #include <sycl/sycl.hpp>
 #include "device_kernel.cpp"
 
+#include "../sycl_timer.hpp"
 void device_chain_kernel_wrapper(
     std::vector<control_dt> &cont,
     std::vector<anchor_dt> &arg,
@@ -52,7 +53,7 @@ void device_chain_kernel_wrapper(
   auto k_start = std::chrono::steady_clock::now();
 
   for (auto batch = 0; batch < batch_count; batch++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<anchor_dt, 1> active_sm(sycl::range<1>(BACK_SEARCH_COUNT_GPU), cgh);
       sycl::local_accessor< score_dt, 1> max_tracker_sm(sycl::range<1>(BACK_SEARCH_COUNT_GPU), cgh);
       sycl::local_accessor<parent_dt, 1> j_tracker_sm(sycl::range<1>(BACK_SEARCH_COUNT_GPU), cgh);
@@ -71,7 +72,7 @@ void device_chain_kernel_wrapper(
                            max_dist_x, max_dist_y, bw);
 
       });
-    });
+    }));
   }
 
   q.wait();

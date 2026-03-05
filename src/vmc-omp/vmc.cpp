@@ -5,6 +5,7 @@
 #include <omp.h>
 
 // Number of threads per block
+#include "../sycl_timer.hpp"
 #define NTHR_PER_BLK 256
 // Number of blocks
 #define NBLOCK 56*4
@@ -301,5 +302,6 @@ int main(int argc, char* argv[]) {
   free(blocksums);
   free(statsum);
   free(ranstates);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

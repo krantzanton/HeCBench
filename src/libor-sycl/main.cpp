@@ -25,6 +25,7 @@
 
 // parameters for device execution
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 64
 #define GRID_SIZE 1500
 
@@ -285,7 +286,7 @@ int main(int argc, char **argv)
   auto start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class porfolio_nogreek>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         const int     tid = item.get_global_id(0);
@@ -306,7 +307,7 @@ int main(int argc, char **argv)
                                 d_swaprates, h_delta, h_Nmat, h_N, h_Nopt);
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -333,7 +334,7 @@ int main(int argc, char **argv)
   start = std::chrono::steady_clock::now();
 
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class porfolio_greek>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         const int     tid = item.get_global_id(0);
@@ -359,7 +360,7 @@ int main(int argc, char **argv)
           d_Lb[path] = L_b[NN-1];
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -401,5 +402,6 @@ int main(int argc, char **argv)
 
   printf("%s\n", ok ? "PASS" : "FAIL");
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

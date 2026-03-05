@@ -6,6 +6,7 @@
 #include "gpu_solver.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void generate_data(int size, int min, int max, float *data) {
   std::mt19937_64 generator{1993764};
   std::uniform_int_distribution<> dist{min, max};
@@ -140,5 +141,6 @@ int main(int argc, char *argv[]) {
   sycl::free(minimum_ref, q);
   sycl::free(minimum, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

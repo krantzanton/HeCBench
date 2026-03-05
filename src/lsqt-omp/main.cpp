@@ -25,6 +25,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "../sycl_timer.hpp"
 static void print_welcome();
 static void check_argc(int);
 static void print_start(std::string);
@@ -52,7 +53,8 @@ int main(int argc, char* argv[])
     real time_used = time * 1e-9f;
     print_finish(directory, time_used);
   }
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 static void print_welcome()

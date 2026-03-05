@@ -5,6 +5,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 using namespace std::chrono;
 typedef high_resolution_clock myclock;
 typedef duration<float> myduration;
@@ -172,7 +173,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < iteration; i++) {
 
-    q.submit([&](sycl::handler& h) {
+    auto __sycl_evt_k1 = q.submit([&](sycl::handler& h) {
       h.parallel_for<class kernel_epi>(
       sycl::nd_range<2>(global_epi, local_epi), [=](sycl::nd_item<2> id) {
         int i, j, tid, p, k;
@@ -331,7 +332,7 @@ int main(int argc, char **argv)
           d_scores[tid] = score;
         }
       });
-    });
+    }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
   }
 
   q.wait();
@@ -366,5 +367,6 @@ int main(int argc, char **argv)
   mem_free(SNP_Data);
   mem_free(SNP_Data_trans);
   mem_free(Ph_Data);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

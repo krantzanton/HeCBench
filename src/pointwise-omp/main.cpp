@@ -33,6 +33,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef struct {
   double i, c, h;
 } checksum;
@@ -312,5 +313,6 @@ int main(int argc, char* argv[]) {
   printf("i checksum %E     ", cs.i);
   printf("c checksum %E     ", cs.c);
   printf("h checksum %E\n", cs.h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

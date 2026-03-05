@@ -5,6 +5,7 @@
 #include "./util/graphics/resize.h"
 #include "./util/timer/timer.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv []) {
 
   // time
@@ -209,23 +210,23 @@ int main(int argc, char* argv []) {
   sycl::range<1> gws (global_work_size);
   sycl::range<1> lws (local_work_size);
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class extract>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_extract.sycl"
     });
-  }).wait();
+  }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
   time7 = get_time();
 
   for (iter=0; iter<niter; iter++){ // do for the number of iterations input parameter
     // Prepare kernel
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k2 = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class prepare>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_prepare.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 2", __sycl_evt_k2);
 
     blocks_work_size2 = blocks_work_size;  // original number of blocks
     global_work_size2 = global_work_size;
@@ -236,14 +237,14 @@ int main(int argc, char* argv []) {
 
       sycl::range<1> gws2 (global_work_size2);
 
-      q.submit([&](sycl::handler& cgh) {
+      auto __sycl_evt_k3 = q.submit([&](sycl::handler& cgh) {
         sycl::local_accessor<FP, 1> d_psum (lws, cgh);
         sycl::local_accessor<FP, 1> d_psum2 (lws, cgh);
         cgh.parallel_for<class reduce>(
           sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
           #include "kernel_reduce.sycl"
         });
-      }).wait();
+      }); SYCL_TIME_AGG("kernel 3", __sycl_evt_k3);
 
       // update execution parameters
       no = blocks_work_size2;
@@ -274,12 +275,12 @@ int main(int argc, char* argv []) {
     q0sqr = varROI / meanROI2; // gets standard deviation of ROI
 
     // set arguments that were uptaded in this loop
-    q.submit([&](sycl::handler& cgh) {
+    auto __sycl_evt_k4 = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class srad>(
         sycl::nd_range<1>(gws, lws) , [=] (sycl::nd_item<1> item) {
         #include "kernel_srad.sycl"
       });
-    });
+    }); SYCL_TIME_AGG("kernel 4", __sycl_evt_k4);
 
     q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class srad2>(
@@ -295,12 +296,12 @@ int main(int argc, char* argv []) {
 
   //   Compress Kernel - SCALE IMAGE UP FROM 0-1 TO 0-255 AND COMPRESS
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k5 = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class compress>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_compress.sycl"
     });
-  }).wait();
+  }); SYCL_TIME_AGG("kernel 5", __sycl_evt_k5);
 
   time9 = get_time();
 
@@ -373,4 +374,6 @@ int main(int argc, char* argv []) {
       (float) (time12-time11) / 1000000, (float) (time12-time11) / (float) (time12-time0) * 100);
   printf("Total time:\n");
   printf("%.12f s\n", (float) (time12-time0) / 1000000);
+
+  SYCL_TIMER_DUMP();
 }

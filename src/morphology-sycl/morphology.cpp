@@ -1,5 +1,6 @@
 #include "morphology.h"
 
+#include "../sycl_timer.hpp"
 enum class MorphOpType {
     ERODE,
     DILATE,
@@ -165,23 +166,23 @@ double morphology(
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<unsigned char, 1> sMem(sycl::range<1>(4*hsize), cgh);
     cgh.parallel_for<class horiz<opType>>(
       sycl::nd_range<2>(h_gws, h_lws), [=] (sycl::nd_item<2> item) {
       vhgw_horiz<opType>(tmp_d, img_d, sMem.get_multi_ptr<sycl::access::decorated::no>().get(),
                          width, height, hsize, item);
     });
-  });
+  }));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<unsigned char, 1> sMem(sycl::range<1>(4*vsize), cgh);
     cgh.parallel_for<class vert<opType>>(
       sycl::nd_range<2>(v_gws, v_lws), [=] (sycl::nd_item<2> item) {
       vhgw_vert<opType>(tmp_d, img_d, sMem.get_multi_ptr<sycl::access::decorated::no>().get(), 
                         width, height, vsize, item);
     });
-  });
+  }));
 
   q.wait();
   auto end = std::chrono::steady_clock::now();

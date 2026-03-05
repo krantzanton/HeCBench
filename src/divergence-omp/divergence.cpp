@@ -6,6 +6,7 @@
 #include "timer/timer.hpp"
 #include "divergence.hpp"
 
+#include "../sycl_timer.hpp"
 constexpr const int DIMS = 2;
 
 template <typename real>
@@ -136,5 +137,6 @@ int main(int argc, char **argv) {
   constexpr const int defNumTests = 1e5;
   const int numtests = (argc > 2) ? std::stoi(argv[2]) : defNumTests;
   compareDivergences(v, elem, deriv, divergence_e, numtests);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

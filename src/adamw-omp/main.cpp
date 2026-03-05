@@ -7,6 +7,7 @@
 #include "kernels.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[])
 {
   if (argc != 3) {
@@ -168,5 +169,6 @@ int main(int argc, char* argv[])
   free(v);
   free(g);
   free(r);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

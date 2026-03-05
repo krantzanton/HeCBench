@@ -25,6 +25,7 @@
 
 // parameters for device execution
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 64
 #define GRID_SIZE 1500
 
@@ -372,5 +373,6 @@ int main(int argc, char **argv)
   free(h_v);
   free(h_Lb);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

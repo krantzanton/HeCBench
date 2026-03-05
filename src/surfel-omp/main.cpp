@@ -7,6 +7,7 @@
 #include "reference.h"
 
 // compute the xyz images using the inverse focal length invF
+#include "../sycl_timer.hpp"
 template<typename T>
 void surfel_render(
     const T *__restrict s,
@@ -136,5 +137,6 @@ int main(int argc, char *argv[]) {
   printf("-------------------------------------\n");
   surfelRenderTest<float>(n, w, h, repeat);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

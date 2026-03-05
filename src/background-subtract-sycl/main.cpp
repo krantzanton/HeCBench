@@ -6,6 +6,7 @@
 #include <sycl/sycl.hpp>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 void findMovingPixels(
@@ -156,35 +157,35 @@ int main(int argc, char* argv[]) {
     if (i >= 2) {
       if (merged) {
         auto start = std::chrono::steady_clock::now();
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class merged_kernel>(
             sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             merge ( item, imgSize, d_Img, d_Img1, d_Img2, d_Tn, d_Bn );
           });
-        }).wait();
+        }));
         auto end = std::chrono::steady_clock::now();
         time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
       }
       else {
         auto start = std::chrono::steady_clock::now();
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class k1>(
             sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             findMovingPixels ( item, imgSize, d_Img, d_Img1, d_Img2, d_Tn, d_Mp );
           });
-        });
-        q.submit([&] (sycl::handler &cgh) {
+        }));
+        SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class k2>(
             sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             updateBackground  ( item, imgSize, d_Img, d_Mp, d_Bn );
           });
-        });
-        q.submit([&] (sycl::handler &cgh) {
+        }));
+        SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class k3>(
             sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
             updateThreshold  ( item, imgSize, d_Img, d_Mp, d_Bn, d_Tn );
           });
-        });
+        }));
         q.wait();
         auto end = std::chrono::steady_clock::now();
         time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -228,5 +229,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_Mp, q);
   sycl::free(d_Bn, q);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

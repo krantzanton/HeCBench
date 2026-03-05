@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void QRdel(int n, const float *A, const float *B, const float *C,
            const float *D, float *__restrict__ b, float *__restrict__ c,
            float *__restrict__ d, float *__restrict__ Q, float *__restrict__ R,
@@ -161,15 +162,15 @@ void QuarticMinimumGPU(sycl::queue &q, int N, float *A, float *B, float *C,
   sycl::range<1> gws((N + block_dim - 1) / block_dim * block_dim);
   sycl::range<1> lws(block_dim);
 
-  q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
     QRdel(N, d_A, d_B, d_C, d_D, d_bi, d_ci, d_di, d_Q, d_R, d_Qint, d_Rint,
           d_del, item);
-  });
+  }));
 
-  q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+  SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
     QuarticSolver(N, d_A, d_B, d_C, d_D, d_bi, d_Q, d_R, d_del, d_theta,
                   d_sqrtQ, d_x1, d_x2, d_x3, d_temp, d_min, item);
-  });
+  }));
 
   q.memcpy(min, d_min, N * sizeof(float)).wait();
 

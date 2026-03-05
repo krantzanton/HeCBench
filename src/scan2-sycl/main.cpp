@@ -1,10 +1,10 @@
 /**********************************************************************
-  Copyright ©2013 Advanced Micro Devices, Inc. All rights reserved.
+  Copyright 2013 Advanced Micro Devices, Inc. All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-  •   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-  •   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+     Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+     Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -19,6 +19,7 @@
 #include <sycl/sycl.hpp>
 #include "scan.h"
 
+#include "../sycl_timer.hpp"
 void bScan(sycl::queue &q,
            const unsigned int blockSize,
            const unsigned int len,
@@ -30,7 +31,7 @@ void bScan(sycl::queue &q,
   sycl::range<1> gws (len / 2);
   sycl::range<1> lws (blockSize / 2);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> block(sycl::range<1>(blockSize), cgh);
     cgh.parallel_for<class lock_scan>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 
@@ -72,7 +73,7 @@ void bScan(sycl::queue &q,
         output[2*gid + 1] = block[2*tid];
       }
     });
-  });
+  }));
 }
 
 void pScan(sycl::queue &q,
@@ -84,7 +85,7 @@ void pScan(sycl::queue &q,
   sycl::range<1> gws (len / 2);
   sycl::range<1> lws (len / 2);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1> block(sycl::range<1>(len+1), cgh);
     cgh.parallel_for<class partial_scan>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 
@@ -124,7 +125,7 @@ void pScan(sycl::queue &q,
         output[2*gid + 1] = block[2*tid];
       }
     });
-  });
+  }));
 }
 
 void bAddition(sycl::queue &q,
@@ -138,7 +139,7 @@ void bAddition(sycl::queue &q,
   sycl::range<1> lws (blockSize);
 
   // Ensycl::queue a kernel run call
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 0> value(cgh);
     cgh.parallel_for<class block_add>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       int globalId = item.get_global_id(0);
@@ -151,7 +152,7 @@ void bAddition(sycl::queue &q,
 
       output[globalId] += value;
     });
-  });
+  }));
 }
 
 
@@ -319,5 +320,6 @@ int main(int argc, char * argv[])
   free(input);
   free(output);
   free(verificationOutput);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

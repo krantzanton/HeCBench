@@ -10,6 +10,7 @@
 #include "reference.h"
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 void md (
   sycl::nd_item<1> &item,
   const POSVECTYPE* __restrict position,
@@ -117,7 +118,7 @@ int main(int argc, char** argv)
   sycl::range<1> gws ((nAtom + 255) / 256 * 256);
 
   // warmup and result verification
-  q.submit([&](sycl::handler& cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class warmup>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       md(item,
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
          lj2,
          cutsq);
     });
-  });
+  }));
 
   q.memcpy(force, d_force, nAtom * sizeof(FORCEVECTYPE)).wait();
 
@@ -142,7 +143,7 @@ int main(int argc, char** argv)
 
   for (int i = 0; i < iteration; i++)
   {
-    q.submit([&](sycl::handler& cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class run>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         md(item,
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
            lj2,
            cutsq);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -171,5 +172,6 @@ int main(int argc, char** argv)
   free(force);
   free(neighborList);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

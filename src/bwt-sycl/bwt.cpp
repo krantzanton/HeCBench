@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 #include "bwt.hpp"
 
+#include "../sycl_timer.hpp"
 const int blockSize = 256;
 
 void generate_table(sycl::nd_item<1> &item, int* table, int table_size, int n) {
@@ -86,24 +87,24 @@ std::pair<std::string,int*> bwt_with_suffix_array(const std::string sequence) {
   sycl::range<1> gws (numBlocks * blockSize);
   sycl::range<1> lws (blockSize);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class gen>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       generate_table(item, d_table, table_size, n);
     });
-  });
+  }));
 
   char *d_sequence = sycl::malloc_device<char>(n, q);
   q.memcpy(d_sequence, sequence.c_str(), seq_size_bytes);
 
   for (int k = 2; k <= table_size; k <<= 1) {
     for (int j = k >> 1; j > 0; j = j >> 1) {
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class bsort>(
           sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           bitonic_sort_step(item, d_table, table_size, j, k, d_sequence, n);
         });
-      });
+      }));
     }
   }
 
@@ -111,12 +112,12 @@ std::pair<std::string,int*> bwt_with_suffix_array(const std::string sequence) {
   numBlocks = (n + blockSize - 1) / blockSize;
   sycl::range<1> gws2 (numBlocks * blockSize);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class restruct>(
       sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
       reconstruct_sequence(item, d_table, d_sequence, d_transformed_sequence, n);
     });
-  });
+  }));
 
   char* transformed_sequence_cstr = (char*) malloc(seq_size_bytes);
 

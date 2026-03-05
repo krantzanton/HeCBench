@@ -11,6 +11,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 #define  FORCE_INLINE inline __attribute__((always_inline))
@@ -192,14 +193,14 @@ int main(int argc, char** argv)
   auto start = std::chrono::steady_clock::now();
 
   for (uint32_t n = 0; n < repeat; n++) {
-    q.submit([&](sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &h) {
       h.parallel_for<class mmh>(
         sycl::nd_range<1>(global_work_size, local_work_size), [=](sycl::nd_item<1> item) {
         int i = item.get_global_id(0); 
         if (i < numKeys) 
           MurmurHash3_x64_128 (dev_keys+dev_length[i], key_length[i], i, dev_out+i*2);
         });
-    });
+    }));
   }
 
   q.wait();
@@ -234,5 +235,6 @@ int main(int argc, char** argv)
   sycl::free(dev_out, q);
   sycl::free(dev_length, q);
   sycl::free(key_length, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

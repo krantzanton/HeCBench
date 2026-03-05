@@ -47,6 +47,7 @@
 
 
 // Params ---------------------------------------------------------------------
+#include "../sycl_timer.hpp"
 struct Params {
 
     int   n_gpu_threads;
@@ -277,5 +278,6 @@ int main(int argc, char **argv) {
 #endif
     free(h_in_backup);
 
-    return 0;
+    SYCL_TIMER_DUMP();
+return 0;
 }

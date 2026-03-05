@@ -4,6 +4,7 @@
 #include "utils.hpp"
 
 // CPU kernel
+#include "../sycl_timer.hpp"
 void solve_seq(const double* l, const double* d, double* u, double* rhs, const int n, const int N) 
 {
   int first,last;
@@ -197,5 +198,6 @@ int main(int argc, char const *argv[])
   free(rhs_seq_output);
   free(rhs_seq_interleave);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

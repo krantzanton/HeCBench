@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "bude.h"
 
+#include "../sycl_timer.hpp"
 typedef std::chrono::high_resolution_clock::time_point TimePoint;
 
 struct Params {
@@ -338,5 +339,6 @@ int main(int argc, char *argv[]) {
   // Expect numbers to be accurate to 2 decimal places
   refEnergies.close();
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

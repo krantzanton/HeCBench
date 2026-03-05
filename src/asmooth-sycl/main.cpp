@@ -6,6 +6,7 @@
 
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 5) {
      printf("./%s <image dimension> <threshold> <max box size> <iterations>\n", argv[0]);
@@ -70,7 +71,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     // launch three kernels
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> s_Img(sycl::range<1>(1024), cgh);
       cgh.parallel_for<class smoothing>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
@@ -134,9 +135,9 @@ int main(int argc, char* argv[]) {
               }
         }
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class normalize>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         int i = item.get_global_id(1);
@@ -147,9 +148,9 @@ int main(int argc, char* argv[]) {
           if (norm != 0) d_img[gtid] = sycl::native::divide(d_img[gtid], norm);
         }
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> s_Img(1024, cgh);
       cgh.parallel_for<class output>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         int tid = item.get_local_id(1);
@@ -185,7 +186,7 @@ int main(int argc, char* argv[]) {
           if ( ksum != 0 ) d_out[gtid] = sycl::native::divide(sum, (float)ksum);
         }
       });
-    });
+    }));
 
     q.wait();
     auto end = std::chrono::steady_clock::now();
@@ -215,5 +216,6 @@ int main(int argc, char* argv[]) {
   free(h_box);
   free(out);
   free(h_out);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -23,6 +23,7 @@
 #include "params.h"
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 #pragma omp declare target
 
 void postprocess (
@@ -262,5 +263,6 @@ int main(int argc, char* argv[])
   free(bndbox_output);
   free(score_output);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

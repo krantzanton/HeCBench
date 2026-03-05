@@ -23,6 +23,7 @@
 #include "qrg.h"
 
 // forward declarations
+#include "../sycl_timer.hpp"
 void initQuasirandomGenerator(unsigned int *table);
 double getQuasirandomValue63(INT64 i, int dim);
 double MoroInvCNDcpu(unsigned int x);
@@ -236,5 +237,6 @@ int main(int argc, const char **argv)
 
     free(output);
   }
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -22,6 +22,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 /** Problem size along one side; total number of cells is this squared */
 #define NUM 512
 
@@ -462,5 +463,6 @@ int main (int argc, char *argv[])
   free(max_v_arr);
   free(res_arr);
   free(pres_sum);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

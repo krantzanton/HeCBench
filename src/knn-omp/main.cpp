@@ -15,6 +15,7 @@
 #include <omp.h>
 
 // Constants used by the program
+#include "../sycl_timer.hpp"
 #define BLOCK_DIM 16
 
 //-----------------------------------------------------------------------------------------------//
@@ -339,4 +340,6 @@ int main(int argc, char* argv[]) {
   free(dist);
   free(query);
   free(ref);
+
+  SYCL_TIMER_DUMP();
 }

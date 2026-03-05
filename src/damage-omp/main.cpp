@@ -4,6 +4,7 @@
 #include <omp.h>
 
 // threads per block
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 #include "kernel.h"
@@ -82,5 +83,6 @@ int main(int argc, char* argv[]) {
   free(n_neigh);
   free(damage);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

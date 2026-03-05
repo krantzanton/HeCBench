@@ -15,6 +15,7 @@
 #include <sycl/sycl.hpp>
 
 // Constants used by the program
+#include "../sycl_timer.hpp"
 #define BLOCK_DIM 16
 
 //-----------------------------------------------------------------------------------------------//
@@ -64,7 +65,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
 
   // Kernel 1: Compute all the distances
   //cuComputeDistanceGlobal<<<g_16x16, t_16x16>>>(ref_dev, ref_width, query_dev, query_width, height, dist_dev);
-  q.submit([&] (sycl::handler &h) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
     auto A = ref_dev;
     auto B = query_dev;
     auto AB = dist_dev;
@@ -133,7 +134,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
       if (cond2 && cond1)
         AB[(begin_A + ty) * query_width + begin_B + tx] = ssd;
     });
-  });
+  }));
 
 #ifdef DEBUG
   q.memcpy(dist_host, dist_dev, query_width * ref_width * size_of_float).wait();
@@ -143,7 +144,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
 
   // Kernel 2: Sort each column
   //cuInsertionSort<<<g_256x1, t_256x1>>>(dist_dev, ind_dev, query_width, ref_width, k);
-  q.submit([&] (sycl::handler &h) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &h) {
     h.parallel_for<class insertionSort>(
       sycl::nd_range<1>(g_256x1, t_256x1), [=] (sycl::nd_item<1> item) {
       int l, i, j;
@@ -207,7 +208,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
         }
       }
     });
-  });
+  }));
 
 #ifdef DEBUG
   q.memcpy(dist_host, dist_dev, query_width * ref_width * size_of_float);
@@ -223,7 +224,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
 
   // Kernel 3: Compute square root of k first elements
   //cuParallelSqrt<<<g_k_16x16, t_k_16x16>>>(dist_dev, query_width, k);
-  q.submit([&] (sycl::handler &h) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &h) {
     h.parallel_for<class parallelSqrt>(
       sycl::nd_range<2>(g_k_16x16, t_k_16x16), [=] (sycl::nd_item<2> item) {
       unsigned int xIndex = item.get_global_id(1);
@@ -231,7 +232,7 @@ void knn_parallel(sycl::queue &q, float *ref_host, int ref_width, float *query_h
       if (xIndex < query_width && yIndex < k)
         dist_dev[yIndex * query_width + xIndex] = sycl::sqrt(dist_dev[yIndex * query_width + xIndex]);
     });
-  });
+  }));
 
   q.memcpy(dist_host, dist_dev, query_width * k * size_of_float);
   q.memcpy(ind_host, ind_dev, query_width * k * size_of_int);
@@ -427,4 +428,6 @@ int main(int argc, char* argv[]) {
   free(dist);
   free(query);
   free(ref);
+
+  SYCL_TIMER_DUMP();
 }

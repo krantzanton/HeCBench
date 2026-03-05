@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 template <int n_threads, int n_elems_per_thread, typename func_t>
 void unfold_backward_elementwise_kernel(int total_n_elems, func_t f,
                                         const sycl::nd_item<1> &item) {
@@ -25,12 +26,12 @@ static void launch_unfold_backward_kernel(sycl::queue &q, int total_n_elems, fun
   sycl::range<1> gws ((total_n_elems + total_work_block - 1) /
                       total_work_block * n_threads);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
       unfold_backward_elementwise_kernel
         <n_threads, n_elems_per_thread, func_t>(total_n_elems, f, item);
     });
-  });
+  }));
 }
 
 template <typename scalar_t>
@@ -162,5 +163,6 @@ int main(int argc, char* argv[])
   free(h_grad_in);
   free(h_grad_out);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

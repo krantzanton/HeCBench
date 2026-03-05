@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <chrono>
 
+#include "../sycl_timer.hpp"
 #define m1  0x5555555555555555
 #define m2  0x3333333333333333 
 #define m4  0x0f0f0f0f0f0f0f0f 
@@ -187,5 +188,6 @@ int main(int argc, char* argv[])
 
   free(data);
   free(result);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

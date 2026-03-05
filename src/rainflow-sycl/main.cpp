@@ -1,3 +1,4 @@
+#include "../sycl_timer.hpp"
 /* -------------------------------------------------------------------------- */
 /* Rainflow cycle counting algorithm according to:                            */
 /* ASTM E1049-85,                                                             */
@@ -220,7 +221,7 @@ int main(int argc, char* argv[]) {
   auto start = std::chrono::steady_clock::now();
 
   for (n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class rainflow>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         rainflow_count (
@@ -233,7 +234,7 @@ int main(int argc, char* argv[]) {
           d_result_lengths,
           num_history);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -270,5 +271,6 @@ int main(int argc, char* argv[]) {
   free(result_lengths);
   free(ref_result_lengths);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

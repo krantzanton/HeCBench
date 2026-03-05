@@ -4,6 +4,7 @@
 
 #include "bondsKernelsGpu.h"
 
+#include "../sycl_timer.hpp"
 #define INLINE
 
 INLINE
@@ -1163,7 +1164,7 @@ long getBondsResultsGpu(sycl::queue &q, inArgsStruct inArgsHost, resultsStruct r
   struct timeval end;
   gettimeofday(&start, NULL);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class kernel>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       bonds(item,
             discountCurveGpu,
@@ -1179,7 +1180,7 @@ long getBondsResultsGpu(sycl::queue &q, inArgsStruct inArgsHost, resultsStruct r
             bondForwardValGpu,
             numBonds);
     });
-  }).wait();
+  }));
 
   gettimeofday(&end, NULL);
   long ktime = (end.tv_sec - start.tv_sec) * 1e6 + end.tv_usec - start.tv_usec;

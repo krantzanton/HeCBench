@@ -18,6 +18,7 @@
  * NVIDIA, Nikolai Sakharnykh, 2009
  */
 
+#include "../sycl_timer.hpp"
 #ifndef _SWEEP_SMALL_SYSTEMS_
 #define _SWEEP_SMALL_SYSTEMS_
 
@@ -56,13 +57,13 @@ double runReorderKernel(sycl::queue &q, float *d_a, float *d_t,
   shrDeltaT(0);
   for (int iCycles = 0; iCycles < BENCH_ITERATIONS; iCycles++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<float, 1> lmem (
          sycl::range<1>(TRANSPOSE_BLOCK_DIM * (TRANSPOSE_BLOCK_DIM+1)), cgh);
       cgh.parallel_for<class transpose_array>(sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
           transpose(item, d_t, d_a, lmem.get_multi_ptr<sycl::access::decorated::no>().get(), width, height);
       });
-    });
+    }));
   }
   q.wait();
   sum_time = shrDeltaT(0);
@@ -104,7 +105,7 @@ double runSweepKernel(sycl::queue &q,
   for (int iCycles = 0; iCycles < BENCH_ITERATIONS; iCycles++)
   {
     if (useLmem)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class sweep_local>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           sweep_small_systems_local_kernel(
               item,
@@ -117,10 +118,10 @@ double runSweepKernel(sycl::queue &q,
               num_systems,
               reorder);
         });
-      });
+      }));
 
     else if (useVec4)
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class sweep_global_v4>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           sweep_small_systems_global_vec4_kernel(
               item,
@@ -134,9 +135,9 @@ double runSweepKernel(sycl::queue &q,
               num_systems,
               reorder);
         });
-      });
+      }));
     else
-      q.submit([&] (sycl::handler &cgh) {
+      SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
         cgh.parallel_for<class sweep_global>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
           sweep_small_systems_global_kernel(
               item,
@@ -150,7 +151,7 @@ double runSweepKernel(sycl::queue &q,
               num_systems,
               reorder);
         });
-      });
+      }));
   }
 
   q.wait();

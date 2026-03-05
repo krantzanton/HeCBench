@@ -5,6 +5,7 @@
 #include <omp.h>
 #include "reference.h"
 
+#include "../sycl_timer.hpp"
 void vanGenuchten(
   const double *__restrict Ksat,
   const double *__restrict psi,
@@ -116,5 +117,6 @@ int main(int argc, char* argv[])
   delete[] theta_ref;
   delete[] K_ref;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -13,6 +13,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 #define NPTS (2048*8)
 #define NDIM 128
 
@@ -833,5 +834,6 @@ int main(int argc, char *argv[])
   CheckMatches(h_index.data(), d_index, h_score.data(), d_score);
 }
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

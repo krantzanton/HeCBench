@@ -3,6 +3,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 256
 
 #include "reference.h"
@@ -131,11 +132,11 @@ void atomicPerf (int n, int t, int repeat)
   auto start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         BlockRangeAtomicOnGlobalMem<T>(d_data, n, item);
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -154,11 +155,11 @@ void atomicPerf (int n, int t, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         WarpRangeAtomicOnGlobalMem<T>(d_data, n, item);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -177,11 +178,11 @@ void atomicPerf (int n, int t, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         SingleRangeAtomicOnGlobalMem<T>(d_data, i % BLOCK_SIZE, n, item);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -200,12 +201,12 @@ void atomicPerf (int n, int t, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<T, 1> smem (sycl::range<1>(BLOCK_SIZE), cgh);
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         BlockRangeAtomicOnSharedMem<T>(d_data, n, item, smem.template get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -221,12 +222,12 @@ void atomicPerf (int n, int t, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<T, 1> smem (sycl::range<1>(32), cgh);
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         WarpRangeAtomicOnSharedMem<T>(d_data, n, item, smem.template get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -242,13 +243,13 @@ void atomicPerf (int n, int t, int repeat)
   start = std::chrono::steady_clock::now();
   for(int i=0; i<repeat; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 6", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<T, 1> smem (sycl::range<1>(BLOCK_SIZE), cgh);
       cgh.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         SingleRangeAtomicOnSharedMem<T>(d_data, i % BLOCK_SIZE,
                                         n, item, smem.template get_multi_ptr<sycl::access::decorated::no>().get());
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -286,5 +287,6 @@ int main(int argc, char* argv[])
   printf("\nFP32 atomic add\n");
   atomicPerf<float>(n, len, repeat); 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

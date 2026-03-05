@@ -5,6 +5,7 @@
 #include "utils.hpp"
 
 // CPU kernel
+#include "../sycl_timer.hpp"
 void solve_seq(const double* l, const double* d, double* u, double* rhs, const int n, const int N)
 {
   int first,last;
@@ -159,7 +160,7 @@ int main(int argc, char const *argv[])
   start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class thomas>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         int tid = item.get_global_id(0);
@@ -184,7 +185,7 @@ int main(int argc, char const *argv[])
           }
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -220,5 +221,6 @@ int main(int argc, char const *argv[])
   sycl::free(d_d, q);
   sycl::free(u_d, q);
   sycl::free(rhs_d, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

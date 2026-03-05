@@ -4,6 +4,7 @@
 #include <chrono>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 void rotate_matrix_parallel (float *matrix, const int n, const int repeat) {
   #pragma omp target data map(tofrom: matrix[0:n*n]) 
   {
@@ -96,5 +97,6 @@ int main(int argc, char** argv) {
 
   free(serial_res);
   free(parallel_res);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

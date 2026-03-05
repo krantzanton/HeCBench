@@ -1,4 +1,5 @@
 
+#include "../sycl_timer.hpp"
 #ifndef _DIVERGENCE_HPP_
 #define _DIVERGENCE_HPP_
 
@@ -81,7 +82,7 @@ __attribute__((noinline)) void divergence_sphere_gpu(
                       (np+BLOCK_SIZE-1)/BLOCK_SIZE*BLOCK_SIZE);
   sycl::range<2> lws (BLOCK_SIZE, BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class divergence_test>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       constexpr const real rrearth = 1.5683814303638645E-7;
@@ -103,7 +104,7 @@ __attribute__((noinline)) void divergence_sphere_gpu(
         d_div[l*np+j] = (d_div[l*np+j] + d_vvtemp[l*np+j]) * 
                         (d_rmetdet[l*np+j] * rrearth);
     });
-  });
+  }));
 
   q.memcpy(div, d_div, sizeof(real)*np*np).wait();
 

@@ -27,6 +27,7 @@
 
 
 // Forward declaration
+#include "../sycl_timer.hpp"
 template <typename TData>
 class copy_kernel;
 
@@ -217,12 +218,12 @@ int runTest(
 
   for (int i = 0; i < NUM_ITERATIONS; i++)
   {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class copy_kernel<TData>>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         testKernel<TData>((TData*)d_odata, (TData*)d_idata, numElements, item);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -333,4 +334,6 @@ int main(int argc, char **argv)
 
   printf("Test passed\n");
   exit(EXIT_SUCCESS);
+
+  SYCL_TIMER_DUMP();
 }

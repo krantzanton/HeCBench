@@ -32,6 +32,7 @@
 #include <math.h>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 typedef struct {
   double i, c, h;
 } checksum;
@@ -131,33 +132,33 @@ void test(sycl::queue &q, int hiddenSize, int miniBatch, int seqLength, int numL
   sycl::range<1> gws_tmp_h ((tmp_h_size + 255)/256*256);
   sycl::range<1> gws_tmp_i ((tmp_i_size + 255)/256*256);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_h_data>(
       sycl::nd_range<1>(gws_tmp_h, lws), [=] (sycl::nd_item<1> item) {
       init(item, tmp_h, tmp_h_size);
     });
-  });
+  }));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_c_data>(
       sycl::nd_range<1>(gws_hc, lws), [=] (sycl::nd_item<1> item) {
       init(item, c_data, hc_size);
     });
-  });
+  }));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_i_data>(
       sycl::nd_range<1>(gws_tmp_i, lws), [=] (sycl::nd_item<1> item) {
       init(item, tmp_i, tmp_i_size);
     });
-  });
+  }));
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class init_bias_data>(
       sycl::nd_range<1>(gws_b, lws), [=] (sycl::nd_item<1> item) {
       init(item, bias, bias_size);
     });
-  });
+  }));
 
   q.wait();
 
@@ -213,7 +214,7 @@ void test(sycl::queue &q, int hiddenSize, int miniBatch, int seqLength, int numL
 
     for (int layer = lStart; layer < lEnd; layer++) {
       for (int i = rStart; i < rEnd; i++)
-        q.submit([&] (sycl::handler &cgh) {
+        SYCL_TIME_AGG("kernel 5", q.submit([&] (sycl::handler &cgh) {
           cgh.parallel_for<class pw>(sycl::nd_range<1>(gws_p, lws), [=] (sycl::nd_item<1> item) {
             elementwise
             (item,
@@ -227,7 +228,7 @@ void test(sycl::queue &q, int hiddenSize, int miniBatch, int seqLength, int numL
              c_data + i * numElements + layer * (seqLength + 1) * numElements,
              c_data + (i + 1) * numElements + layer * (seqLength + 1) * numElements);
 	  });
-        });
+        }));
     }
 
     q.wait();
@@ -341,6 +342,7 @@ int main(int argc, char* argv[]) {
   printf("i checksum %E     ", cs.i);
   printf("c checksum %E     ", cs.c);
   printf("h checksum %E\n", cs.h);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

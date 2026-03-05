@@ -16,6 +16,7 @@
 
 // Using Viterbi algorithm to search for a Hidden Markov Model for the most
 // probable state path given the observation sequence.
+#include "../sycl_timer.hpp"
 int ViterbiGPU(float &viterbiProb,
     int   *viterbiPath,
     int   *obs, 
@@ -60,7 +61,7 @@ int ViterbiGPU(float &viterbiProb,
   // main iteration of Viterbi algorithm
   for (int t = 1; t < nObs; t++) // for every input observation
   { 
-    q.submit([&] (sycl::handler &h) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &h) {
       h.parallel_for<class hmm>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         // find the most probable previous state leading to iState
@@ -81,7 +82,7 @@ int ViterbiGPU(float &viterbiProb,
           d_path[(t-1)*nState+iState] = maxState;
         }
       });
-    });
+    }));
 
     q.memcpy(d_maxProbOld, d_maxProbNew, sizeof(float)*nState);
   }

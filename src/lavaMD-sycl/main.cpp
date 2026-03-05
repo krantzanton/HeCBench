@@ -7,6 +7,7 @@
 #include "./util/num/num.h"
 #include "./main.h"
 
+#include "../sycl_timer.hpp"
 int main(  int argc, char *argv [])
 {
   // counters
@@ -210,7 +211,7 @@ int main(  int argc, char *argv [])
   q.wait();
   kstart = get_time();
 
-  q.submit([&](sycl::handler& cgh) {
+  auto __sycl_evt_k1 = q.submit([&](sycl::handler& cgh) {
     sycl::local_accessor <FOUR_VECTOR> rA_shared (100, cgh);
     sycl::local_accessor <FOUR_VECTOR> rB_shared (100, cgh);
     sycl::local_accessor <fp, 1> qB_shared (100, cgh);
@@ -218,7 +219,7 @@ int main(  int argc, char *argv [])
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel.sycl"
     });
-  }).wait();
+  }); SYCL_TIME_AGG("kernel 1", __sycl_evt_k1);
 
   kend = get_time();
 
@@ -251,5 +252,6 @@ int main(  int argc, char *argv [])
   free(fv_cpu);
   free(box_cpu);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

@@ -4,6 +4,7 @@
 #include <sycl/sycl.hpp>
 
 
+#include "../sycl_timer.hpp"
 typedef struct {
   uint n[10];
 } secp256k1_fe;
@@ -1211,7 +1212,7 @@ int main(int argc, char **argv) {
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class secp256k1>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
 
@@ -1230,7 +1231,7 @@ int main(int argc, char **argv) {
         secp256k1_fe_inv(&z_all, &z_all);
         secp256k1_fe_get_b32(d_output, &z_all);
       });
-    });
+    }));
   }
 
   q.wait();
@@ -1253,5 +1254,6 @@ int main(int argc, char **argv) {
     printf("PASS\n");
   else
     printf("FAIL\n");
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

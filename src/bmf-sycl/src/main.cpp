@@ -6,6 +6,7 @@
 #include "io_and_allocation.h"
 #include "bit_vector_functions.h"
 
+#include "../sycl_timer.hpp"
 #ifdef USE_GPU
 #include "cuBool_gpu.h"
 #else
@@ -115,6 +116,7 @@ int main(int argc, char **argv) {
   count = nonzeroDimension(B_vec);
   std::cout << "B uses " << count << " of " << int(config.factorDim) << " columns" << std::endl;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 

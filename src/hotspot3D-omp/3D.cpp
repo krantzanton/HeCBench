@@ -3,6 +3,7 @@
 #include <omp.h>
 #include "3D_helper.h"
 
+#include "../sycl_timer.hpp"
 #define TOL      (0.001)
 #define STR_SIZE (256)
 #define MAX_PD   (3.0e6)
@@ -170,5 +171,6 @@ int main(int argc, char** argv)
   free(pIn);
   free(tCopy);
   free(tOut);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

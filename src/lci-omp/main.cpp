@@ -6,6 +6,7 @@
 #include "../lci-cuda/tables.h"
 #include "kernels.h"
 
+#include "../sycl_timer.hpp"
 const double t_init = .1;
 const double t_final = 200;
 
@@ -95,5 +96,6 @@ int main (int argc, char* argv[]) {
   free(c);
   free(n);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

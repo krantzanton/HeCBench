@@ -1,6 +1,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE 16
 
 inline void atomicAdd(double *val, const double operand)
@@ -162,7 +163,7 @@ long ccsd_tengy_gpu(sycl::queue &q,
                      (nvir+BLOCK_SIZE-1)/BLOCK_SIZE*BLOCK_SIZE);
   sycl::range<2> lws(BLOCK_SIZE, BLOCK_SIZE);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class tengy>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         ccsd_kernel(d_f1n, d_f1t, d_f2n, d_f2t, d_f3n, d_f3t, d_f4n, d_f4t,
@@ -170,7 +171,7 @@ long ccsd_tengy_gpu(sycl::queue &q,
                     d_eorb, eaijk, d_emp4i, d_emp5i, d_emp4k, d_emp5k, ncor,
                     nocc, nvir, item);
     });
-  }).wait();
+  }));
 
   auto t1 = std::chrono::steady_clock::now();
   long time = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();

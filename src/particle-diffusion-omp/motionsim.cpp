@@ -37,6 +37,7 @@
 // Helper functions
 
 // This function displays correct usage and parameters
+#include "../sycl_timer.hpp"
 void usage(std::string programName) {
   std::cout << " Incorrect number of parameters " << std::endl;
   std::cout << " Usage: ";
@@ -273,5 +274,6 @@ int main(int argc, char* argv[]) {
   delete[] map;
   delete[] map_ref;
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

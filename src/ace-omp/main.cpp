@@ -6,6 +6,7 @@
 #include <omp.h>
 
 //define the data set size (cubic volume)
+#include "../sycl_timer.hpp"
 #define DATAXSIZE 400
 #define DATAYSIZE 400
 #define DATAZSIZE 400
@@ -427,5 +428,6 @@ int main(int argc, char *argv[])
   free(d_Fx);
   free(d_Fy);
   free(d_Fz);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

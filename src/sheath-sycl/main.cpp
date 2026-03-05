@@ -2,6 +2,7 @@
 // https://www.particleincell.com/wp-content/uploads/2016/02/sheath-gpu.cu
 
 
+#include "../sycl_timer.hpp"
 /* 1D sheath PIC simulation with SYCL */
 
 #include <stdio.h>
@@ -259,7 +260,8 @@ int main(int argc, char* argv[])
   printf("Total time for %d time steps: %.3g (s)\n", NUM_TS, time * 1e-9f);
   printf("Time per time step: %.3g (ms)\n", (time * 1e-6f) / NUM_TS);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }
 
 /***** HELPER FUNCTIONS *********************************************************/
@@ -304,7 +306,7 @@ void ScatterSpecies(sycl::queue &q,
   q.wait();
   auto start = std::chrono::steady_clock::now();
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class scatterParticle>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       long p = item.get_global_id(0);
@@ -314,7 +316,7 @@ void ScatterSpecies(sycl::queue &q,
         scatter(lc, 1.f, den_gpu);
       }
     });
-  }).wait();
+  }));
 
   auto end = std::chrono::steady_clock::now();
   time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -481,7 +483,7 @@ void PushSpecies(sycl::queue &q,
   sycl::range<1> gws (nblocks * THREADS_PER_BLOCK);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class pushParticle>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       /*get particle id*/
@@ -509,7 +511,7 @@ void PushSpecies(sycl::queue &q,
           part->alive = false;
       }
     });
-  });
+  }));
 }
 
 
@@ -527,7 +529,7 @@ void RewindSpecies(sycl::queue &q, Species* species, Particle *species_part_gpu,
   sycl::range<1> gws (nblocks * THREADS_PER_BLOCK);
   sycl::range<1> lws (THREADS_PER_BLOCK);
 
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class rewindParticle>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       /*get particle id*/
@@ -548,7 +550,7 @@ void RewindSpecies(sycl::queue &q, Species* species, Particle *species_part_gpu,
         part->v -= 0.5 * DT * qm * part_ef;
       }
     });
-  });
+  }));
 }
 
 

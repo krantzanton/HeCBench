@@ -12,6 +12,7 @@
 // line argument.
 ////////////////////////////////////////////////////////////////////////////////////
 
+#include "../sycl_timer.hpp"
 void run_event_based_simulation(Input in, SimulationData SD, unsigned long * vhash_result, double * kernel_init_time )
 {
   printf("Beginning event based simulation...\n");
@@ -68,7 +69,7 @@ void run_event_based_simulation(Input in, SimulationData SD, unsigned long * vha
   double start = get_time();
 
   // queue a kernel to be run, as a lambda
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     ////////////////////////////////////////////////////////////////////////////////
     // XS Lookup Simulation Loop
     ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +120,7 @@ void run_event_based_simulation(Input in, SimulationData SD, unsigned long * vha
         verification_d[i] = max_idx+1;
       }
     });
-  }).wait();
+  }));
 
   double stop = get_time();
   *kernel_init_time = stop-start;

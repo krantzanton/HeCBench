@@ -9,6 +9,7 @@
 // Kernels used for collaborative filtering and aggregation
 
 //Sum the passed values in a warp to the first thread of this warp.
+#include "../sycl_timer.hpp"
 template<typename T>
 inline T warpReduceSum(sycl::nd_item<2> &item, T val) 
 {
@@ -342,7 +343,7 @@ void run_get_block(
   const sycl::range<2> lws,
   const sycl::range<2> gws)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class assemble>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       get_block(
@@ -357,7 +358,7 @@ void run_get_block(
         params
       );
     });
-  });
+  }));
 }
 
 void run_hard_treshold_block(
@@ -373,7 +374,7 @@ void run_hard_treshold_block(
   const sycl::range<2> gws,
   const uint shared_memory_size)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
     sycl::local_accessor<float, 1>
       lmem(sycl::range<1>(shared_memory_size/sizeof(float)), cgh);
     cgh.parallel_for<class hard_treshold>(
@@ -390,7 +391,7 @@ void run_hard_treshold_block(
         sigma
       );
     });
-  });
+  }));
 }
 
 void run_aggregate_block(
@@ -409,7 +410,7 @@ void run_aggregate_block(
   const sycl::range<2> lws,  
   const sycl::range<2> gws)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class agg_block>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       aggregate_block(
@@ -427,7 +428,7 @@ void run_aggregate_block(
         params
       );
     });
-  });
+  }));
 }
 
 void run_aggregate_final(
@@ -439,7 +440,7 @@ void run_aggregate_final(
   const sycl::range<2> lws,  
   const sycl::range<2> gws)
 {
-  q.submit([&] (sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 4", q.submit([&] (sycl::handler &cgh) {
     cgh.parallel_for<class agg_final>(
       sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
       aggregate_final(
@@ -450,5 +451,5 @@ void run_aggregate_final(
         denoised_image
       );  
     });
-  });
+  }));
 }

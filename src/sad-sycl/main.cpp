@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 #include "bitmap_image.hpp"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE_X  16
 #define BLOCK_SIZE_Y  16
 #define BLOCK_SIZE    (BLOCK_SIZE_X * BLOCK_SIZE_Y)
@@ -230,7 +231,7 @@ int main(int argc, char* argv[]) {
     q.wait();
     auto kbegin = std::chrono::steady_clock::now();
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class sad>(
         sycl::nd_range<2>(gws, lws), [=] (sycl::nd_item<2> item) {
         compute_sad_array (
@@ -243,9 +244,9 @@ int main(int argc, char* argv[]) {
           template_width, template_height,
           template_size);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int> cache (lws2, cgh);
       cgh.parallel_for<class find_min>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
@@ -256,9 +257,9 @@ int main(int argc, char* argv[]) {
           d_sad_array,
           d_min_mse);
       });
-    });
+    }));
 
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       sycl::local_accessor<int, 0> sum (cgh);
       cgh.parallel_for<class count>(
         sycl::nd_range<1>(gws2, lws2), [=] (sycl::nd_item<1> item) {
@@ -270,7 +271,7 @@ int main(int argc, char* argv[]) {
           d_min_mse,
           d_num_occurances);
       });
-    });
+    }));
 
     q.wait();
     auto kend = std::chrono::steady_clock::now();
@@ -300,5 +301,6 @@ int main(int argc, char* argv[]) {
   delete[] h_main_image;
   delete[] h_template_image;
   delete[] h_sad_array;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

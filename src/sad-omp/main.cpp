@@ -3,6 +3,7 @@
 #include <omp.h>
 #include "bitmap_image.hpp"
 
+#include "../sycl_timer.hpp"
 #define BLOCK_SIZE_X  16
 #define BLOCK_SIZE_Y  16
 #define BLOCK_SIZE    (BLOCK_SIZE_X * BLOCK_SIZE_Y)
@@ -162,5 +163,6 @@ int main(int argc, char* argv[]) {
   delete[] h_main_image;
   delete[] h_template_image;
   delete[] h_sad_array;
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

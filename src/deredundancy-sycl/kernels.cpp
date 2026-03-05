@@ -1,4 +1,5 @@
 // kernel_baseToNumber
+#include "../sycl_timer.hpp"
 void kernel_baseToNumber(char *reads, const long length, sycl::nd_item<1> &item) 
 {
   long index = item.get_global_id(0); 
@@ -361,7 +362,7 @@ void updateRepresentative(
   int *d_r = sycl::malloc_device<int>(1, q);
   q.memcpy(d_r, representative, sizeof(int));
 
-  q.submit([&](sycl::handler &cgh) {
+  SYCL_TIME_AGG("kernel 1", q.submit([&](sycl::handler &cgh) {
     cgh.single_task<class update>([=]() {
       d_r[0]++;
       while (d_r[0] < readsCount) {
@@ -372,7 +373,7 @@ void updateRepresentative(
         d_r[0]++;
       }
     });
-  });
+  }));
 
   q.memcpy(representative, d_r, sizeof(int)).wait();
   sycl::free(d_r, q);

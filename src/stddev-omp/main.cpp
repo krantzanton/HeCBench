@@ -36,6 +36,7 @@
  * whether
  *  to normalize the output using N-1 or N, for true or false, respectively
  */
+#include "../sycl_timer.hpp"
 template <typename Type, typename IdxType = int>
 void stddev(Type *std, const Type *data, IdxType D, IdxType N, bool sample) {
   static const int TPB = 256;
@@ -152,5 +153,6 @@ int main(int argc, char* argv[]) {
   free(std_ref);
   free(std);
   free(data);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

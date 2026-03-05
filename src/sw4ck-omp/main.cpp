@@ -18,6 +18,7 @@
 #include "utils.h"
 #include "utils.cpp"
 
+#include "../sycl_timer.hpp"
 int main(int argc, char* argv[]) {
   if (argc != 3) {
     std::cout << "Usage: " << argv[0] << " <path to file> <repeat>\n";
@@ -188,5 +189,6 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 2; i++)
     for (auto const& x : arrays[i]) 
       delete(x.second);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

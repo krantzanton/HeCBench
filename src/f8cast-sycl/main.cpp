@@ -6,6 +6,7 @@
 #include "kernels.h"
 #include "utils.h"
 
+#include "../sycl_timer.hpp"
 template <typename Td, typename Ts>
 void convert(sycl::queue &q, bool isE4M3, int nelems, int niters)
 {
@@ -29,20 +30,20 @@ void convert(sycl::queue &q, bool isE4M3, int nelems, int niters)
   // Warm-up run
   for (int i = 0; i < 30; i++) {
     if (isE4M3) {
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 1", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         ref_fp32_cvt_e4m3<Td, Ts>(dst, src, nelems, item);
-      });
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      }));
+      SYCL_TIME_AGG("kernel 2", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         fp32_cvt_e4m3<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
     }
     else {
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 3", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         ref_fp32_cvt_e5m2<Td, Ts>(dst, src, nelems, item);
-      });
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      }));
+      SYCL_TIME_AGG("kernel 4", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         fp32_cvt_e5m2<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
     }
   }
 
@@ -51,13 +52,13 @@ void convert(sycl::queue &q, bool isE4M3, int nelems, int niters)
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < niters; i++) {
     if (isE4M3)
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 5", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         ref_fp32_cvt_e4m3<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
     else
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 6", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         ref_fp32_cvt_e5m2<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
   }
   q.wait();
   auto end = std::chrono::high_resolution_clock::now();
@@ -78,13 +79,13 @@ void convert(sycl::queue &q, bool isE4M3, int nelems, int niters)
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < niters; i++) {
     if (isE4M3)
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 7", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         fp32_cvt_e4m3<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
     else
-      q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
+      SYCL_TIME_AGG("kernel 8", q.parallel_for(sycl::nd_range<1>(gws, lws), [=](sycl::nd_item<1> item) {
         fp32_cvt_e5m2<Td, Ts>(dst, src, nelems, item);
-      });
+      }));
   }
   q.wait();
   end = std::chrono::high_resolution_clock::now();
@@ -138,5 +139,6 @@ int main(int argc, char* argv[]) {
   printf("float -> fp8 E5M2\n");
   convert<uint8_t, float>(q, false, nelems, niters); 
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

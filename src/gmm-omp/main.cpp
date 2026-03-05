@@ -33,6 +33,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
 ////////////////////////////////////////////////////////////////////////////////
+#include "../sycl_timer.hpp"
 int main( int argc, char** argv) {
   int original_num_clusters, desired_num_clusters, ideal_num_clusters;
 
@@ -137,5 +138,6 @@ int main( int argc, char** argv) {
 
   printf("Execution time of the cluster function %f (s)\n", time * 1e-9f);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

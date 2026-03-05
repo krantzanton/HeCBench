@@ -23,6 +23,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 #define MAX_DETECTIONS  4096
 #define N_PARTITIONS    32
 
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
   auto start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class generate>(sycl::nd_range<2>(gen_gws, gen_lws), [=] (sycl::nd_item<2> item) {
         const int i = item.get_global_id(1);
         const int j = item.get_global_id(0);
@@ -196,7 +197,7 @@ int main(int argc, char *argv[])
           nmsbitmap[i * MAX_DETECTIONS + j] = (((w * h) / area) < 0.3f) && (rects[j].z() != 0);
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -211,7 +212,7 @@ int main(int argc, char *argv[])
   start = std::chrono::steady_clock::now();
 
   for (int n = 0; n < repeat; n++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class reduce>(sycl::nd_range<1>(reduce_gws, reduce_lws), [=] (sycl::nd_item<1> item) {
         auto g = item.get_group();
         int bid = item.get_group(0);
@@ -228,7 +229,7 @@ int main(int argc, char *argv[])
                               sycl::all_of_group(g, pointsbitmap[bid] && nmsbitmap[idx]));
         }
       });
-    });
+    }));
   }
 
   q.wait();
@@ -269,5 +270,6 @@ int main(int argc, char *argv[])
   free(cpu_points);
   free(cpu_pointsbitmap);
 
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

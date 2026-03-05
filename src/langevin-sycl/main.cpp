@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sycl/sycl.hpp>
 
+#include "../sycl_timer.hpp"
 void k0 (sycl::nd_item<1> &item, const float *__restrict a, float *__restrict o) {
   int t = item.get_global_id(0);
   float x = a[t];
@@ -103,12 +104,12 @@ int main(int argc, char* argv[]) {
   q.wait();
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 1", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class kernel0>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k0(item, d_a, d_o0);
       });
-    });
+    }));
   }
   q.wait();
   auto end = std::chrono::steady_clock::now();
@@ -117,12 +118,12 @@ int main(int argc, char* argv[]) {
 
   start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 2", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class kernel1>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k1(item, d_a, d_o1);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -131,12 +132,12 @@ int main(int argc, char* argv[]) {
 
   start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeat; i++) {
-    q.submit([&] (sycl::handler &cgh) {
+    SYCL_TIME_AGG("kernel 3", q.submit([&] (sycl::handler &cgh) {
       cgh.parallel_for<class kernel2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         k2(item, d_a, d_o2);
       });
-    });
+    }));
   }
   q.wait();
   end = std::chrono::steady_clock::now();
@@ -179,5 +180,6 @@ int main(int argc, char* argv[]) {
   sycl::free(d_o0, q);
   sycl::free(d_o1, q);
   sycl::free(d_o2, q);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

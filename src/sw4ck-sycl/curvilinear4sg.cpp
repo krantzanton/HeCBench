@@ -6,6 +6,7 @@
 #include "kernel4.cpp"
 #include "kernel5.cpp"
 
+#include "../sycl_timer.hpp"
 void curvilinear4sg_ci(sycl::queue &q,
                        int ifirst, int ilast, int jfirst, int jlast, int kfirst,
                        int klast, float_sw4 *d_u, float_sw4 *d_mu,
@@ -42,13 +43,13 @@ void curvilinear4sg_ci(sycl::queue &q,
     sycl::range<3> tpb(K.tpb, J.tpb, I.tpb);
     sycl::range<3> blocks(K.blocks, J.blocks, I.blocks);
 
-    q.parallel_for(
+    SYCL_TIME_AGG("kernel 1", q.parallel_for(
         sycl::nd_range<3>(blocks * tpb, tpb), [=](sycl::nd_item<3> item) {
           kernel1(I.start, I.end, J.start, J.end, K.start, K.end, ifirst, ilast,
                   jfirst, jlast, kfirst, klast, a1, sgn, d_u, d_mu, d_lambda,
                   d_met, d_jac, d_lu, d_acof, d_bope, d_ghcof, d_acof_no_gp,
                   d_ghcof_no_gp, d_strx, d_stry, item);
-        });
+        }));
   }
 
   Range<64> I(ifirst + 2, ilast - 1);
@@ -58,29 +59,29 @@ void curvilinear4sg_ci(sycl::queue &q,
   sycl::range<3> tpb(K.tpb, J.tpb, I.tpb);
   sycl::range<3> blocks(K.blocks, J.blocks, I.blocks);
 
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 2", q.parallel_for(
       sycl::nd_range<3>(blocks * tpb, tpb), [=](sycl::nd_item<3> item) {
         kernel2(I.start, I.end, J.start, J.end, K.start, K.end, ifirst, ilast,
                 jfirst, jlast, kfirst, klast, a1, sgn, d_u, d_mu, d_lambda,
                 d_met, d_jac, d_lu, d_acof, d_bope, d_ghcof, d_acof_no_gp,
                 d_ghcof_no_gp, d_strx, d_stry, item);
-      });
+      }));
 
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 3", q.parallel_for(
       sycl::nd_range<3>(blocks * tpb, tpb), [=](sycl::nd_item<3> item) {
         kernel3(I.start, I.end, J.start, J.end, K.start, K.end, ifirst, ilast,
                 jfirst, jlast, kfirst, klast, a1, sgn, d_u, d_mu, d_lambda,
                 d_met, d_jac, d_lu, d_acof, d_bope, d_ghcof, d_acof_no_gp,
                 d_ghcof_no_gp, d_strx, d_stry, item);
-      });
+      }));
 
-  q.parallel_for(
+  SYCL_TIME_AGG("kernel 4", q.parallel_for(
       sycl::nd_range<3>(blocks * tpb, tpb), [=](sycl::nd_item<3> item) {
         kernel4(I.start, I.end, J.start, J.end, K.start, K.end, ifirst, ilast,
                 jfirst, jlast, kfirst, klast, a1, sgn, d_u, d_mu, d_lambda,
                 d_met, d_jac, d_lu, d_acof, d_bope, d_ghcof, d_acof_no_gp,
                 d_ghcof_no_gp, d_strx, d_stry, item);
-      });
+      }));
 
   if (onesided[5] == 1) {
     Range<16> I(ifirst + 2, ilast - 1);
@@ -90,12 +91,12 @@ void curvilinear4sg_ci(sycl::queue &q,
     sycl::range<3> tpb(K.tpb, J.tpb, I.tpb);
     sycl::range<3> blocks(K.blocks, J.blocks, I.blocks);
 
-    q.parallel_for(
+    SYCL_TIME_AGG("kernel 5", q.parallel_for(
         sycl::nd_range<3>(blocks * tpb, tpb), [=](sycl::nd_item<3> item) {
           kernel5(I.start, I.end, J.start, J.end, K.start, K.end, ifirst, ilast,
                   jfirst, jlast, kfirst, klast, nk, a1, sgn, d_u, d_mu,
                   d_lambda, d_met, d_jac, d_lu, d_acof, d_bope, d_ghcof,
                   d_acof_no_gp, d_ghcof_no_gp, d_strx, d_stry, item);
-        });
+        }));
   }
 }

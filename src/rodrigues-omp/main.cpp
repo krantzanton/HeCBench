@@ -4,6 +4,7 @@
 #include <math.h>
 #include <omp.h>
 
+#include "../sycl_timer.hpp"
 typedef struct __attribute__((__aligned__(16)))
 {
   float x, y, z;
@@ -133,5 +134,6 @@ int main(int argc, char* argv[])
 
   free(h);
   free(h2);
-  return 0;
+  SYCL_TIMER_DUMP();
+return 0;
 }

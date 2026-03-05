@@ -53,6 +53,7 @@
 */
 
 // Set version number of the library.
+#include "../sycl_timer.hpp"
 #ifndef cimg_version
 #define cimg_version 160
 
@@ -2192,7 +2193,9 @@ namespace cimg_library_suffixed {
           std::fprintf(stderr,"CImg Library Error: %s",e.what());   // Display your custom error message.
           ...                                                       // Do what you want now to save the ship!
           }
-        }
+        
+  SYCL_TIMER_DUMP();
+}
       \endcode
   **/
   struct CImgException : public std::exception {
