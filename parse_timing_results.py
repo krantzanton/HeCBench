@@ -41,11 +41,37 @@ def main():
             avgs_omp = re.findall(r"\[SYCL\]\[avg\][a-z\s]+(\d): ([\d\.]+)", content_omp)
             print(proj_name + ":")
             print("\tsums:")
-            for result in sums:
-                print(f"\t\tKernel {result[0]}: {result[1]} s")
+            for result in list(zip(sums_ocl, sums_omp)):
+                ocl_kernel = result[0][0]
+                omp_kernel = result[1][0]
+                ocl_value = result[0][1]
+                omp_value = result[1][1]
+                if ocl_kernel == omp_kernel:
+                    winner = ""
+                    if float(ocl_value) > float(omp_value):
+                        winner = "ocl" 
+                    elif float(ocl_value) == float(omp_value):
+                        winner = "same"
+                    else:
+                        winner = "omp"
+                    print(f"  {'Kernel':<10} | {'ocl':<10} | {'omp':<10} | {'difference':<10} | {'fastest':<10}")
+                    print(f"  {str(ocl_kernel):<10} | {str(ocl_value):<10} | {omp_value:<10} | {str(abs(float(ocl_value)-float(omp_value))):<10} | {winner:<10}")
             print("\tavgs:")
-            for result in avgs:
-                print(f"\t\tKernel {result[0]}: {result[1]} s")
+            for result in list(zip(avgs_ocl, avgs_omp)):
+                ocl_kernel = result[0][0]
+                omp_kernel = result[1][0]
+                ocl_value = result[0][1]
+                omp_value = result[1][1]
+                if ocl_kernel == omp_kernel:
+                    winner = ""
+                    if float(ocl_value) > float(omp_value):
+                        winner = "ocl" 
+                    elif float(ocl_value) == float(omp_value):
+                        winner = "same"
+                    else:
+                        winner = "omp"
+                    print(f"  {'Kernel':<10} | {'ocl':<10} | {'omp':<10} | {'difference':<10} | {'fastest':<10}")
+                    print(f"  {str(ocl_kernel):<10} | {str(ocl_value):<10} | {omp_value:<10} | {str(abs(float(ocl_value)-float(omp_value))):<10} | {winner:<10}")
         else:
             print("run.log not found for both")
         print("Exit")
