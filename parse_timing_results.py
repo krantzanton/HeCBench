@@ -42,11 +42,11 @@ def main():
     result_file = Path.cwd() / "timing_results.csv"
     with open(str(result_file), "w") as output:
         output.write(
-            "name,kernel,ocl_total,omp_total,ocl_avg,omp_avg,total_delta,avg_delta,fastest_total,fastest_avg\n"
+            "name,ocl_total,omp_total,ocl_avg,omp_avg,total_delta,avg_delta,fastest_total,fastest_avg\n"
         )
         for proj in list(zip(projects_ocl, projects_omp)):
             proj_name = proj[0].name
-            print(f"Enter ==> {proj_name}")
+            print(f"\nEnter ==> {proj_name}")
             runlog_ocl = proj[0] / "run.log"
             runlog_omp = proj[1] / "run.log"
             if runlog_ocl.exists() and runlog_omp.exists():
@@ -66,39 +66,42 @@ def main():
                 avgs_omp = re.findall(
                     r"\[SYCL\]\[avg\][a-z\s]+(\d): ([\d\.]+)", content_omp
                 )
-                print(proj_name + ":")
-                print(" sums:")
+                print(" " + proj_name + ":")
                 print(
-                    f"  {'Kernel':<10} | {'ocl_total':<10} | {'omp_total':<10} | {'ocl_avg':<10} | {'omp_avg':<10} | {'total_delta':<16} | {'avg_delta':<16} | {'fastest_total':<16} | {'fastest_avg':<16}"
+                    f"  {'ocl_total':<10} | {'omp_total':<10} | {'ocl_avg':<10} | {'omp_avg':<10} | {'total_delta':<16} | {'avg_delta':<16} | {'fastest_total':<16} | {'fastest_avg':<16}"
                 )
+                ocl_total = 0
+                omp_total = 0
+                ocl_avg = 0
+                omp_avg = 0
                 for result in list(zip(sums_ocl, sums_omp, avgs_ocl, avgs_omp)):
                     ocl_kernel = result[0][0]
                     omp_kernel = result[1][0]
-                    ocl_total = result[0][1]
-                    omp_total = result[1][1]
-                    ocl_avg = result[2][1]
-                    omp_avg = result[3][1]
                     if ocl_kernel == omp_kernel:
-                        total_winner = ""
-                        avg_winner = ""
-                        if float(ocl_total) > float(omp_total):
-                            total_winner = "ocl"
-                        elif float(ocl_total) == float(omp_total):
-                            total_winner = "same"
-                        else:
-                            avg_winner = "omp"
-                        if float(ocl_avg) > float(omp_avg):
-                            avg_winner = "ocl"
-                        elif float(ocl_avg) == float(omp_avg):
-                            avg_winner = "same"
-                        else:
-                            avg_winner = "omp"
-                        print(
-                            f"  {str(ocl_kernel):<10} | {str(ocl_total):<10} | {omp_total:<10} | {str(ocl_avg):<10} | {omp_avg:<10} | {str(abs(float(ocl_total) - float(omp_total))):<16} | {str(abs(float(ocl_avg) - float(omp_avg))):<16} | {total_winner:<16} | {avg_winner:<16}"
-                        )
-                        output.write(
-                            f"{str(proj_name)},{str(ocl_kernel)},{str(ocl_total)},{omp_total},{str(ocl_avg)},{omp_avg},{str(abs(float(ocl_total) - float(omp_total)))},{str(abs(float(ocl_avg) - float(omp_avg)))},{total_winner},{avg_winner}\n"
-                        )
+                        ocl_total += float(result[0][1])
+                        omp_total += float(result[1][1])
+                        ocl_avg += float(result[2][1])
+                        omp_avg += float(result[3][1])
+                total_winner = ""
+                avg_winner = ""
+                if float(ocl_total) > float(omp_total):
+                    total_winner = "ocl"
+                elif float(ocl_total) == float(omp_total):
+                    total_winner = "same"
+                else:
+                    avg_winner = "omp"
+                if float(ocl_avg) > float(omp_avg):
+                    avg_winner = "ocl"
+                elif float(ocl_avg) == float(omp_avg):
+                    avg_winner = "same"
+                else:
+                    avg_winner = "omp"
+                print(
+                    f"  {round(ocl_total, 5):<10} | {round(omp_total, 5):<10} | {str(ocl_avg):<10} | {omp_avg:<10} | {str(abs(float(ocl_total) - float(omp_total))):<16} | {str(abs(float(ocl_avg) - float(omp_avg))):<16} | {total_winner:<16} | {avg_winner:<16}"
+                )
+                output.write(
+                    f"{str(proj_name)},{str(round(ocl_total, 5))},{round(omp_total, 5)},{str(ocl_avg)},{omp_avg},{str(abs(float(ocl_total) - float(omp_total)))},{str(abs(float(ocl_avg) - float(omp_avg)))},{total_winner},{avg_winner}\n"
+                )
             else:
                 print("run.log not found for both")
             print("Exit")
