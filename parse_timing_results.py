@@ -4,6 +4,8 @@ import re
 import sys
 from pathlib import Path
 
+PRECISION=6
+PADDING="15"
 
 def main():
     ap = argparse.ArgumentParser(
@@ -68,7 +70,7 @@ def main():
                 )
                 print(" " + proj_name + ":")
                 print(
-                    f"  {'ocl_total':<10} | {'omp_total':<10} | {'ocl_avg':<10} | {'omp_avg':<10} | {'total_delta':<16} | {'avg_delta':<16} | {'fastest_total':<16} | {'fastest_avg':<16}"
+                    f"  {'ocl_total':<{PADDING}} | {'omp_total':<{PADDING}} | {'ocl_avg':<{PADDING}} | {'omp_avg':<{PADDING}} | {'total_delta':<{PADDING}} | {'avg_delta':<{PADDING}} | {'fastest_total':<{PADDING}} | {'fastest_avg':<{PADDING}}"
                 )
                 ocl_total = 0
                 omp_total = 0
@@ -97,10 +99,10 @@ def main():
                 else:
                     avg_winner = "omp"
                 print(
-                    f"  {round(ocl_total, 5):<10} | {round(omp_total, 5):<10} | {str(ocl_avg):<10} | {omp_avg:<10} | {str(abs(float(ocl_total) - float(omp_total))):<16} | {str(abs(float(ocl_avg) - float(omp_avg))):<16} | {total_winner:<16} | {avg_winner:<16}"
+                    f"  {round(ocl_total, PRECISION):<{PADDING}} | {round(omp_total, PRECISION):<{PADDING}} | {round(ocl_avg, PRECISION):<{PADDING}} | {round(omp_avg, PRECISION):<{PADDING}} | {round(abs(float(ocl_total) - float(omp_total)), PRECISION):<{PADDING}} | {round(abs(float(ocl_avg) - float(omp_avg)),PRECISION):<{PADDING}} | {total_winner:<{PADDING}} | {avg_winner:<{PADDING}}"
                 )
                 output.write(
-                    f"{str(proj_name)},{str(round(ocl_total, 5))},{round(omp_total, 5)},{str(ocl_avg)},{omp_avg},{str(abs(float(ocl_total) - float(omp_total)))},{str(abs(float(ocl_avg) - float(omp_avg)))},{total_winner},{avg_winner}\n"
+                    f"{str(proj_name)},{str(round(ocl_total, PRECISION))},{round(omp_total, PRECISION)},{round(ocl_avg, PRECISION)},{round(omp_avg,PRECISION)},{round(abs(float(ocl_total) - float(omp_total)),PRECISION)},{round(abs(float(ocl_avg) - float(omp_avg)),PRECISION)},{total_winner},{avg_winner}\n"
                 )
             else:
                 print("run.log not found for both")
