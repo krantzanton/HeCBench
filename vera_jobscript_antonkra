@@ -12,9 +12,11 @@
 
 cd /cephyr/users/antonkra/Vera/HeCBench
 
-IMG=/cephyr/users/antonkra/Vera/HeCBench/rocky-acpp.sif
+IMG=/cephyr/users/antonkra/Vera/acpp.sif
 
 # export ACPP_VISIBILITY_MASK=ocl
 export ACPP_VISIBILITY_MASK=omp
 
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src
+apptainer exec $IMG python3 clean_all.py --sycl-root=src
+
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --skip-run
