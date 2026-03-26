@@ -9,7 +9,7 @@
 #include <sycl/sycl.hpp>
 #include "device_kernel.cpp"
 
-#include "../sycl_timer.hpp"
+#include "../../sycl_timer.hpp"
 void device_chain_kernel_wrapper(
     std::vector<control_dt> &cont,
     std::vector<anchor_dt> &arg,
