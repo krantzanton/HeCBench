@@ -136,6 +136,10 @@ gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.
     # yum install -y intel-oneapi-dpcpp-cpp-2025.3.x86_64
 
 
+    rm -rf /opt/sleef_install
+    rm -rf /opt/sleef
+    rm -rf /tmp/sleef
+
     export LDFLAGS="-L/opt/sleef/lib64"
     mkdir -p /tmp/sleef
     mkdir /opt/sleef
