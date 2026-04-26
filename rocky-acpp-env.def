@@ -1,5 +1,5 @@
 Bootstrap: localimage
-From: ./acpp-base.sif
+From: ./rocky-acpp-base.sif
 
 %post
     echo "Setting up environment... Make sure to build to off the rocky-acpp-base image! And if you want to add modules add them in this post since the base rebuild takes quite a while."
