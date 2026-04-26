@@ -4,6 +4,8 @@ From: rockylinux:9
 %post
     set -e
 
+    dnf -y install ca-certificates
+    update-ca-trust
 
     dnf -y install epel-release
 
@@ -134,14 +136,29 @@ gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.
     # yum install -y intel-oneapi-dpcpp-cpp-2025.3.x86_64
 
 
+    export LDFLAGS="-L/opt/sleef/lib64"
+    mkdir -p /tmp/sleef
+    mkdir /opt/sleef
+    cd /tmp/sleef
+    git clone https://github.com/shibatch/sleef.git
+    cd sleef && mkdir build && cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX=/opt/sleef\
+      -DCMAKE_PREFIX_PATH=/opt/install/lib64 \
+      -DCMAKE_LIBRARY_PATH=/opt/install/lib64 \
+      -DCMAKE_INCLUDE_PATH=/opt/install/include
+    cmake --build . -j --clean-first
+    cmake --install .
+    unset LDFLAGS
+
     # AdaptiveCpp
     mkdir -p /tmp/acpp
     cd /tmp/acpp
     
     rm -rf AdaptiveCpp-25.02.0 v25.02.0.tar.gz
     
-    wget https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz
-    tar -xvf v25.10.0.tar.gz
+    # wget https://github.com/AdaptiveCpp/AdaptiveCpp/archive/refs/tags/v25.10.0.tar.gz
+    # tar -xvf v25.10.0.tar.gz
+    git clone https://github.com/AdaptiveCpp/AdaptiveCpp.git AdaptiveCpp-25.10.0
     cd AdaptiveCpp-25.10.0
 
     mkdir -p build && cd build 
