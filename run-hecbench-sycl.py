@@ -12,9 +12,22 @@ import signal
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
+import fcntl
 
 # ---------- helpers ----------
 
+def drain(fd):
+    """Read everything available without blocking"""
+    chunks = []
+    while True:
+        try:
+            data = os.read(fd, 4096)
+            if not data:
+                break
+            chunks.append(data)
+        except BlockingIOError:
+            break
+    return b"".join(chunks)
 
 def run(
     cmd: List[str], cwd: Path, timeout: int, env: Optional[dict] = None
@@ -26,23 +39,29 @@ def run(
         stderr=subprocess.PIPE,
         text=True,
         env=env,
-        start_new_session=True,
     )
 
     try:
-        out, err = p.communicate(timeout=timeout)
+        # Make pipes non-blocking
+        for fd in (p.stdout.fileno(), p.stderr.fileno()):
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        p.wait(timeout=timeout)
+        time.sleep(0.05)
+        out = drain(p.stdout.fileno()).decode()
+        err = drain(p.stderr.fileno()).decode()
         return p.returncode, out, err
 
     except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
+        p.kill()  # kill the main process
         out, err = p.communicate()
         return 124, out, err + "\n[TIMEOUT]\n"
 
     except KeyboardInterrupt:
-        print("\n[INTERRUPTED] Killing subprocess...")
-        os.killpg(p.pid, signal.SIGKILL)
+        print("\n[INTERRUPTED] Killing subprocess...", flush=True)
+        p.kill()
         p.wait()
-        raise  # re-raise so main program stops
+        raise
 
 
 def list_targets(make_tool: str, proj_dir: Path, timeout: int) -> List[str]:
@@ -133,6 +152,12 @@ def main():
         help="Build timeout per project in seconds (default: 900)",
     )
     ap.add_argument(
+        "--extra-runs",
+        type=int,
+        default=0,
+        help="how many extra runs it should do for the JIT runtime to stabilize",
+    )
+    ap.add_argument(
         "--timeout-run",
         type=int,
         default=900,
@@ -157,6 +182,17 @@ def main():
         default="",
         help="Append tokens to EXTRA_CFLAGS (passed to make as EXTRA_CFLAGS+=tok ...)",
     )
+    ap.add_argument(
+        "--likwid",
+        default="",
+        help="If likwid should be ran or not, argumnet is number of HWthreads to monitor"
+    )
+    ap.add_argument(
+        "--likwid-precision",
+        default="sp",
+        help="Selects what precision likwid should track. Accepts arugments 'sp' or 'dp'"
+    )
+
     args = ap.parse_args()
 
     sycl_root = Path(args.sycl_root).resolve()
@@ -166,10 +202,7 @@ def main():
     # Discover projects
     projects = sorted([p for p in sycl_root.glob(args.pattern) if p.is_dir()])
     if not projects:
-        log(
-            f"No projects found under {sycl_root} matching {args.pattern}",
-            file=sys.stderr,
-        )
+        print(f"No projects found under {sycl_root} matching {args.pattern}", flush=True)
         sys.exit(1)
 
     summary_rows = []
@@ -177,7 +210,7 @@ def main():
 
     for proj in projects:
         proj_name = proj.name
-        log(f"==> {proj_name}")
+        print(f"==> {proj_name}", flush=True)
 
         makefile = proj / "Makefile"
         log_dir = results_root / proj_name
@@ -248,32 +281,78 @@ def main():
                 }
             )
             continue
-
-        # 2) Test/run
-        env = os.environ.copy()
-        if args.device_filter:
-            env["SYCL_DEVICE_FILTER"] = args.device_filter
-
-        # Always run via `make run` (as requested)
+        # Always run via `make run`
         ran_via = "make run"
         run_env = os.environ.copy()
         if args.device_filter:
             run_env["SYCL_DEVICE_FILTER"] = args.device_filter
+
         run_cmd = [args.make]
         if args.cflags_plus:
             for tok in shlex.split(args.cflags_plus):
                 run_cmd.append(f"EXTRA_CFLAGS+={tok}")
         run_cmd.append("run")
-        run_code, r_out, r_err = run(run_cmd, proj, args.timeout_run, env=run_env)
+        if args.likwid:
+            if args.likwid_precision == "dp":
+                run_cmd.insert(0, "FLOPS_DP")
+            else:
+                run_cmd.insert(0, "FLOPS_SP")
+            run_cmd.insert(0, "-g")
+            run_cmd.insert(0, f"0-{int(args.likwid)-1}")
+            run_cmd.insert(0, "-C")
+            run_cmd.insert(0, "likwid-perfctr")
 
+        num_runs = 1 + args.extra_runs
+        all_run_logs = []
+        run_ok = True
+        last_run_code = 0
+        last_r_out = ""
+        last_r_err = ""
+
+        for run_idx in range(num_runs):
+            run_code, r_out, r_err = run(run_cmd, proj, args.timeout_run, env=run_env)
+            last_run_code = run_code
+
+            phase = "warmup" if run_idx < num_runs - 1 else "measured"
+
+            all_run_logs.append(
+                f"[run {run_idx + 1}/{num_runs}] phase={phase} via={ran_via}\n\n"
+                f"[stdout]\n{r_out}\n\n"
+                f"[stderr]\n{r_err}\n\n"
+                f"[exit] {run_code}\n"
+            )
+
+            if run_code != 0:
+                run_ok = False
+                break
+
+            last_r_out = r_out
+            last_r_err = r_err
+
+        # Full history of all runs
         write_text(
-            run_log,
-            f"[via] {ran_via}\n\n[stdout]\n{r_out}\n\n[stderr]\n{r_err}\n\n[exit] {run_code}\n",
+            log_dir / "run_all.log",
+            "\n" + ("\n" + ("=" * 80) + "\n").join(all_run_logs)
         )
-        run_ok = run_code == 0
+
+        # Only final measured run, for downstream parsing
+        if run_ok:
+            write_text(
+                run_log,
+                f"[via] {ran_via}\n\n[stdout]\n{last_r_out}\n\n[stderr]\n{last_r_err}\n\n[exit] {last_run_code}\n"
+            )
+        else:
+            # If a run failed, it is still useful to keep failure info in run.log
+            write_text(
+                run_log,
+                all_run_logs[-1]
+            )
+
         if not run_ok:
             failure_stage = "run"
-            note = f"{ran_via or 'no-run'} exit {run_code}"
+            note = f"{ran_via} failed on run {run_idx + 1}/{num_runs} with exit {last_run_code}"
+        else:
+            note = f"{ran_via} passed {num_runs} run(s)"
 
         summary_rows.append(
             {
@@ -308,26 +387,19 @@ def main():
     skipped_run = sum(1 for r in summary_rows if r["run"] == "SKIP")
 
     elapsed = time.time() - start_time
-    log(f"\nSummary for {total} benchmarks:")
-    log(f"  PASS both:  {passed_both}")
-    log(f"  FAIL compile: {failed_compile}")
-    log(f"  FAIL run:     {failed_run}")
-    log(f"  SKIP run:     {skipped_run}")
-    log(f"Logs & results in: {csv_path.parent}")
-    log(f"Elapsed: {int(elapsed)}s")
+    print(f"\nSummary for {total} benchmarks:", flush=True)
+    print(f"  PASS both:  {passed_both}", flush=True)
+    print(f"  FAIL compile: {failed_compile}", flush=True)
+    print(f"  FAIL run:     {failed_run}", flush=True)
+    print(f"  SKIP run:     {skipped_run}", flush=True)
+    print(f"Logs & results in: {csv_path.parent}", flush=True)
+    print(f"Elapsed: {int(elapsed)}s", flush=True)
 
 
 if __name__ == "__main__":
-    orig_stdout = sys.stdout
-    log_file = open("log.txt", "w")
 
-    def log(text):
-        log_file.write(text + "\n")
-        log_file.flush()
     try:
         main()
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
         sys.exit(130)
-    finally:
-        log_file.close()
