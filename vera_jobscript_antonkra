@@ -18,12 +18,12 @@ export ACPP_VISIBILITY_MASK=omp
 
 apptainer exec $IMG python3 clean_all.py --sycl-root=src
 
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4 --extra-runs=1
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_sp --likwid=64 --likwid-precision=sp
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_dp --likwid=64 --likwid-precision=dp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_warmup --extra-runs=1
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_likwid_sp --likwid=64 --likwid-precision=sp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_likwid_dp --likwid=64 --likwid-precision=dp
 
 export ACPP_VISIBILITY_MASK=ocl
 
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4 --extra-runs=1
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_sp --likwid=64 --likwid-precision=sp
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_dp --likwid=64 --likwid-precision=dp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=ocl_results_zen4_warmup --extra-runs=1
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=ocl_results_zen4_likwid_sp --likwid=64 --likwid-precision=sp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=ocl_results_zen4_likwid_dp --likwid=64 --likwid-precision=dp
