@@ -14,9 +14,16 @@ cd /cephyr/users/antonkra/Vera/HeCBench
 
 IMG=/cephyr/users/antonkra/Vera/acpp.sif
 
-# export ACPP_VISIBILITY_MASK=ocl
 export ACPP_VISIBILITY_MASK=omp
 
 apptainer exec $IMG python3 clean_all.py --sycl-root=src
 
-apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --skip-run
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4 --extra-runs=1
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_sp --likwid=64 --likwid-precision=sp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_dp --likwid=64 --likwid-precision=dp
+
+export ACPP_VISIBILITY_MASK=ocl
+
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4 --extra-runs=1
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_sp --likwid=64 --likwid-precision=sp
+apptainer exec $IMG python3 run-hecbench-sycl.py --sycl-root=src --pattern=gabor-sycl --results-dir=omp_results_zen4_dp --likwid=64 --likwid-precision=dp
