@@ -11,14 +11,14 @@ PADDING="15"
 TIME_PATTERN_SUM=r"\[SYCL\]\[sum\][a-z\s]+(\d): ([\d\.]+)"
 TIME_PATTERN_AVG=r"\[SYCL\]\[avg\][a-z\s]+(\d): ([\d\.]+)"
 
-LIKWID_PATTERN_CPI=r"\|\s*CPI STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_AVX2_SP=r"\|\s*AVX SP \[MFLOP/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_AVX512_SP=r"\|\s*AVX512 SP \[MFLOP/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_AVX2_DP=r"\|\s*AVX DP \[MFLOP/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_AVX512_DP=r"\|\s*AVX512 DP \[MFLOP/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_PACKED=r"\|\s*Packed \[MUOPS/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_SCALAR=r"\|\s*Scalar \[MUOPS/s\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
-LIKWID_PATTERN_VECTOR_RATIO=r"\|\s*Vectorization ratio \[%\] STAT\s*\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s\|\s*([0-9.]*)\s"
+LIKWID_PATTERN_CPI=r"\|\s*CPI STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_AVX2_SP=r"\|\s*AVX SP \[MFLOP/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_AVX512_SP=r"\|\s*AVX512 SP \[MFLOP/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_AVX2_DP=r"\|\s*AVX DP \[MFLOP/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_AVX512_DP=r"\|\s*AVX512 DP \[MFLOP/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_PACKED=r"\|\s*Packed \[MUOPS/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_SCALAR=r"\|\s*Scalar \[MUOPS/s\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
+LIKWID_PATTERN_VECTOR_RATIO=r"\|\s*Vectorization ratio \[%\] STAT\s*\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s\|\s*([0-9.+e-]*)\s"
 
 
 def normal_parse(args):
@@ -196,7 +196,14 @@ def likwid_parse(args):
                 content_omp_sp = omp_log_sp.read()
                 content_ocl_dp = ocl_log_dp.read()
                 content_omp_dp = omp_log_dp.read()
-
+                if "[TIMEOUT]" in content_ocl_sp or "[SKIP]" in content_ocl_sp:
+                    continue
+                if "[TIMEOUT]" in content_omp_sp or "[SKIP]" in content_omp_sp:
+                    continue
+                if "[TIMEOUT]" in content_ocl_dp or "[SKIP]" in content_ocl_dp:
+                    continue
+                if "[TIMEOUT]" in content_omp_dp or "[SKIP]" in content_omp_dp:
+                    continue
                 sums_ocl = re.findall(
                    TIME_PATTERN_SUM, content_ocl_sp
                 )
