@@ -295,6 +295,8 @@ def main():
         if args.likwid:
             if args.likwid_precision == "dp":
                 run_cmd.insert(0, "FLOPS_DP")
+            elif args.likwid_precision == "l3":
+                run_cmd.insert(0, "L3")
             else:
                 run_cmd.insert(0, "FLOPS_SP")
             run_cmd.insert(0, "-g")
