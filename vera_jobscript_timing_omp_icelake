@@ -31,6 +31,5 @@ apptainer exec "$IMG" python3 clean_all.py --sycl-root=src
 
 apptainer exec "$IMG" python3 run-hecbench-sycl.py \
     --sycl-root=src \
-    --pattern=gabor-sycl \
     --results-dir=omp_timing_results_icelake \
     --extra-runs=1

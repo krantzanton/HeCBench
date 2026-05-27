@@ -30,6 +30,5 @@ apptainer exec "$IMG" python3 clean_all.py --sycl-root=src
 
 apptainer exec "$IMG" python3 run-hecbench-sycl.py \
     --sycl-root=src \
-    --pattern=gabor-sycl \
     --results-dir=ocl_timing_results_zen4 \
     --extra-runs=1

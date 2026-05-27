@@ -27,16 +27,16 @@ cd "$BASE_DIR" || {
 export ACPP_VISIBILITY_MASK=ocl
 
 apptainer exec $IMG python3 run-hecbench-sycl.py \
-    --sycl-root=src --pattern=gabor-sycl \
+    --sycl-root=src \
     --results-dir=ocl_profiling_fp_results_icelake \
     --likwid=fp \
 
 apptainer exec $IMG python3 run-hecbench-sycl.py \
-    --sycl-root=src --pattern=gabor-sycl \
+    --sycl-root=src \
     --results-dir=ocl_profiling_l3_results_icelake \
     --likwid=l3 \
 
 apptainer exec $IMG python3 run-hecbench-sycl.py \
-    --sycl-root=src --pattern=gabor-sycl \
+    --sycl-root=src \
     --results-dir=ocl_profiling_stalls_results_icelake \
     --likwid=stalls \
