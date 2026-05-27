@@ -1,0 +1,36 @@
+#!/bin/bash
+#SBATCH -A C3SE2026-1-12
+#SBATCH -C ICELAKE
+#SBATCH --exclusive
+#SBATCH -p vera
+#SBATCH -J HeCBench
+#SBATCH -N 1
+#SBATCH -t 24:00:00
+#SBATCH -e hecbench_err_amd
+
+######################-------------------######################
+
+# Usage:
+#   sbatch jobscript.sh someusername
+#
+# If no username is given, default to the current user.
+TARGET_USER="${1:-$USER}"
+
+BASE_DIR="/cephyr/users/${TARGET_USER}/Vera/HeCBench"
+IMG="${BASE_DIR}/acpp.sif"
+
+cd "$BASE_DIR" || {
+    echo "Error: could not cd to $BASE_DIR"
+    exit 1
+}
+
+export OMP_PROC_BIND=true
+export ACPP_VISIBILITY_MASK=omp
+
+apptainer exec "$IMG" python3 clean_all.py --sycl-root=src
+
+apptainer exec "$IMG" python3 run-hecbench-sycl.py \
+    --sycl-root=src \
+    --pattern=gabor-sycl \
+    --results-dir=omp_timing_results_zen4 \
+    --extra-runs=1

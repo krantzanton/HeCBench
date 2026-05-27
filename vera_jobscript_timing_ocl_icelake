@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH -A C3SE2026-1-12
+#SBATCH -C ICELAKE
+#SBATCH --exclusive
+#SBATCH -p vera
+#SBATCH -J HeCBench
+#SBATCH -N 1
+#SBATCH -t 24:00:00
+#SBATCH -e hecbench_err_amd
+
+######################-------------------######################
+
+# Usage:
+#   sbatch jobscript.sh someusername
+#
+# If no username is given, default to the current user.
+TARGET_USER="${1:-$USER}"
+
+BASE_DIR="/cephyr/users/${TARGET_USER}/Vera/HeCBench"
+IMG="${BASE_DIR}/acpp.sif"
+
+cd "$BASE_DIR" || {
+    echo "Error: could not cd to $BASE_DIR"
+    exit 1
+}
+
+export ACPP_VISIBILITY_MASK=ocl
+
+apptainer exec "$IMG" python3 clean_all.py --sycl-root=src
+
+apptainer exec "$IMG" python3 run-hecbench-sycl.py \
+    --sycl-root=src \
+    --pattern=gabor-sycl \
+    --results-dir=ocl_timing_results_icelake \
+    --extra-runs=1
+
+apptainer exec $IMG python3 run-hecbench-sycl.py \
+    --sycl-root=src --pattern=gabor-sycl \
+    --results-dir=ocl_profiling_fp_results_icelake \
+    --likwid=fp \
+
+apptainer exec $IMG python3 run-hecbench-sycl.py \
+    --sycl-root=src --pattern=gabor-sycl \
+    --results-dir=ocl_profiling_l3_results_icelake \
+    --likwid=l3 \
+
+apptainer exec $IMG python3 run-hecbench-sycl.py \
+    --sycl-root=src --pattern=gabor-sycl \
+    --results-dir=ocl_profiling_stalls_results_icelake \
+    --likwid=stalls \

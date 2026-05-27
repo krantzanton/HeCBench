@@ -185,12 +185,7 @@ def main():
     ap.add_argument(
         "--likwid",
         default="",
-        help="If likwid should be ran or not, argumnet is number of HWthreads to monitor"
-    )
-    ap.add_argument(
-        "--likwid-precision",
-        default="sp",
-        help="Selects what precision likwid should track. Accepts arugments 'sp' or 'dp'"
+        help="If likwid should be ran or not, argument should be passed with group likwid should use"
     )
 
     args = ap.parse_args()
@@ -293,15 +288,13 @@ def main():
                 run_cmd.append(f"EXTRA_CFLAGS+={tok}")
         run_cmd.append("run")
         if args.likwid:
-            if args.likwid_precision == "dp":
-                run_cmd.insert(0, "FLOPS_DP")
-            elif args.likwid_precision == "l3":
-                run_cmd.insert(0, "L3")
+            if args.likwid == "l3":
+                run_cmd.insert(0, "THESIS_L3")
+            elif args.likwid == "stalls":
+                run_cmd.insert(0, "THESIS_STALLS")
             else:
-                run_cmd.insert(0, "FLOPS_SP")
+                run_cmd.insert(0, "THESIS_FP")
             run_cmd.insert(0, "-g")
-            run_cmd.insert(0, f"0-{int(args.likwid)-1}")
-            run_cmd.insert(0, "-C")
             run_cmd.insert(0, "likwid-perfctr")
 
         num_runs = 1 + args.extra_runs
