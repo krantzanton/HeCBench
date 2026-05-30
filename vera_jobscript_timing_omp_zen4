@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -A C3SE2026-1-12
-#SBATCH -C ICELAKE
+#SBATCH -C ZEN4
 #SBATCH --exclusive
 #SBATCH -p vera
 #SBATCH -J HeCBench
